@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="21";
+const APP_VER="22";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3161,7 +3161,8 @@ async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created
   $("sheet").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q))}}
 /* --- polling --- */
 async function liveTick(){if(LIVE.busy||document.hidden||LIVE.ok===false&&!LIVE.retry)return;LIVE.busy=true;LIVE.retry=false;
-  try{const sig=await pullJobs();let changed=sig!==LIVE.sig;LIVE.sig=sig;
+  try{for(const j of st.userJobs.filter(x=>!x.rid&&!x.example))await pushJob(j);
+    const sig=await pullJobs();let changed=sig!==LIVE.sig;LIVE.sig=sig;
     const mine=st.userJobs.filter(j=>j.rid).map(j=>j.rid);
     if(mine.length){const rows=await sb(`offers?job_id=in.(${mine.join(",")})&status=neq.withdrawn&order=created_at.asc&select=*`);const by={};
       rows.forEach(o=>{(by[o.job_id]=by[o.job_id]||[]).push(o);if(!LIVE.seen.has("o"+o.id)){if(!LIVE.first){const j=st.userJobs.find(x=>x.rid===o.job_id);
