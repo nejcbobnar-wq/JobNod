@@ -2721,9 +2721,9 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
     if(el&&(el.scrollTop||el.scrollLeft)&&!(typing&&(el===document.scrollingElement||el===document.documentElement||el===document.body))){el.scrollTop=0;el.scrollLeft=0}};
   addEventListener("scroll",fix,true);addEventListener("focusout",()=>setTimeout(fix,50));addEventListener("resize",()=>setTimeout(fix,50))})();
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
-document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;
+document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="13";
+const APP_VER="17";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -2978,6 +2978,57 @@ function openJobDetail(id){const j=jobById(id);if(!j)return;sheetOpts={job:id};
   $("sheet").querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));
   if($("jdGo"))$("jdGo").onclick=()=>{if(deal)openChat(deal.id);else openOffer(id)};
   openSheet(L(j.title))}
+
+/* ================= PROFILE: WHAT YOU NEED DEPENDS ON YOUR ROLE ================= */
+Object.assign(PR_EMPTY,{addr:"",seekExp:"",seekSkills:"",lastJob:""});
+Object.assign(LANGS.sl,{roleProD:"Opravljam dela kot podjetje ali s.p. in prevzemam naročila.",fAddr:"Naslov (ulica in hišna številka)",fAddrPh:"npr. Cankarjeva ulica 5",
+ seekExp:"Delovne izkušnje (let)",seekSkills:"Znanja in spretnosti",seekSkillsPh:"npr. delo z ljudmi, vozniško dovoljenje B, angleščina, delo na blagajni …",lastJob:"Zadnje delovno mesto",lastJobPh:"npr. natakar v Hotelu Lipov Gaj, 2 leti",
+ eRoles:"Izberite vsaj eno možnost.",ePickOne:"Izberite vsaj eno.",eCv:"Naložite življenjepis (PDF).",proCoLock:"Izvajalci del se morajo registrirati kot podjetje ali s.p., zato je ta možnost vklopljena.",
+ needClient:"Za naročanje del potrebujemo ime, naslov, telefon in e-pošto, da vas mojster lahko kontaktira.",needPro:"Za opravljanje del se registrirate kot podjetje ali s.p. Izpolnite podatke podjetja in izberite vrste del.",
+ needSeeker:"Za iskanje zaposlitve izpolnite znanja, izkušnje in naložite življenjepis.",needNone:"Najprej izberite, kaj želite v aplikaciji. Glede na izbiro vam pokažemo, katere podatke potrebujemo."});
+Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take on orders.",fAddr:"Address (street and number)",fAddrPh:"e.g. 5 Main Street",
+ seekExp:"Work experience (years)",seekSkills:"Skills",seekSkillsPh:"e.g. customer service, driving licence B, English, till work …",lastJob:"Most recent job",lastJobPh:"e.g. waiter at Hotel Lipov Gaj, 2 years",
+ eRoles:"Pick at least one option.",ePickOne:"Pick at least one.",eCv:"Upload your CV (PDF).",proCoLock:"People who do jobs have to register as a company or sole trader, so this is switched on.",
+ needClient:"To order jobs we need your name, address, phone and email so the pro can reach you.",needPro:"To do jobs you register as a company or sole trader. Fill in the company details and pick the kinds of work.",
+ needSeeker:"To look for a job, fill in your skills and experience and upload your CV.",needNone:"First pick what you want to do here. We'll show you which details we need for that."});
+{const _v=prValidate;prValidate=function(p){const e=_v(p),r=p.roles||[],req=k=>{if(!String(p[k]||"").trim())e[k]=t("eReq")};
+  if(!r.length)e.roles=t("eRoles");
+  if(r.includes("client")){req("phone");req("addr")}
+  if(r.includes("pro")){req("phone");if(!p.hasCo){e["co.name"]=e["co.name"]||t("eReq")}if(!(p.cats||[]).length)e.cats=t("ePickOne")}
+  if(r.includes("seeker")){if(!(p.sectors||[]).length)e.sectors=t("ePickOne");req("seekExp");req("seekSkills");if(!p.cvName)e.cv=t("eCv")}
+  return e}}
+{const _rp=renderProfile;renderProfile=function(){const p=pd;if((p.roles||[]).includes("pro"))p.hasCo=true;_rp();const P=$("profile");if(!P)return;
+  const r=p.roles||[],errBox=(k,el)=>{if(el&&pdErrs[k]&&!el.querySelector("#e-"+k))el.insertAdjacentHTML("beforeend",`<div class="ferr" id="e-${k}" role="alert">${esc(pdErrs[k])}</div>`)};
+  /* roles first, with a note on what each choice needs */
+  const rolesSec=P.querySelector(".roles")&&P.querySelector(".roles").closest("section"),basic=P.querySelector("#p-first")&&P.querySelector("#p-first").closest("section");
+  if(rolesSec&&basic){rolesSec.id="p-roles";basic.parentNode.insertBefore(rolesSec,basic);
+    const notes=r.length?[r.includes("client")&&t("needClient"),r.includes("pro")&&t("needPro"),r.includes("seeker")&&t("needSeeker")].filter(Boolean):[t("needNone")];
+    rolesSec.insertAdjacentHTML("beforeend",notes.map(n=>`<p class="hint rolenote">${esc(n)}</p>`).join(""));errBox("roles",rolesSec)}
+  /* basic details: address + phone required where needed */
+  const ph=P.querySelector("#p-phone"),town=P.querySelector("#p-town");
+  if(ph&&(r.includes("client")||r.includes("pro"))){const s=ph.closest("label").querySelector("span");if(s&&!s.querySelector(".req"))s.insertAdjacentHTML("beforeend",' <i class="req">*</i>')}
+  if(town&&!P.querySelector("#p-addr")){const two=town.closest(".two");two.insertAdjacentHTML("afterend",fIn("addr",t("fAddr"),p.addr||"",{req:r.includes("client")?1:0,ac:"street-address",ph:t("fAddrPh"),max:80}))}
+  /* job seeker: skills, experience, last job; CV only for seekers */
+  const sk=P.querySelector('[data-show="seeker"]');
+  if(sk&&!P.querySelector("#p-seekExp")){sk.querySelector("h3").insertAdjacentHTML("afterend",`${fIn("lastJob",t("lastJob"),p.lastJob||"",{ph:t("lastJobPh"),max:80})}
+     <div class="two">${fIn("seekExp",t("seekExp"),p.seekExp||"",{req:1,type:"number",im:"numeric",ph:"3"})}<span></span></div>
+     <label><span>${t("seekSkills")} <i class="req">*</i></span><textarea id="p-seekSkills" data-k="seekSkills" maxlength="400" placeholder="${esc(t("seekSkillsPh"))}"${pdErrs.seekSkills?' aria-invalid="true"':""}>${esc(p.seekSkills||"")}</textarea>${err("seekSkills")}</label>`);
+    const sf=sk.querySelector('[data-arr="sectors"]');if(sf){const fs=sf.closest("fieldset");fs.id="p-sectors";errBox("sectors",fs)}}
+  const cv=$("cvSec");if(cv){cv.dataset.show="seeker";cv.hidden=!r.includes("seeker");errBox("cv",cv)}
+  /* pro: company is mandatory */
+  const pro=P.querySelector('[data-show="pro"]');if(pro){const cf=pro.querySelector('[data-arr="cats"]');if(cf){const fs=cf.closest("fieldset");fs.id="p-cats";errBox("cats",fs)}}
+  const hc=P.querySelector('[data-tog="hasCo"]');if(hc&&r.includes("pro")){hc.checked=true;hc.disabled=true;const co=P.querySelector('[data-show="co"]');if(co)co.hidden=false;
+    hc.closest("label").insertAdjacentHTML("afterend",`<p class="hint rolenote">${esc(t("proCoLock"))}</p>`)}
+  /* own tools / own transport belong to job seekers, not to pros */
+  {const skS=P.querySelector('[data-show="seeker"]');["tools","transport"].forEach(k=>{const tg=P.querySelector(`[data-tog="${k}"]`);if(tg&&skS)skS.append(tg.closest("label"))})}
+  /* re-bind inputs that were added above */
+  P.querySelectorAll("#p-addr,#p-seekExp,#p-lastJob,#p-seekSkills").forEach(el=>el.addEventListener("input",()=>{setK(el.dataset.k,el.value.trimStart());if(pdErrs[el.dataset.k]){delete pdErrs[el.dataset.k];const e=$("e-"+el.dataset.k);if(e)e.textContent="";el.removeAttribute("aria-invalid")}markDirty()}));
+  /* changing a role redraws the form so the right fields show */
+  P.querySelectorAll('[data-arr="roles"]').forEach(cb=>cb.addEventListener("change",()=>{delete pdErrs.roles;if(cb.value==="pro"&&cb.checked)pd.hasCo=true;const sc=P.closest(".scroll"),y=sc?sc.scrollTop:0,jump=cb.checked?cb.value:null;setTimeout(()=>{renderProfile();if(sc)sc.scrollTop=y;
+    const tgt=jump==="client"?(P.querySelector("#p-first")&&P.querySelector("#p-first").closest("section")):jump==="pro"?P.querySelector('[data-show="pro"]'):jump==="seeker"?P.querySelector('[data-show="seeker"]'):null;
+    if(tgt)setTimeout(()=>{scrollToEl(tgt,"start");tgt.classList.add("flash");setTimeout(()=>tgt.classList.remove("flash"),1400)},80)},0)}))}}
+{const css=document.createElement("style");css.textContent=`.rolenote{margin:8px 0 0;padding:9px 12px;background:var(--soft);border-radius:12px;color:var(--ink)}
+.pcard.flash{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s}`;document.head.appendChild(css)}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
