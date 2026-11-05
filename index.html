@@ -48,7 +48,8 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;pa
 .logo{width:36px;height:36px;flex:none}
 .brand b{background:linear-gradient(90deg,var(--a1),var(--a3));-webkit-background-clip:text;background-clip:text;color:transparent}
 .count{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--soft);padding:6px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
-main{flex:1;min-height:0;position:relative}
+main{flex:1;min-height:0;position:relative;overflow:hidden;overflow:clip}
+.app{overflow:hidden;overflow:clip}
 .view{position:absolute;inset:0;display:flex;flex-direction:column}
 .stack{flex:1;position:relative;min-height:0}
 .card{position:absolute;inset:0;border-radius:28px;box-shadow:var(--shadow);overflow:hidden;touch-action:none;user-select:none;cursor:grab;will-change:transform;isolation:isolate}
@@ -1309,7 +1310,7 @@ $("seg-m").onclick=()=>{segRole="mojster";renderPeople()};$("seg-c").onclick=()=
 let sheetOpts={};
 function openSheet(label){$("sheet").setAttribute("aria-label",label);$("sheetWrap").hidden=false}
 function openProfile(id,opts={}){sheetOpts={...opts,id};drawProfile();openSheet(pName(person(id)));
-  if(opts.focus)setTimeout(()=>{const x=$("rv-text");if(x){x.scrollIntoView({block:"center"});x.focus()}},60)}
+  if(opts.focus)setTimeout(()=>{const x=$("rv-text");if(x){scrollToEl(x);x.focus()}},60)}
 function closeSheet(){$("sheetWrap").hidden=true;sheetOpts={}}
 $("sheetWrap").addEventListener("click",e=>{if(e.target.id==="sheetWrap")closeSheet()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheetWrap").hidden)closeSheet()});
@@ -2228,7 +2229,7 @@ function bindProfile(){const P=$("profile");bindVer();
     if(k==="roles")P.querySelectorAll("[data-show]").forEach(s=>{if(s.dataset.show==="pro")s.hidden=!has(pd.roles,"pro");if(s.dataset.show==="seeker")s.hidden=!has(pd.roles,"seeker")});
     markDirty()}));
   P.querySelectorAll("[data-tog]").forEach(cb=>cb.addEventListener("change",()=>{setK(cb.dataset.tog,cb.checked);
-    if(cb.dataset.tog==="hasCo"){const box=P.querySelector('[data-show="co"]');box.hidden=!cb.checked;if(cb.checked)setTimeout(()=>{const c=P.querySelector(".cocard");if(c)c.scrollIntoView({block:"start",behavior:"smooth"})},60)}markDirty()}));
+    if(cb.dataset.tog==="hasCo"){const box=P.querySelector('[data-show="co"]');box.hidden=!cb.checked;if(cb.checked)setTimeout(()=>{const c=P.querySelector(".cocard");if(c)scrollToEl(c,"start")},60)}markDirty()}));
   const photo=f=>compressImg(f,480,d=>{pd.photo=d;markDirty();renderProfile()});
   ["p-cam","p-gal"].forEach(id=>$(id).addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(f)photo(f)}));
   if($("p-rmphoto"))$("p-rmphoto").onclick=()=>{pd.photo="";markDirty();renderProfile()};
@@ -2269,11 +2270,11 @@ function openSso(k){sheetOpts={sso:k};const n=SSO_NAMES[k];
   <div class="two"><button type="button" class="ghost" id="ssoNo">${t("cancel")}</button><button type="button" class="primary" id="ssoYes">${t("ssoContinue")}</button></div>`;
   $("cls").onclick=closeSheet;$("ssoNo").onclick=closeSheet;
   $("ssoYes").onclick=()=>{const a={provider:k,date:"2026-11-05"};st.profile.auth=a;pd.auth=prClone(a);save();closeSheet();renderProfile();toast(t("ssoLinked",{p:n}));
-    const first=["first","last","email","town"].find(f=>!pd[f]);if(first){const el=$("p-"+first);if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.focus({preventScroll:true})}}};
+    const first=["first","last","email","town"].find(f=>!pd[f]);if(first){const el=$("p-"+first);if(el){scrollToEl(el);el.focus({preventScroll:true})}}};
   openSheet(t("contWith",{p:n}))}
 function saveProfile(){pdErrs=prValidate(pd);
   if(Object.keys(pdErrs).length){renderProfile();const first=Object.keys(pdErrs)[0],el=$("p-"+first);
-    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.focus({preventScroll:true})}
+    if(el){scrollToEl(el);el.focus({preventScroll:true})}
     toast(t("tFix",{n:Object.keys(pdErrs).length}));return}
   pd.co.tax=pd.co.tax?"SI"+taxDigits(pd.co.tax):"";
   pd.auth=st.profile.auth?prClone(st.profile.auth):pd.auth;st.profile=prClone(pd);pdDirty=false;save();syncMe();renderProfile();renderAll();toast(t("tSaved"))}
@@ -2751,6 +2752,13 @@ setInterval(()=>{if(!isCo())return;let fresh=false;st.myAds.forEach(a=>{const n=
     const all=applicants(a);if(a.seenN!==undefined){const x=all[all.length-1];notify("nApplicant",{x:x.name,y:L(a.title)})}a.seenN=n;fresh=true}});
   if(fresh){save();if(!$("v-coads").hidden)renderCoAds()}},10000);
 
+/* keep the app shell from being scrolled out of view (white screen on phones) */
+function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const r=el.getBoundingClientRect(),q=sc.getBoundingClientRect();
+  sc.scrollTo({top:Math.max(0,r.top-q.top+sc.scrollTop-(where==="start"?8:sc.clientHeight/3)),behavior:"smooth"})}
+(function(){const fix=()=>{const ae=document.activeElement,typing=ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)&&!/^(checkbox|radio|file)$/.test(ae.type||"");
+  for(const el of [document.scrollingElement,document.documentElement,document.body,document.querySelector(".app"),document.querySelector("main")])
+    if(el&&(el.scrollTop||el.scrollLeft)&&!(typing&&(el===document.scrollingElement||el===document.documentElement||el===document.body))){el.scrollTop=0;el.scrollLeft=0}};
+  addEventListener("scroll",fix,true);addEventListener("focusout",()=>setTimeout(fix,50));addEventListener("resize",()=>setTimeout(fix,50))})();
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
