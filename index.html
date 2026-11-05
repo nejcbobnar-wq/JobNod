@@ -2312,7 +2312,7 @@ function openNotes(){sheetOpts={notes:true};const list=st.notes;
 
 /* ---------- job filters ---------- */
 function fCount(){const f=st.f;return (f.min?1:0)+(f.max?1:0)+(f.cats.length?1:0)+(f.when!=="any"?1:0)+(f.urgent?1:0)+(f.verified?1:0)}
-function passJob(j){const f=st.f;if(isBlocked(j.client))return false;if(f.min&&j.max<f.min)return false;if(f.max&&j.min>f.max)return false;
+function passJob(j){const f=st.f;if(isBlocked(j.client))return false;if(j.live)return true;if(f.min&&j.max<f.min)return false;if(f.max&&j.min>f.max)return false;
   if(f.cats.length&&!f.cats.includes(j.cat))return false;if(f.urgent&&!j.urgent)return false;if(f.verified&&!isVerified(j.client))return false;
   if(f.when!=="any"){const w=WHEN[j.when]?j.when:(WHEN_LEGACY[j.when]||"deal");const ord={asap:0,week:1,month:2,deal:3};if(ord[w]>ord[f.when])return false}return true}
 function renderJobBar(){const n=fCount(),total=deckJ().length;
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="22";
+const APP_VER="23";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3133,7 +3133,7 @@ async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created
   for(let i=DEMO_JOBS.length-1;i>=0;i--)if(DEMO_JOBS[i].live)DEMO_JOBS.splice(i,1);
   rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const j=liveJobFromRow(r);DEMO_JOBS.unshift(j);if(!LIVE.first&&!LIVE.seen.has("j"+r.id))fresh.push(j);LIVE.seen.add("j"+r.id)});
   restoreCache();cacheLive();
-  fresh.forEach(j=>notify("nLiveJob",{y:L(j.title)}));return rows.map(r=>r.id).join(",")}
+  if(fresh.length){st.pos=0;st.last=null}fresh.forEach(j=>notify("nLiveJob",{y:L(j.title)}));return rows.map(r=>r.id).join(",")}
 {const _jc=jobCard;jobCard=function(j){const h=_jc(j);return j.live?h.replace('<div class="top">',`<div class="top"><span class="glass live">${t("liveBadge")}</span>`):h}}
 /* --- offers: a pro answering a live job sends a real offer --- */
 {const _nd=newDeal;newDeal=function(o){const d=_nd(o);const j=o.kind==="job"&&o.role==="pro"?jobById(o.item):null;
