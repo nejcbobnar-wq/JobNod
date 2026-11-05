@@ -1132,7 +1132,7 @@ function flyEl(el,right,done){el.querySelector(right?".stamp.yes":".stamp.no").s
   el.style.transform=`translate(${right?650:-650}px,40px) rotate(${right?30:-30}deg)`;setTimeout(()=>done(right),230)}
 
 /* ================= JOBS (worker mode) ================= */
-const deckJ=()=>allJobs().filter(j=>j.client!=="me"&&passJob(j)).map(j=>({j,d:dist(j)}))
+const deckJ=()=>allJobs().filter(j=>j.client!=="me"&&passJob(j)).map(j=>({j,d:j.live?-1:dist(j)}))
   .filter(x=>x.d===null||x.d<=st.radius).sort((a,b)=>(a.d??0)-(b.d??0)).map(x=>x.j);
 const pending=deckJ;
 function endCard(kind,n){const ads=kind==="ads";return `
@@ -2283,7 +2283,7 @@ const fmtDay=iso=>dayName(new Date(iso+"T12:00:00"));
 const hhmm=ts=>new Date(ts).toLocaleTimeString(loc(),{hour:"2-digit",minute:"2-digit"});
 
 /* ---------- verification badges ---------- */
-function isVerified(id){if(id==="me")return st.ver.phone==="ok"&&st.ver.email==="ok";if(id==="me-co")return st.ver.co==="ok";
+function isVerified(id){if(String(id).startsWith("lv_"))return false;if(id==="me")return st.ver.phone==="ok"&&st.ver.email==="ok";if(id==="me-co")return st.ver.co==="ok";
   if(String(id).startsWith("co")||String(id).startsWith("ico")||String(id).startsWith("sc"))return hashN(id)%10<6;
   const p=PMAP.get(id);if(!p)return false;return hashN(id)%10<(p.role==="mojster"?7:5)}
 const VSVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-.9 2.9.9 2.9-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9-2.5-1.7.9-2.9-.9-2.9 2.5-1.7.9-2.9 3 .2z" fill="currentColor"/><path d="m8.2 12.3 2.5 2.5 5-5.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="20";
+const APP_VER="21";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -2859,7 +2859,7 @@ let qSort={};
   f.addEventListener("submit",()=>{if(pm!=="quotes")return;setTimeout(()=>{const j=st.userJobs[0];if(j&&!j.quotes&&Date.now()-jobTs(j)<3000){j.quotes=true;j.ts=jobTs(j);save();renderAll()}
     pm="fixed";upd()},0)})})();
 /* --- swipe card + offer sheet --- */
-{const _jc=jobCard;jobCard=function(j){const h=_jc(j);if(!j.quotes)return h;const n=j.client==="me"?quotesFor(j).length:hashN(j.id)%6;
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);if(!j.quotes)return h;const n=j.client==="me"?quotesFor(j).length:j.live?0:hashN(j.id)%6;
   return h.replace(/<div class="price">[\s\S]*?<\/div>/,`<div class="price qprice">${t("collectingQ")} <small>· ${n?nOffersT(n):t("firstOffer")}</small></div>`)}}
 {const _oo=openOffer;openOffer=function(jobId){_oo(jobId);const j=jobById(jobId),S=$("sheet");if(!j||!sheetOpts||sheetOpts.offer!==jobId||!$("of-price"))return;
   if(j.quotes){const sm=S.querySelector(".offerjob small");if(sm)sm.textContent=`${pName(person(j.client))} · ${j.loc} · ${t("collectingQ")}`;const q=S.querySelector(".quick");if(q)q.remove();$("of-price").value=""}
@@ -2896,7 +2896,7 @@ let qSort={};
   _cp(jobId,proId)}}
 /* "My posts": offers list for posts that collect offers */
 {const _rp=renderPosts;renderPosts=function(){_rp();const P=$("posts");if(!P)return;
-  P.querySelectorAll(".post").forEach(pc=>{const del=pc.querySelector("[data-del]");if(!del)return;const j=jobById(del.dataset.del);if(!j||!j.quotes)return;
+  P.querySelectorAll(".post").forEach(pc=>{const del=pc.querySelector("[data-del]");if(!del)return;const j=jobById(del.dataset.del);if(!j||!(j.quotes||j.rid))return;
     const p=pc.querySelector(".top2 p");if(p)p.textContent=`${j.loc} · ${fmtQty(j)}`;
     if(st.chosen[j.id])return;const apps=pc.querySelector(".apps");if(!apps)return;
     const qs=quotesFor(j),srt=qSort[j.id]||"price",list=qs.map(q=>({q,p:person(q.pro),rt:rating(q.pro)}));
@@ -3097,6 +3097,90 @@ document.addEventListener("submit",e=>{if(!e.target||e.target.id!=="caF")return;
 {const _oa=openAd;openAd=function(id){_oa(id);const a=adById(id);if(a&&a.secCustom)swapText($("sheet"),L(OTHER_SEC),a.secCustom)}}
 {const css=document.createElement("style");css.textContent=`.otherin{margin-top:8px;width:100%}`;document.head.appendChild(css)}
 applyStatic();
+
+/* ================= LIVE TEST MODE: testers share jobs, offers and chat through Supabase ================= */
+const SB_URL="https://eivqantbqesybjhlrdpp.supabase.co",SB_KEY="sb_publishable_3tckIMPjhDhSoH8XEC_Yww_Z-aU9hGv";
+Object.assign(LANGS.sl,{liveBadge:"● V živo",liveOn:"Povezano s testerji",liveOff:"Ni povezave s skupno bazo, deluje samo demo.",nLiveOffer:"Prava ponudba za »{y}«: {x}, {p}",nLiveMsg:"{x}: {y}",nLiveAcc:"{x} je sprejel/a vašo ponudbo za »{y}«",nLiveDec:"{x} je izbral/a drugega izvajalca za »{y}«",nLiveJob:"Nova prava objava v bližini: {y}",liveHint:"Objave z oznako »V živo« so objavili pravi testerji."});
+Object.assign(LANGS.en,{liveBadge:"● Live",liveOn:"Connected to testers",liveOff:"No connection to the shared database, demo only.",nLiveOffer:"Real offer for “{y}”: {x}, {p}",nLiveMsg:"{x}: {y}",nLiveAcc:"{x} accepted your offer for “{y}”",nLiveDec:"{x} chose another pro for “{y}”",nLiveJob:"New real post nearby: {y}",liveHint:"Posts marked “Live” were posted by real testers."});
+if(!st.liveId){st.liveId=(crypto.randomUUID?crypto.randomUUID():"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,10));save()}
+const LIVE={ok:null,offers:{},seen:new Set(),busy:false,first:true};
+const liveName=()=>meName()||("Tester "+st.liveId.slice(0,4).toUpperCase());
+async function sb(path,opt={}){const r=await fetch(`${SB_URL}/rest/v1/${path}`,{method:opt.method||"GET",headers:Object.assign({apikey:SB_KEY,"Content-Type":"application/json"},opt.prefer?{Prefer:opt.prefer}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
+  if(!r.ok)throw new Error(r.status+" "+(await r.text()).slice(0,200));const tx=await r.text();return tx?JSON.parse(tx):null}
+function livePerson(id,name,role,town){const pid="lv_"+id;let p=PMAP.get(pid);if(!p){p={id:pid,role,name:name||"Tester",loc:town||"",since:2026,jobs:0,bio:null,cats:role==="mojster"?Object.keys(CATS):[],skills:[],rate:0,live:true};PEOPLE.push(p);PMAP.set(pid,p)}
+  else{if(name)p.name=name;if(town)p.loc=town}return pid}
+/* --- push my new job --- */
+async function pushJob(j){if(j.rid||j.example)return;const ph=j.photo&&j.photo.length<150000?j.photo:null;
+  try{const [row]=await sb("jobs",{method:"POST",prefer:"return=representation",body:{author_id:st.liveId,author_name:liveName(),cat:j.cat,cat_custom:j.catCustom||null,title:String(L(j.title)).slice(0,80),
+      descr:typeof j.desc==="string"?j.desc.slice(0,1000):null,qty:Number(j.qty)||null,unit:j.unit||null,per:!!j.per,umin:j.umin||null,umax:j.umax||null,min:j.min||null,max:j.max||null,quotes:!!j.quotes,
+      loc:j.loc||null,from_town:j.from||null,to_town:j.to||null,when_:j.when||null,photo:ph}});
+    j.rid=row.id;save();renderPosts()}catch(e){console.warn("live push",e)}}
+{const f=$("f");if(f)f.addEventListener("submit",()=>setTimeout(()=>{const j=st.userJobs[0];if(j&&!j.rid&&Date.now()-(+String(j.id).slice(1)||0)<4000)pushJob(j)},60))}
+/* removing my post closes it for everyone */
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#posts [data-del]");if(!b)return;const j=st.userJobs.find(x=>x.id===b.dataset.del);
+  if(j&&j.rid)sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{status:"removed"}}).catch(()=>{})},true);
+/* --- jobs from other testers go into the deck (always shown first, whatever the radius) --- */
+function liveJobFromRow(r){const client=livePerson(r.author_id,r.author_name,"stranka",r.loc);
+  return {id:"L"+r.id,rid:r.id,live:true,cat:CATS[r.cat]?r.cat:"drugo",catCustom:r.cat_custom||(CATS[r.cat]?null:r.cat),client,title:{sl:r.title,en:r.title},desc:r.descr?{sl:r.descr,en:r.descr}:{sl:"",en:""},
+    qty:Number(r.qty)||1,unit:r.unit||"pcs",per:!!r.per,umin:r.umin!=null?Number(r.umin):undefined,umax:r.umax!=null?Number(r.umax):undefined,min:Number(r.min)||0,max:Number(r.max)||0,quotes:!!r.quotes,
+    loc:r.loc||st.home,from:r.from_town||undefined,to:r.to_town||undefined,when:r.when_||"deal",photo:r.photo||undefined,urgent:false,ts:Date.parse(r.created_at)}}
+/* jobs that a deal of mine points at stay available even once they are taken */
+if(!st.liveCache||typeof st.liveCache!=="object")st.liveCache={};
+function cacheLive(){const keep={};st.deals.forEach(d=>{const j=DEMO_JOBS.find(x=>x.id===d.item&&x.live);if(j)keep[j.id]=Object.assign({},j,{clientName:person(j.client).name,closed:true})||null;else if(st.liveCache[d.item])keep[d.item]=st.liveCache[d.item]});st.liveCache=keep}
+function restoreCache(){Object.values(st.liveCache||{}).forEach(j=>{if(DEMO_JOBS.some(x=>x.id===j.id))return;const raw=j.client&&j.client.startsWith("lv_")?j.client.slice(3):j.client;livePerson(raw,j.clientName,"stranka",j.loc);DEMO_JOBS.push(Object.assign({},j,{client:"lv_"+raw}))})}
+restoreCache();
+async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created_at.desc&limit=200&select=*");const fresh=[];
+  for(let i=DEMO_JOBS.length-1;i>=0;i--)if(DEMO_JOBS[i].live)DEMO_JOBS.splice(i,1);
+  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const j=liveJobFromRow(r);DEMO_JOBS.unshift(j);if(!LIVE.first&&!LIVE.seen.has("j"+r.id))fresh.push(j);LIVE.seen.add("j"+r.id)});
+  restoreCache();cacheLive();
+  fresh.forEach(j=>notify("nLiveJob",{y:L(j.title)}));return rows.map(r=>r.id).join(",")}
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);return j.live?h.replace('<div class="top">',`<div class="top"><span class="glass live">${t("liveBadge")}</span>`):h}}
+/* --- offers: a pro answering a live job sends a real offer --- */
+{const _nd=newDeal;newDeal=function(o){const d=_nd(o);const j=o.kind==="job"&&o.role==="pro"?jobById(o.item):null;
+  if(j&&j.live){d.live=true;const of=o.offer||{};save();
+    sb("offers",{method:"POST",prefer:"return=representation",body:{job_id:j.rid,pro_id:st.liveId,pro_name:liveName(),ptype:of.ptype||"fixed",price:of.price||null,uprice:of.uprice||null,qty:of.qty||null,unit:of.unit||null,
+      rate:of.rate||null,hours:of.hours||null,day:of.date||null,at_time:of.time||null,note:of.note||null}}).then(([row])=>{d.rid=row.id;save();if(of.note)sb("messages",{method:"POST",body:{offer_id:row.id,from_id:st.liveId,from_name:liveName(),body:of.note}}).catch(()=>{})}).catch(e=>console.warn("live offer",e))}
+  return d}}
+{const _sc=simulateClient;simulateClient=function(id){const d=st.deals.find(x=>x.id===id);if(d&&d.live)return;_sc(id)}}
+/* my posts: real offers replace the made-up ones */
+{const _q=quotesFor;quotesFor=function(j){if(!j.rid)return _q(j);return (LIVE.offers[j.rid]||[]).map(o=>({pro:livePerson(o.pro_id,o.pro_name,"mojster"),d:0,ptype:o.ptype,price:Number(o.price)||0,
+  uprice:o.uprice!=null?Number(o.uprice):undefined,qty:o.qty!=null?Number(o.qty):undefined,unit:o.unit||undefined,rate:o.rate!=null?Number(o.rate):undefined,hours:o.hours!=null?Number(o.hours):undefined,
+  date:o.day||dateOpts()[1][0],time:o.at_time||"10:00",note:{sl:o.note||"",en:o.note||""},rid:o.id,live:true}))}}
+{const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
+  if(j&&j.rid&&!dealFor("job",jobId,proId)){const q=quotesFor(j).find(x=>x.pro===proId);
+    if(q){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,uprice:q.uprice,qty:q.qty,unit:q.unit,date:q.date,time:q.time,note:L(q.note)}});
+      d.live=true;d.rid=q.rid;sysMsg(d,"mAgreed",{p:priceTxt(q),d:fmtDay(q.date),h:q.time});save();
+      sb(`offers?id=eq.${q.rid}`,{method:"PATCH",body:{status:"accepted"}}).then(()=>sb(`offers?job_id=eq.${j.rid}&id=neq.${q.rid}&status=eq.sent`,{method:"PATCH",body:{status:"declined"}}))
+        .then(()=>sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{status:"assigned"}})).catch(e=>console.warn("live choose",e))}}
+  _cp(jobId,proId)}}
+/* --- chat: messages in live deals go to the other tester instead of an automatic reply --- */
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||!d.live)return;
+  const send=txt=>{txt=String(txt||"").trim();if(!txt)return;d.msgs.push({from:"me",text:txt,ts:now()});save();drawChat(id);setTimeout(()=>{const b=$("chatBox");if(b)b.scrollTop=b.scrollHeight},20);
+    const go=()=>d.rid?sb("messages",{method:"POST",body:{offer_id:d.rid,from_id:st.liveId,from_name:liveName(),body:txt.slice(0,1000)}}).catch(e=>console.warn("live msg",e)):setTimeout(go,1500);go()};
+  if($("chatForm"))$("chatForm").onsubmit=e=>{e.preventDefault();send($("chatTxt").value)};
+  $("sheet").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q))}}
+/* --- polling --- */
+async function liveTick(){if(LIVE.busy||document.hidden||LIVE.ok===false&&!LIVE.retry)return;LIVE.busy=true;LIVE.retry=false;
+  try{const sig=await pullJobs();let changed=sig!==LIVE.sig;LIVE.sig=sig;
+    const mine=st.userJobs.filter(j=>j.rid).map(j=>j.rid);
+    if(mine.length){const rows=await sb(`offers?job_id=in.(${mine.join(",")})&status=neq.withdrawn&order=created_at.asc&select=*`);const by={};
+      rows.forEach(o=>{(by[o.job_id]=by[o.job_id]||[]).push(o);if(!LIVE.seen.has("o"+o.id)){if(!LIVE.first){const j=st.userJobs.find(x=>x.rid===o.job_id);
+        notify("nLiveOffer",{x:o.pro_name,y:j?L(j.title):"",p:priceTxt({ptype:o.ptype,price:+o.price,uprice:+o.uprice,qty:+o.qty,unit:o.unit,rate:+o.rate,hours:+o.hours})})}LIVE.seen.add("o"+o.id)}});
+      const os=JSON.stringify(rows.map(o=>o.id+o.status));if(os!==LIVE.osig){LIVE.osig=os;changed=true}LIVE.offers=by}
+    const sent=st.deals.filter(d=>d.live&&d.role==="pro"&&d.rid);
+    if(sent.length){const rows=await sb(`offers?id=in.(${sent.map(d=>d.rid).join(",")})&select=id,status`);rows.forEach(r=>{const d=sent.find(x=>x.rid===r.id);if(!d)return;
+      if(r.status==="accepted"&&d.status==="offer"){d.status="agreed";sysMsg(d,"mAgreed",{p:priceTxt(d.offer),d:fmtDay(d.offer.date),h:d.offer.time});notify("nLiveAcc",{x:dealOther(d).name,y:dealTitle(d)},{chat:d.id});if(typeof showMatch==="function")showMatch(d)}
+      if(r.status==="declined"&&d.status==="offer"){d.status="declined";notify("nLiveDec",{x:dealOther(d).name,y:dealTitle(d)},{chat:d.id})}})}
+    const live=st.deals.filter(d=>d.live&&d.rid);
+    if(live.length){const rows=await sb(`messages?offer_id=in.(${live.map(d=>d.rid).join(",")})&order=created_at.asc&select=*`);
+      rows.forEach(m=>{if(m.from_id===st.liveId)return;const d=live.find(x=>x.rid===m.offer_id);if(!d)return;d.seenM=d.seenM||[];if(d.seenM.includes(m.id))return;d.seenM.push(m.id);
+        theirMsg(d,m.body);if(!LIVE.first&&sheetOpts.chat!==d.id)notify("nLiveMsg",{x:m.from_name,y:m.body.slice(0,60)},{chat:d.id})})}
+    save();if(LIVE.ok!==true){LIVE.ok=true;toast(t("liveOn"))}LIVE.first=false;
+    if(changed){const top=$("stack")&&$("stack").querySelector(".card:not(.back)");if(!top||!top.classList.contains("dragging"))render();if(!$("v-mine").hidden){renderPosts();renderMine()}}updBell()}
+  catch(e){console.warn("live",e);if(LIVE.ok===null){LIVE.ok=false;setTimeout(()=>{LIVE.retry=true},30000)}}
+  finally{LIVE.busy=false}}
+{const css=document.createElement("style");css.textContent=`.glass.live{background:rgba(22,176,122,.85);color:#fff;border-color:transparent}`;document.head.appendChild(css)}
+setTimeout(liveTick,800);setInterval(liveTick,6000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)liveTick()});
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
