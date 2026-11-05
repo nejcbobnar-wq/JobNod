@@ -2759,6 +2759,11 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
   for(const el of [document.scrollingElement,document.documentElement,document.body,document.querySelector(".app"),document.querySelector("main")])
     if(el&&(el.scrollTop||el.scrollLeft)&&!(typing&&(el===document.scrollingElement||el===document.documentElement||el===document.body))){el.scrollTop=0;el.scrollLeft=0}};
   addEventListener("scroll",fix,true);addEventListener("focusout",()=>setTimeout(fix,50));addEventListener("resize",()=>setTimeout(fix,50))})();
+/* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
+document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;
+  e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
+const APP_VER="6";
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
