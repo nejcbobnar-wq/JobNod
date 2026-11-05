@@ -2657,7 +2657,7 @@ function syncMyAds(){
 /* fictional applicants, revealed over time */
 const AP_FIRST=["Ana","Luka","Nina","Jan","Eva","Žan","Maja","Nejc","Tina","Rok","Sara","Matic","Lara","Tilen","Urška","Gal","Katja","Miha"];
 const AP_LAST=["Novak","Horvat","Kovač","Krajnc","Zupan","Potočnik","Kos","Vidmar","Golob","Mlakar","Turk","Božič","Kralj","Zupančič"];
-function applicants(a){const R=rng([...a.id].reduce((s,c)=>s*31+c.charCodeAt(0)|0,7)),cap=Math.min(8,Math.max(3,(a.open||1)*2+2));
+function coApplicants(a){const R=rng([...a.id].reduce((s,c)=>s*31+c.charCodeAt(0)|0,7)),cap=Math.min(8,Math.max(3,(a.open||1)*2+2));
   const shown=Math.min(cap,Math.floor((Date.now()-a.ts)/40000)+(Date.now()-a.ts>15000?1:0)),out=[];
   for(let i=0;i<cap;i++){const f=AP_FIRST[Math.floor(R()*AP_FIRST.length)],l=AP_LAST[Math.floor(R()*AP_LAST.length)],
     tw=R()<.6?a.loc:TOWN_W[Math.floor(R()*TOWN_W.length)],m=55+Math.floor(R()*44),cv=R()<.75,age=a.kind==="stud"?19+Math.floor(R()*6):22+Math.floor(R()*30);
@@ -2676,7 +2676,7 @@ function renderCoAds(){const box=$("coads");if(!box)return;
   const e=k=>coErr[k]?`<div class="ferr" role="alert">${esc(coErr[k])}</div>`:"";
   const secs=f&&f.kind==="stud"?[...new Set(STUD_POS?Object.keys(STUD_POS):Object.keys(SECTORS))]:Object.keys(SECTORS).filter(k=>!SECTORS[k].stud);
   box.innerHTML=`<div class="mine-head"><h2 class="section-title">${t("coAds")}</h2>${f?"":`<button class="ghost sm" id="caNew">+ ${t("aPost")}</button>`}</div>
-  <div class="summary"><div><span>${esc(c.name)}</span><strong>${mine.length}</strong><span>${t("postedAds")}</span></div><div style="text-align:right"><span>${t("applicantsN")}</span><strong>${mine.reduce((s,a)=>s+applicants(a).length,0)}</strong></div></div>
+  <div class="summary"><div><span>${esc(c.name)}</span><strong>${mine.length}</strong><span>${t("postedAds")}</span></div><div style="text-align:right"><span>${t("applicantsN")}</span><strong>${mine.reduce((s,a)=>s+coApplicants(a).length,0)}</strong></div></div>
   ${f?`<form id="caF" class="pcard" novalidate style="margin-bottom:16px">
     <div class="seg" role="group"><button type="button" data-kind="zap" aria-pressed="${f.kind==="zap"}">${t("kindZap")}</button><button type="button" data-kind="stud" aria-pressed="${f.kind==="stud"}">${t("kindStud")}</button></div>
     <h3 style="margin:0">${f.kind==="stud"?t("newAdStud"):t("newAdZap")}</h3>
@@ -2698,7 +2698,7 @@ function renderCoAds(){const box=$("coads");if(!box)return;
     <div class="two"><button type="button" class="ghost" id="caCancel">${t("cancel")}</button><button type="submit" class="primary">${t("aPost")}</button></div>
    </form>`:""}
   <div class="h3">${t("postedAds")} <small>${mine.length}</small></div>
-  <div class="list">${mine.length?mine.map(a=>{const ap=applicants(a);return `<div class="pcard" style="display:flex;flex-direction:column;gap:10px">
+  <div class="list">${mine.length?mine.map(a=>{const ap=coApplicants(a);return `<div class="pcard" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="padding:0;background:none"><div class="thumb" style="background:${SECTORS[a.sec].bg}">${SECTORS[a.sec].svg}</div>
      <div style="min-width:0"><h4>${esc(L(a.title))}</h4><p>${esc(a.kind==="stud"?t("kindStud"):L(ETYPES[a.type]))} · ${esc(a.loc)}</p><span class="status ok">${t("adActive")}</span></div>
      <div><div class="rp" style="font-size:13.5px">${payRange(a)}</div><button class="x" data-cav="${a.id}">${t("preview")}</button><br><button class="x" data-carm="${a.id}">${t("removeAd")}</button></div></div>
@@ -2747,9 +2747,9 @@ VIEWS.push("coads");
 {const _a=decideA;decideA=function(a,r){_a(a,a&&a.mine?false:r)}}
 {const _s=decideS;decideS=function(a,r){_s(a,a&&a.mine?false:r)}}
 {const _o=openAd;openAd=function(id){_o(id);const a=adById(id);if(!a||!a.mine)return;const b=$("adApply");if(!b)return;
-  b.textContent=t("seeApplicants",{n:applicants(a).length});b.disabled=false;b.onclick=()=>{closeSheet();show("coads")}}}
-setInterval(()=>{if(!isCo())return;let fresh=false;st.myAds.forEach(a=>{const n=applicants(a).length;if(n>(a.seenN||0)){
-    const all=applicants(a);if(a.seenN!==undefined){const x=all[all.length-1];notify("nApplicant",{x:x.name,y:L(a.title)})}a.seenN=n;fresh=true}});
+  b.textContent=t("seeApplicants",{n:coApplicants(a).length});b.disabled=false;b.onclick=()=>{closeSheet();show("coads")}}}
+setInterval(()=>{if(!isCo())return;let fresh=false;st.myAds.forEach(a=>{const n=coApplicants(a).length;if(n>(a.seenN||0)){
+    const all=coApplicants(a);if(a.seenN!==undefined){const x=all[all.length-1];notify("nApplicant",{x:x.name,y:L(a.title)})}a.seenN=n;fresh=true}});
   if(fresh){save();if(!$("v-coads").hidden)renderCoAds()}},10000);
 
 /* keep the app shell from being scrolled out of view (white screen on phones) */
@@ -2762,8 +2762,118 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="6";
+const APP_VER="7";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
+/* ================= JOBS: COLLECT OFFERS INSTEAD OF SETTING A PRICE ================= */
+Object.assign(LANGS.sl,{pmFixed:"Določim ceno",pmQuotes:"Zberi ponudbe",pmQuotesD:"Ne veste, koliko bo stalo? Mojstri vam pošljejo svoje cene, vi izberete najboljšo ponudbo.",
+ priceHint:"Podobna dela v tej kategoriji: {r}",collectingQ:"Zbiramo ponudbe",nOffers:"{n} ponudb",nOffers1:"1 ponudba",nOffers2:"2 ponudbi",nOffers34:"{n} ponudbe",firstOffer:"Bodite prvi",
+ ptFixed:"Fiksna cena",ptHour:"Na uro",ptInspect:"Po ogledu",ptInspectD:"Najprej si delo ogledate, nato pošljete končno ceno. Spodaj lahko vpišete okvirno ceno.",
+ hourRate:"Urna postavka (€)",hoursEst:"Ocena ur",estPrice:"Okvirna cena (€)",totalEst:"Skupaj okvirno {p}",perHourShort:"{p}/h",afterInspect:"po ogledu",approx:"okvirno",
+ offersRecv:"Prejete ponudbe",noOffersYet:"Ponudbe še prihajajo. Mojstri v bližini so obveščeni.",sortPrice:"Najcenejše",sortRating:"Najbolje ocenjeni",cheapest:"Najnižja cena",topRated:"Najboljša ocena",
+ pickOffer:"Izberi",nNewOffer:"Nova ponudba za »{y}«: {x}, {p}",quotesTag:"Ponudbe",offerFrom:"Ponudba"});
+Object.assign(LANGS.en,{pmFixed:"I'll set the price",pmQuotes:"Collect offers",pmQuotesD:"Not sure what it costs? Pros send you their prices and you pick the best offer.",
+ priceHint:"Similar jobs in this category: {r}",collectingQ:"Collecting offers",nOffers:"{n} offers",nOffers1:"1 offer",nOffers2:"2 offers",nOffers34:"{n} offers",firstOffer:"Be the first",
+ ptFixed:"Fixed price",ptHour:"Hourly",ptInspect:"After a visit",ptInspectD:"You look at the job first, then send a final price. You can add a rough estimate below.",
+ hourRate:"Hourly rate (€)",hoursEst:"Estimated hours",estPrice:"Rough price (€)",totalEst:"About {p} in total",perHourShort:"{p}/h",afterInspect:"after a visit",approx:"approx.",
+ offersRecv:"Offers received",noOffersYet:"Offers are on their way. Pros nearby have been notified.",sortPrice:"Cheapest",sortRating:"Top rated",cheapest:"Lowest price",topRated:"Best rated",
+ pickOffer:"Choose",nNewOffer:"New offer for “{y}”: {x}, {p}",quotesTag:"Offers",offerFrom:"Offer"});
+{const css=document.createElement("style");css.textContent=`.price.qprice{display:inline-flex;align-items:baseline;gap:6px}
+.pmseg{margin:0}.pmhint{margin:-4px 0 0}.ptseg{margin:0 0 10px}.ptseg button{font-size:13px;padding:8px 4px}
+.qlist{display:flex;flex-direction:column;gap:8px;margin-top:6px}.qrow{display:grid;grid-template-columns:40px 1fr auto;gap:6px 10px;align-items:center;background:var(--bg);border-radius:14px;padding:10px}
+.qrow .nm{background:none;border:0;padding:0;font:inherit;font-weight:700;font-size:15px;color:var(--ink);cursor:pointer;text-align:left}.qrow .qp small{display:inline}.qrow .qp small.b{display:block}.qrow small{display:block;color:var(--muted);font-size:12px}.qrow .qp{font-weight:800;font-size:16px;text-align:right;white-space:nowrap}.qrow .qp small{font-weight:600}
+.qrow .qnote{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted);font-style:italic}.qrow .qtags{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.qrow .pick-btn{grid-column:1/-1;justify-self:stretch}.qsort{display:flex;gap:6px;margin:4px 0 2px}.qsort .ghost.sm{margin:0}`;document.head.appendChild(css)}
+const nOffersT=n=>n===1?t("nOffers1"):n===2?t("nOffers2"):(lang==="sl"&&(n===3||n===4))?t("nOffers34",{n}):t("nOffers",{n});
+/* typical price range per category, from jobs that do have a price */
+function catRange(c){const xs=DEMO_JOBS.filter(j=>j.cat===c&&!j.quotes);if(!xs.length)return null;const s=a=>a.slice().sort((x,y)=>x-y),mid=a=>a[Math.floor(a.length/2)];
+  const lo=mid(s(xs.map(j=>j.min))),hi=mid(s(xs.map(j=>j.max)));return [Math.round(lo/5)*5,Math.max(Math.round(lo/5)*5+10,Math.round(hi/5)*5)]}
+/* about a quarter of the demo jobs collect offers */
+DEMO_JOBS.forEach(j=>{if(hashN(j.id)%4===0)j.quotes=true});
+const jobTs=j=>j.ts||(/^u\d+$/.test(j.id)?+j.id.slice(1):0);
+function priceTxt(o){if(!o)return "";if(o.ptype==="hour")return `${t("perHourShort",{p:money(o.rate)})} · ~${num(o.hours)} h (${money(o.price)})`;
+  if(o.ptype==="inspect")return `${t("afterInspect")}${o.price?` · ${t("approx")} ${money(o.price)}`:""}`;return money(o.price)}
+/* fictional offers from nearby pros on the user's own "collect offers" posts */
+function quotesFor(j){const ll=coords(j)||TOWNS[st.home],est=catRange(j.cat)||[j.min||40,j.max||90],mid=(est[0]+est[1])/2;
+  const pros=PEOPLE.filter(p=>p.role==="mojster"&&p.cats.includes(j.cat)&&TOWNS[p.loc]).map(p=>({p,d:km(ll,TOWNS[p.loc])})).filter(x=>x.d<=Math.max(st.radius,40)).sort((a,b)=>a.d-b.d).slice(0,5);
+  const ts=jobTs(j),age=ts?Date.now()-ts:1e9,shown=ts?Math.min(pros.length,age<6000?0:1+Math.floor((age-6000)/25000)):pros.length,dates=dateOpts();
+  return pros.slice(0,shown).map(({p,d},i)=>{const R=rng(hashN(j.id+"|"+p.id)),r=R(),pt=r<.6?"fixed":r<.85?"hour":"inspect";
+    const price=Math.max(15,Math.round(mid*(.72+R()*.6)/5)*5),rate=[20,22,25,28,30,35,40][Math.floor(R()*7)],hours=Math.max(1,Math.round(price/rate*2)/2);
+    const o={pro:p.id,d,ptype:pt,price:pt==="hour"?Math.round(rate*hours):price,rate,hours,date:dates[1+Math.floor(R()*5)][0],time:["08:00","09:00","10:00","14:00","16:00"][Math.floor(R()*5)]};
+    o.note=[ {sl:"Imam vse orodje s sabo, delo opravim v enem obisku.",en:"I bring all the tools and finish in one visit."},{sl:"Material lahko priskrbim po nabavni ceni.",en:"I can supply materials at cost."},
+      {sl:"Pred začetkom pridem na kratek ogled, brez stroškov.",en:"I'll pop by for a quick look first, free of charge."},{sl:"Garancija na opravljeno delo 12 mesecev.",en:"12-month guarantee on the work."},{sl:"",en:""}][Math.floor(R()*5)];
+    return o})}
+let qSort={};
+/* --- post form: price mode --- */
+(function(){const f=$("f");if(!f)return;const row=$("f-min").closest(".two");if(!row)return;
+  row.insertAdjacentHTML("beforebegin",`<div class="seg pmseg" role="group" id="f-pm"><button type="button" data-pm="fixed" aria-pressed="true"></button><button type="button" data-pm="quotes" aria-pressed="false"></button></div>
+   <p class="hint pmhint" id="f-pmhint" hidden></p>`);
+  row.insertAdjacentHTML("afterend",`<p class="hint" id="f-phint"></p>`);
+  let pm="fixed";const upd=()=>{$("f-pm").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.pm===pm);b.textContent=t(b.dataset.pm==="fixed"?"pmFixed":"pmQuotes")});
+    row.hidden=pm==="quotes";$("f-pmhint").hidden=pm!=="quotes";$("f-pmhint").textContent=t("pmQuotesD");
+    const r=catRange($("f-cat").value);$("f-phint").textContent=r?t("priceHint",{r:range(r[0],r[1])}):"";};
+  $("f-pm").querySelectorAll("button").forEach(b=>b.onclick=()=>{pm=b.dataset.pm;upd()});$("f-cat").addEventListener("change",upd);
+  const _as=applyStatic;applyStatic=function(){_as();upd()};upd();
+  f.addEventListener("submit",()=>{if(pm!=="quotes")return;const r=catRange($("f-cat").value)||[40,90];$("f-min").value=r[0];$("f-max").value=r[1]},true);
+  f.addEventListener("submit",()=>{if(pm!=="quotes")return;setTimeout(()=>{const j=st.userJobs[0];if(j&&!j.quotes&&Date.now()-jobTs(j)<3000){j.quotes=true;j.ts=jobTs(j);save();renderAll()}
+    pm="fixed";upd()},0)})})();
+/* --- swipe card + offer sheet --- */
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);if(!j.quotes)return h;const n=j.client==="me"?quotesFor(j).length:hashN(j.id)%6;
+  return h.replace(/<div class="price">[\s\S]*?<\/div>/,`<div class="price qprice">${t("collectingQ")} <small>· ${n?nOffersT(n):t("firstOffer")}</small></div>`)}}
+{const _oo=openOffer;openOffer=function(jobId){_oo(jobId);const j=jobById(jobId),S=$("sheet");if(!j||!sheetOpts||sheetOpts.offer!==jobId||!$("of-price"))return;
+  if(j.quotes){const sm=S.querySelector(".offerjob small");if(sm)sm.textContent=`${pName(person(j.client))} · ${j.loc} · ${t("collectingQ")}`;const q=S.querySelector(".quick");if(q)q.remove();$("of-price").value=""}
+  const pc=$("of-price").closest(".pcard"),lab=$("of-price").closest("label");let pt="fixed";
+  pc.insertAdjacentHTML("afterbegin",`<div class="seg ptseg" role="group"><button type="button" data-pt="fixed" aria-pressed="true">${t("ptFixed")}</button><button type="button" data-pt="hour" aria-pressed="false">${t("ptHour")}</button><button type="button" data-pt="inspect" aria-pressed="false">${t("ptInspect")}</button></div>`);
+  lab.insertAdjacentHTML("afterend",`<div class="two" id="of-hr" hidden><label>${t("hourRate")}<div class="pricein"><input id="of-rate" type="number" min="1" inputmode="numeric" value="25"><span>€</span></div></label>
+    <label>${t("hoursEst")}<div class="pricein"><input id="of-hours" type="number" min="0.5" step="0.5" inputmode="decimal" value="2"><span>h</span></div></label></div><p class="hint" id="of-hrtot" hidden></p><p class="hint" id="of-insp" hidden>${t("ptInspectD")}</p>`);
+  const capEl=lab.firstChild,tot=()=>{const r=+$("of-rate").value||0,h=+$("of-hours").value||0;$("of-hrtot").textContent=t("totalEst",{p:money(Math.round(r*h))})};
+  const upd=()=>{S.querySelectorAll("[data-pt]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pt===pt));lab.hidden=pt==="hour";$("of-hr").hidden=pt!=="hour";$("of-hrtot").hidden=pt!=="hour";$("of-insp").hidden=pt!=="inspect";
+    if(capEl&&capEl.nodeType===3)capEl.textContent=pt==="inspect"?t("estPrice"):t("yourPrice");const qk=S.querySelector(".quick");if(qk)qk.hidden=pt!=="fixed";tot()};
+  S.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{pt=b.dataset.pt;upd()});["of-rate","of-hours"].forEach(id=>$(id).addEventListener("input",tot));upd();
+  $("ofYes").onclick=()=>{let price=+$("of-price").value,o;
+    if(pt==="hour"){const rate=+$("of-rate").value,hours=+$("of-hours").value;if(!(rate>0)||!(hours>0)){toast(t("eNum"));return}o={ptype:"hour",rate,hours,price:Math.round(rate*hours)}}
+    else if(pt==="inspect")o={ptype:"inspect",price:price>0?price:0};
+    else{if(!(price>0)){toast(t("eNum"));return}o={ptype:"fixed",price}}
+    const d=newDeal({kind:"job",item:j.id,other:j.client,role:"pro",status:"offer",offer:Object.assign(o,{date:$("of-date").value,time:$("of-time").value,note:$("of-note").value.trim()})});
+    if(!d.offer.price)d.offer.price=Math.round(((j.min||0)+(j.max||0))/2/5)*5||50,d.offer.noPrice=true;
+    if(!st.taken.includes(j.id))st.taken.push(j.id);
+    sysMsg(d,"mOfferSent",{p:priceTxt(d.offer.noPrice?{ptype:"inspect",price:0}:d.offer),d:fmtDay(d.offer.date),h:d.offer.time});if(d.offer.note)d.msgs.push({from:"me",text:d.offer.note,ts:now()});save();
+    toast(t("offerSent"));openChat(d.id);simulateClient(d.id);renderMine()}}}
+/* chat shows the offer's price type */
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||!d.offer||!d.offer.ptype||d.offer.ptype==="fixed")return;
+  const txt=d.offer.noPrice?t("afterInspect"):priceTxt(d.offer),S=$("sheet");S.querySelectorAll(".dealcard b").forEach(b=>{if(b.textContent===money(d.offer.price))b.textContent=txt});
+  const sm=S.querySelector(".chathead small");if(sm)sm.textContent=sm.textContent.replace(money(d.offer.price),txt)}}
+/* client picks an offer: the deal takes that offer's price and terms */
+{const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
+  if(j&&j.quotes&&!dealFor("job",jobId,proId)){const q=quotesFor(j).find(x=>x.pro===proId);
+    if(q){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,date:q.date,time:q.time,note:L(q.note)}});
+      sysMsg(d,"mAgreed",{p:priceTxt(q),d:fmtDay(q.date),h:q.time});later(1500,()=>theirMsg(st.deals.find(x=>x.id===d.id),t("rProThanks",{d:fmtDay(q.date)})));notify("nMatch",{x:dealOther(d).name,y:L(j.title)},{chat:d.id})}}
+  _cp(jobId,proId)}}
+/* "My posts": offers list for posts that collect offers */
+{const _rp=renderPosts;renderPosts=function(){_rp();const P=$("posts");if(!P)return;
+  P.querySelectorAll(".post").forEach(pc=>{const del=pc.querySelector("[data-del]");if(!del)return;const j=jobById(del.dataset.del);if(!j||!j.quotes)return;
+    const p=pc.querySelector(".top2 p");if(p)p.textContent=`${j.loc} · ${fmtQty(j)}`;
+    if(st.chosen[j.id])return;const apps=pc.querySelector(".apps");if(!apps)return;
+    const qs=quotesFor(j),srt=qSort[j.id]||"price",list=qs.map(q=>({q,p:person(q.pro),rt:rating(q.pro)}));
+    list.sort(srt==="price"?(a,b)=>a.q.price-b.q.price:(a,b)=>b.rt.avg-a.rt.avg||a.q.price-b.q.price);
+    const minP=Math.min(...qs.map(q=>q.price)),maxR=Math.max(...list.map(x=>x.rt.avg));
+    apps.querySelectorAll(".lbl,.app-row").forEach(x=>x.remove());
+    apps.insertAdjacentHTML("beforeend",`<span class="lbl">${t("offersRecv")} · ${qs.length}</span>
+     ${qs.length>1?`<div class="qsort"><button class="ghost sm" data-qs="${j.id}|price" aria-pressed="${srt==="price"}">${t("sortPrice")}</button><button class="ghost sm" data-qs="${j.id}|rating" aria-pressed="${srt==="rating"}">${t("sortRating")}</button></div>`:""}
+     ${qs.length?`<div class="qlist">${list.map(({q,p,rt})=>`<div class="qrow">${av(p)}<div style="min-width:0"><button class="nm" data-person="${p.id}">${esc(p.name)}</button>
+        <small>${rt.n?stars(rt.avg)+" "+f1(rt.avg):t("newShort")} · ${fkm(q.d)} · ${fmtDay(q.date)} ${q.time}</small></div>
+        <div class="qp">${q.ptype==="hour"?`${money(q.rate)}<small>/h</small><small class="b">~${num(q.hours)} h · ${money(q.price)}</small>`:q.ptype==="inspect"?`<small class="b">${t("afterInspect")}</small><small>${t("approx")}</small> ${money(q.price)}`:money(q.price)}</div>
+        ${q.price===minP||rt.avg===maxR&&rt.n?`<div class="qtags">${q.price===minP&&qs.length>1?`<span class="status ok">${t("cheapest")}</span>`:""}${rt.avg===maxR&&rt.n&&qs.length>1?`<span class="status">${t("topRated")} ★</span>`:""}</div>`:""}
+        ${L(q.note)?`<p class="qnote">„${esc(L(q.note))}“</p>`:""}
+        <button class="pick-btn" data-qpick="${j.id}" data-m="${p.id}">${t("pickOffer")} · ${esc(q.ptype==="hour"?t("perHourShort",{p:money(q.rate)}):money(q.price))}</button></div>`).join("")}</div>`
+      :`<p class="hint">${t("noOffersYet")}</p>`}`)});
+  P.querySelectorAll("[data-qs]").forEach(b=>b.onclick=()=>{const [id,s]=b.dataset.qs.split("|");qSort[id]=s;renderPosts()});
+  P.querySelectorAll(".qlist [data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));
+  P.querySelectorAll("[data-qpick]").forEach(b=>b.onclick=()=>{const id=b.dataset.qpick,m=b.dataset.m;st.chosen[id]=m;save();renderPosts();toast(t("tChosen",{x:person(m).name}));chooseProDeal(id,m)})}}
+/* notify about new offers on the user's posts */
+setInterval(()=>{let ch=false;st.userJobs.filter(j=>j.quotes&&!st.chosen[j.id]).forEach(j=>{const qs=quotesFor(j);if(qs.length>(j.seenQ||0)){const q=qs[qs.length-1];
+    if(j.seenQ!==undefined)notify("nNewOffer",{x:person(q.pro).name,y:L(j.title),p:priceTxt(q)});j.seenQ=qs.length;ch=true}});
+  if(ch){save();if(!$("v-mine").hidden)renderPosts();render()}},8000);
+
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
