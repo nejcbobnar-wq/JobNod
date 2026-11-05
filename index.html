@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="17";
+const APP_VER="19";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -2980,20 +2980,25 @@ function openJobDetail(id){const j=jobById(id);if(!j)return;sheetOpts={job:id};
   openSheet(L(j.title))}
 
 /* ================= PROFILE: WHAT YOU NEED DEPENDS ON YOUR ROLE ================= */
-Object.assign(PR_EMPTY,{addr:"",seekExp:"",seekSkills:"",lastJob:""});
+const POSTS={"Ljubljana":"1000","Kranj":"4000","Maribor":"2000","Celje":"3000","Koper":"6000","Novo mesto":"8000","Škofja Loka":"4220","Jesenice":"4270","Domžale":"1230","Kamnik":"1241","Ptuj":"2250","Murska Sobota":"9000","Nova Gorica":"5000","Velenje":"3320","Trbovlje":"1420","Krško":"8270","Bled":"4260","Radovljica":"4240","Tržič":"4290","Medvode":"1215","Idrija":"5280","Slovenj Gradec":"2380","Izola":"6310","Piran":"6330","Postojna":"6230","Kočevje":"1330","Brežice":"8250","Sevnica":"8290","Zagorje ob Savi":"1410","Litija":"1270","Grosuplje":"1290","Vrhnika":"1360","Logatec":"1370","Ajdovščina":"5270","Tolmin":"5220","Žalec":"3310","Šentjur":"3230","Slovenska Bistrica":"2310","Ormož":"2270","Lendava":"9220","Ljutomer":"9240","Gornja Radgona":"9250","Ravne na Koroškem":"2390","Dravograd":"2370","Črnomelj":"8340","Metlika":"8330","Ribnica":"1310","Cerknica":"1380","Sežana":"6210","Ilirska Bistrica":"6250","Bohinj":"4264","Kranjska Gora":"4280","Cerklje na Gorenjskem":"4207","Naklo":"4202","Šenčur":"4208","Preddvor":"4205","Železniki":"4228","Gorenja vas":"4224","Žiri":"4226","Bovec":"5230"};
+Object.assign(PR_EMPTY.co,{street:"",houseNo:"",postCode:"",postCity:""});
+Object.assign(PR_EMPTY,{addr:"",street:"",houseNo:"",postCode:"",postCity:"",seekExp:"",seekSkills:"",lastJob:""});
 Object.assign(LANGS.sl,{roleProD:"Opravljam dela kot podjetje ali s.p. in prevzemam naročila.",fAddr:"Naslov (ulica in hišna številka)",fAddrPh:"npr. Cankarjeva ulica 5",
  seekExp:"Delovne izkušnje (let)",seekSkills:"Znanja in spretnosti",seekSkillsPh:"npr. delo z ljudmi, vozniško dovoljenje B, angleščina, delo na blagajni …",lastJob:"Zadnje delovno mesto",lastJobPh:"npr. natakar v Hotelu Lipov Gaj, 2 leti",
  eRoles:"Izberite vsaj eno možnost.",ePickOne:"Izberite vsaj eno.",eCv:"Naložite življenjepis (PDF).",proCoLock:"Izvajalci del se morajo registrirati kot podjetje ali s.p., zato je ta možnost vklopljena.",
- needClient:"Za naročanje del potrebujemo ime, naslov, telefon in e-pošto, da vas mojster lahko kontaktira.",needPro:"Za opravljanje del se registrirate kot podjetje ali s.p. Izpolnite podatke podjetja in izberite vrste del.",
+ needClient:"Za naročanje del potrebujemo ime, naslov, telefon in e-pošto, da vas mojster lahko kontaktira.",fStreet:"Ulica",fStreetPh:"npr. Cankarjeva ulica",fHouseNo:"Hišna številka",fPostCode:"Poštna številka",fPostCity:"Pošta (mesto)",fPostCityPh:"npr. Kranj",ePost:"Vpišite veljavno poštno številko, npr. 4000.",needPro:"Za opravljanje del se registrirate kot podjetje ali s.p. Izpolnite podatke podjetja in izberite vrste del.",
  needSeeker:"Za iskanje zaposlitve izpolnite znanja, izkušnje in naložite življenjepis.",needNone:"Najprej izberite, kaj želite v aplikaciji. Glede na izbiro vam pokažemo, katere podatke potrebujemo."});
 Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take on orders.",fAddr:"Address (street and number)",fAddrPh:"e.g. 5 Main Street",
  seekExp:"Work experience (years)",seekSkills:"Skills",seekSkillsPh:"e.g. customer service, driving licence B, English, till work …",lastJob:"Most recent job",lastJobPh:"e.g. waiter at Hotel Lipov Gaj, 2 years",
  eRoles:"Pick at least one option.",ePickOne:"Pick at least one.",eCv:"Upload your CV (PDF).",proCoLock:"People who do jobs have to register as a company or sole trader, so this is switched on.",
- needClient:"To order jobs we need your name, address, phone and email so the pro can reach you.",needPro:"To do jobs you register as a company or sole trader. Fill in the company details and pick the kinds of work.",
+ needClient:"To order jobs we need your name, address, phone and email so the pro can reach you.",fStreet:"Street",fStreetPh:"e.g. Main Street",fHouseNo:"House number",fPostCode:"Postcode",fPostCity:"Post town",fPostCityPh:"e.g. Kranj",ePost:"Enter a valid postcode, e.g. 4000.",needPro:"To do jobs you register as a company or sole trader. Fill in the company details and pick the kinds of work.",
  needSeeker:"To look for a job, fill in your skills and experience and upload your CV.",needNone:"First pick what you want to do here. We'll show you which details we need for that."});
 {const _v=prValidate;prValidate=function(p){const e=_v(p),r=p.roles||[],req=k=>{if(!String(p[k]||"").trim())e[k]=t("eReq")};
   if(!r.length)e.roles=t("eRoles");
-  if(r.includes("client")){req("phone");req("addr")}
+  if(r.length){req("street");req("houseNo");req("postCode");req("postCity");if(!e.postCode&&!/^[A-Za-z0-9 -]{3,10}$/.test(String(p.postCode).trim()))e.postCode=t("ePost")}
+  if(r.includes("client")){req("phone")}
+  if(p.hasCo){const c=p.co||{};["street","houseNo","postCode","postCity","town"].forEach(k=>{if(!String(c[k]||"").trim())e["co."+k]=t("eReq")});
+    if(!e["co.postCode"]&&!/^[A-Za-z0-9 -]{3,10}$/.test(String(c.postCode).trim()))e["co.postCode"]=t("ePost");delete e["co.addr"]}
   if(r.includes("pro")){req("phone");if(!p.hasCo){e["co.name"]=e["co.name"]||t("eReq")}if(!(p.cats||[]).length)e.cats=t("ePickOne")}
   if(r.includes("seeker")){if(!(p.sectors||[]).length)e.sectors=t("ePickOne");req("seekExp");req("seekSkills");if(!p.cvName)e.cv=t("eCv")}
   return e}}
@@ -3007,7 +3012,16 @@ Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take
   /* basic details: address + phone required where needed */
   const ph=P.querySelector("#p-phone"),town=P.querySelector("#p-town");
   if(ph&&(r.includes("client")||r.includes("pro"))){const s=ph.closest("label").querySelector("span");if(s&&!s.querySelector(".req"))s.insertAdjacentHTML("beforeend",' <i class="req">*</i>')}
-  if(town&&!P.querySelector("#p-addr")){const two=town.closest(".two");two.insertAdjacentHTML("afterend",fIn("addr",t("fAddr"),p.addr||"",{req:r.includes("client")?1:0,ac:"street-address",ph:t("fAddrPh"),max:80}))}
+  if(!p.street&&p.addr){p.street=p.addr}
+  if(town&&!P.querySelector("#p-street")){const two=town.closest(".two"),rq=r.length?1:0;two.insertAdjacentHTML("afterend",`<div class="two addr2">${fIn("street",t("fStreet"),p.street||"",{req:rq,ac:"address-line1",ph:t("fStreetPh"),max:70})}${fIn("houseNo",t("fHouseNo"),p.houseNo||"",{req:rq,ph:"12a",max:8})}</div>
+     <div class="two addr3">${fIn("postCode",t("fPostCode"),p.postCode||"",{req:rq,ac:"postal-code",im:"numeric",ph:"4000",max:10})}${fIn("postCity",t("fPostCity"),p.postCity||"",{req:rq,ac:"address-level2",ph:t("fPostCityPh"),max:40})}</div>`);
+    town.addEventListener("change",()=>{const pc=POSTS[town.value];if(!pc)return;const a=$("p-postCode"),b=$("p-postCity");if(a&&!a.value){a.value=pc;a.dispatchEvent(new Event("input"))}if(b&&!b.value){b.value=town.value;b.dispatchEvent(new Event("input"))}})}
+  /* company: full registered address */
+  {const ca=P.querySelector('[id="p-co.addr"]'),ct=P.querySelector('[id="p-co.town"]');if(ca&&!P.querySelector('[id="p-co.street"]')){const c=p.co;if(!c.street&&c.addr)c.street=c.addr;
+    ca.closest("label").outerHTML=`<div class="two">${fIn("co.street",t("fStreet"),c.street||"",{req:1,ac:"address-line1",ph:t("fStreetPh"),max:70})}${fIn("co.houseNo",t("fHouseNo"),c.houseNo||"",{req:1,ph:"12a",max:8})}</div>
+     <div class="two">${fIn("co.postCode",t("fPostCode"),c.postCode||"",{req:1,im:"numeric",ph:"4000",max:10})}${fIn("co.postCity",t("fPostCity"),c.postCity||"",{req:1,ph:t("fPostCityPh"),max:40})}</div>`;
+    if(ct){const s=ct.closest("label").querySelector("span");if(s&&!s.querySelector(".req"))s.insertAdjacentHTML("beforeend",' <i class="req">*</i>');
+      ct.addEventListener("change",()=>{const pc=POSTS[ct.value];if(!pc)return;const a=P.querySelector('[id="p-co.postCode"]'),b=P.querySelector('[id="p-co.postCity"]');if(a&&!a.value){a.value=pc;a.dispatchEvent(new Event("input"))}if(b&&!b.value){b.value=ct.value;b.dispatchEvent(new Event("input"))}})}}}
   /* job seeker: skills, experience, last job; CV only for seekers */
   const sk=P.querySelector('[data-show="seeker"]');
   if(sk&&!P.querySelector("#p-seekExp")){sk.querySelector("h3").insertAdjacentHTML("afterend",`${fIn("lastJob",t("lastJob"),p.lastJob||"",{ph:t("lastJobPh"),max:80})}
@@ -3022,7 +3036,7 @@ Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take
   /* own tools / own transport belong to job seekers, not to pros */
   {const skS=P.querySelector('[data-show="seeker"]');["tools","transport"].forEach(k=>{const tg=P.querySelector(`[data-tog="${k}"]`);if(tg&&skS)skS.append(tg.closest("label"))})}
   /* re-bind inputs that were added above */
-  P.querySelectorAll("#p-addr,#p-seekExp,#p-lastJob,#p-seekSkills").forEach(el=>el.addEventListener("input",()=>{setK(el.dataset.k,el.value.trimStart());if(pdErrs[el.dataset.k]){delete pdErrs[el.dataset.k];const e=$("e-"+el.dataset.k);if(e)e.textContent="";el.removeAttribute("aria-invalid")}markDirty()}));
+  P.querySelectorAll('#p-street,#p-houseNo,#p-postCode,#p-postCity,[id="p-co.street"],[id="p-co.houseNo"],[id="p-co.postCode"],[id="p-co.postCity"],#p-seekExp,#p-lastJob,#p-seekSkills').forEach(el=>el.addEventListener("input",()=>{setK(el.dataset.k,el.value.trimStart());if(pdErrs[el.dataset.k]){delete pdErrs[el.dataset.k];const e=$("e-"+el.dataset.k);if(e)e.textContent="";el.removeAttribute("aria-invalid")}markDirty()}));
   /* changing a role redraws the form so the right fields show */
   P.querySelectorAll('[data-arr="roles"]').forEach(cb=>cb.addEventListener("change",()=>{delete pdErrs.roles;if(cb.value==="pro"&&cb.checked)pd.hasCo=true;const sc=P.closest(".scroll"),y=sc?sc.scrollTop:0,jump=cb.checked?cb.value:null;setTimeout(()=>{renderProfile();if(sc)sc.scrollTop=y;
     const tgt=jump==="client"?(P.querySelector("#p-first")&&P.querySelector("#p-first").closest("section")):jump==="pro"?P.querySelector('[data-show="pro"]'):jump==="seeker"?P.querySelector('[data-show="seeker"]'):null;
