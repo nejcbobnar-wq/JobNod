@@ -1171,7 +1171,7 @@ function render(){
     if(!front)return;
     if(end){swipeEl(el,()=>restartJ(),tg=>endTap(tg,restartJ));return}
     const j=list[ix];
-    swipeEl(el,r=>decide(j,r),tg=>{const w=tg&&tg.closest("[data-person]");if(w)openProfile(w.dataset.person)});
+    swipeEl(el,r=>decide(j,r),tg=>{const w=tg&&tg.closest("[data-person]");if(w)openProfile(w.dataset.person);else openJobDetail(j.id)});
     el.querySelector(".who").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openProfile(j.client)}})});
 }
 function restartJ(){st.pos=0;st.last=null;save();render();toast(t("newRound"))}
@@ -1185,7 +1185,7 @@ $("b-no").onclick=()=>{const el=topJ();swipeTop(el,false,r=>decide(jobById(el.da
 $("b-undo").onclick=()=>{if(!st.last)return toast(t("tNothing"));
   st.pos=st.last.pos;if(st.last.right&&!st.last.was)st.taken=st.taken.filter(i=>i!==st.last.id);
   st.last=null;save();render();renderMine()};
-$("b-info").onclick=()=>{const tp=topJ();if(tp&&tp.dataset.id==="__end")return openMap();const d=$("stack").querySelector(".card:not(.back) .desc");if(d)d.style.webkitLineClamp=d.style.webkitLineClamp==="unset"?"2":"unset"};
+$("b-info").onclick=()=>{const tp=topJ();if(!tp)return;if(tp.dataset.id==="__end")return openMap();openJobDetail(tp.dataset.id)};
 document.addEventListener("keydown",e=>{if(!$("sheetWrap").hidden||!$("onb").hidden)return;
   if(!$("v-swipe").hidden){if(e.key==="ArrowRight")$("b-yes").click();if(e.key==="ArrowLeft")$("b-no").click()}
   if(!$("v-pros").hidden){if(e.key==="ArrowRight")$("m-yes").click();if(e.key==="ArrowLeft")$("m-no").click()}
@@ -2762,43 +2762,124 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="7";
+const APP_VER="12";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
+/* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
+Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
+Object.assign(CATS,{
+ fasada:{name:{sl:"Fasada (pranje, obnova)",en:"Facade (washing, renovation)"},bg:"linear-gradient(160deg,#F2B880,#C0703A)",svg:'<svg viewBox="0 0 100 100"><path d="M14 44 50 16l36 28v44H14z" fill="#fff"/><g fill="#000" fill-opacity=".14"><rect x="24" y="52" width="14" height="14" rx="2"/><rect x="62" y="52" width="14" height="14" rx="2"/><rect x="43" y="66" width="14" height="22" rx="2"/></g><path d="M80 18v20" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="12" r="6" fill="#fff" fill-opacity=".7"/></svg>'},
+ izkop:{name:{sl:"Izkop in zemeljska dela",en:"Excavation & earthworks"},bg:"linear-gradient(160deg,#D9B26A,#8A6324)",svg:'<svg viewBox="0 0 100 100"><path d="M8 88c10-22 26-30 42-30s32 8 42 30z" fill="#fff" fill-opacity=".6"/><rect x="18" y="56" width="34" height="16" rx="4" fill="#fff"/><path d="M48 58 70 30l14 8-6 16" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="26" cy="76" r="6" fill="#fff"/><circle cx="44" cy="76" r="6" fill="#fff"/></svg>'},
+ ciscenje:{name:{sl:"Čiščenje",en:"Cleaning"},bg:"linear-gradient(160deg,#7FE3D0,#2A9D8F)",svg:'<svg viewBox="0 0 100 100"><path d="M30 46h40l-5 40H35z" fill="#fff"/><path d="M34 46a16 14 0 0 1 32 0" fill="none" stroke="#fff" stroke-width="5"/><path d="M76 14l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#fff"/></svg>'},
+ tlaki:{name:{sl:"Ploščice in talne obloge",en:"Tiles & flooring"},bg:"linear-gradient(160deg,#9AA9C2,#4A5A78)",svg:'<svg viewBox="0 0 100 100"><g fill="#fff"><rect x="14" y="14" width="34" height="34" rx="3"/><rect x="52" y="14" width="34" height="34" rx="3" fill-opacity=".7"/><rect x="14" y="52" width="34" height="34" rx="3" fill-opacity=".7"/><rect x="52" y="52" width="34" height="34" rx="3"/></g></svg>'},
+ ograja:{name:{sl:"Ograje",en:"Fences"},bg:"linear-gradient(160deg,#A8D672,#5A8F2E)",svg:'<svg viewBox="0 0 100 100"><g fill="#fff">'+[14,32,50,68].map(x=>`<path d="M${x} 86V30l9-10 9 10v56z"/>`).join("")+'</g><rect x="8" y="42" width="84" height="8" rx="3" fill="#fff" fill-opacity=".8"/><rect x="8" y="66" width="84" height="8" rx="3" fill="#fff" fill-opacity=".8"/></svg>'}});
+/* what the client has to measure for each kind of job */
+const MEASURE={
+ selitev:{unit:"km",q:{sl:"Razdalja prevoza",en:"Transport distance"},route:true},
+ pleskanje:{unit:"m2",q:{sl:"Površina za pleskanje",en:"Area to paint"}},
+ fasada:{unit:"m2",q:{sl:"Površina fasade",en:"Facade area"}},
+ izkop:{unit:"m3",q:{sl:"Količina izkopa",en:"Volume to dig"}},
+ ciscenje:{unit:"m2",q:{sl:"Površina za čiščenje",en:"Area to clean"}},
+ tlaki:{unit:"m2",q:{sl:"Površina tal",en:"Floor area"}},
+ ograja:{unit:"m",q:{sl:"Dolžina ograje",en:"Fence length"}},
+ kosnja:{unit:"m2",q:{sl:"Površina trave",en:"Lawn area"}},
+ drevje:{unit:"trees",q:{sl:"Število dreves",en:"Number of trees"}},
+ vodovod:{unit:"pcs",q:{sl:"Število okvar ali elementov",en:"Number of faults or fittings"},free:true},
+ elektrika:{unit:"pcs",q:{sl:"Število vtičnic, luči ali okvar",en:"Number of sockets, lights or faults"},free:true}};
+Object.assign(LANGS.sl,{fFrom:"Od kod",fTo:"Kam",routeHint:"Razdaljo smo ocenili po cesti, po potrebi jo popravite.",eMeasure:"Vpišite: {q}.",measureHint:"Mojstri bodo ceno računali po tej meri, zato jo vpišite čim bolj natančno."});
+Object.assign(LANGS.en,{fFrom:"From",fTo:"To",routeHint:"Distance estimated by road, adjust it if needed.",eMeasure:"Enter: {q}.",measureHint:"Pros will price the job by this measure, so make it as accurate as you can."});
+/* pros who do the new kinds of work */
+PEOPLE.filter(p=>p.role==="mojster").forEach(p=>["fasada","izkop","ciscenje","tlaki","ograja"].forEach(c=>{if(hashN(p.id+c)%4===0&&!p.cats.includes(c))p.cats.push(c)}));
+/* demo jobs for the new categories */
+(function(){const R=rng(777),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),pick=a=>a[Math.floor(R()*a.length)],r5=x=>Math.round(x/5)*5,cls=PEOPLE.filter(p=>p.role==="stranka"&&/^gc/.test(p.id));
+  const T={fasada:[[["Pranje fasade","Facade washing"],["Fasada je zelena od alg, potrebno visokotlačno pranje.","Facade is green with algae, needs pressure washing."],"m2",80,260,3,40],
+     [["Barvanje fasade","Facade painting"],["Dvonadstropna hiša, fasada je očiščena, potreben nov sloj barve.","Two-storey house, facade already cleaned, needs a new coat."],"m2",90,220,11,120],
+     [["Popravilo ometa na fasadi","Facade render repair"],["Odpadel omet na severni strani, ok. tretjina fasade.","Render has fallen off on the north side, about a third of the facade."],"m2",20,70,25,80]],
+   izkop:[[["Izkop za temelje garaže","Digging garage foundations"],["Dostop z bagrom je možen, zemljo odpeljati.","Excavator access is fine, soil to be taken away."],"m3",12,45,22,90],
+     [["Izkop jarka za kanalizacijo","Trench for a sewer pipe"],["Jarek ob hiši, globina okoli 1 m.","Trench next to the house, about 1 m deep."],"m3",6,20,30,60],
+     [["Odvoz zemlje","Soil removal"],["Kup zemlje po gradnji, nalaganje in odvoz.","Pile of soil after building work, loading and removal."],"m3",8,30,18,50]],
+   ciscenje:[[["Čiščenje po gradnji","Post-construction cleaning"],["Novo stanovanje, prah in ostanki barve.","New flat, dust and paint residue."],"m2",50,140,2.5,30],
+     [["Generalno čiščenje hiše","Deep clean of a house"],["Pred vselitvijo, tudi okna in kopalnice.","Before moving in, windows and bathrooms included."],"m2",80,180,2,40]],
+   tlaki:[[["Polaganje ploščic v kopalnici","Bathroom tiling"],["Stene in tla, ploščice že kupljene.","Walls and floor, tiles already bought."],"m2",8,25,32,80],
+     [["Polaganje laminata","Laminate flooring"],["Dnevna soba in hodnik, podloga je ravna.","Living room and hallway, subfloor is level."],"m2",20,70,11,50],
+     [["Brušenje in lakiranje parketa","Parquet sanding and varnishing"],["Hrastov parket, nekaj prask.","Oak parquet, a few scratches."],"m2",20,60,16,40]],
+   ograja:[[["Postavitev žične ograje","Wire fence installation"],["Okoli vrta, stebrički in mreža.","Around the garden, posts and mesh."],"m",25,120,14,80],
+     [["Lesena ograja na vrtu","Wooden garden fence"],["Ravno zemljišče, material priskrbim sam.","Flat ground, I'll supply the material."],"m",10,40,40,60],
+     [["Barvanje lesene ograje","Painting a wooden fence"],["Stara barva se lušči.","Old paint is peeling."],"m",15,60,7,30]]};
+  let n=1;Object.entries(T).forEach(([c,tpls])=>{for(let i=0;i<12;i++){const [tt,dd,unit,qa,qb,rate,fix]=pick(tpls);let qty=ri(qa,qb);if(qty>100)qty=Math.round(qty/10)*10;
+    const min=r5(Math.max(30,qty*rate+fix)),max=r5(min*(1.3+R()*.5));
+    DEMO_JOBS.push({id:"n"+n++,cat:c,client:pick(cls).id,title:{sl:tt[0],en:tt[1]},desc:{sl:dd[0],en:dd[1]},qty,unit,min,max,loc:pick(TOWN_W),when:pick(["asap","week","month","month","deal"]),urgent:R()<.1})}});
+  /* some moving jobs get a route */
+  const tw=TOWN_W.filter(x=>TOWNS[x]);DEMO_JOBS.filter(j=>j.cat==="selitev").forEach(j=>{const a=j.loc,b=pick(tw.filter(x=>x!==a));if(!TOWNS[a]||!b)return;
+    j.from=a;j.to=b;j.unit="km";j.qty=Math.max(3,Math.round(km(TOWNS[a],TOWNS[b])*1.3));j.min=Math.round(Math.max(40,j.qty*(.9+R()*.5)+30)/5)*5;j.max=Math.round(j.min*(1.3+R()*.3)/5)*5})})();
+/* --- post form: the category decides what must be measured --- */
+(function(){const f=$("f");if(!f)return;const qrow=$("f-qty").closest(".two"),qlab=$("f-qty").closest("label").querySelector("span");
+  qrow.insertAdjacentHTML("beforebegin",`<div class="two" id="f-route" hidden><label><span>${t("fFrom")}</span><select id="f-from"></select></label><label><span>${t("fTo")}</span><select id="f-to"></select></label></div>`);
+  qrow.insertAdjacentHTML("afterend",`<p class="hint" id="f-mhint"></p>`);
+  const spec=()=>MEASURE[$("f-cat").value];let lastCat=null;
+  const fillRoute=()=>{const opts=townList().filter(x=>TOWNS[x]).map(x=>`<option value="${esc(x)}">${esc(townLabel(x))}</option>`).join("");
+    ["f-from","f-to"].forEach(id=>{const v=$(id).value;$(id).innerHTML=opts;if(v)$(id).value=v});if(!$("f-from").value||$("f-from").value===$("f-to").value&&!$("f-to").dataset.set){$("f-from").value=st.home}
+    $("f-route").querySelectorAll("span")[0].textContent=t("fFrom");$("f-route").querySelectorAll("span")[1].textContent=t("fTo")};
+  const routeKm=()=>{const a=TOWNS[$("f-from").value],b=TOWNS[$("f-to").value];if(a&&b&&$("f-from").value!==$("f-to").value){$("f-qty").value=Math.max(1,Math.round(km(a,b)*1.3));$("f-qty").dispatchEvent(new Event("input"))}};
+  const apply=()=>{const s=spec(),u=$("f-unit"),c=$("f-cat").value;
+    if(s){qlab.innerHTML=`${esc(L(s.q))} (${esc(L({sl:UNITS[s.unit].sl[3],en:UNITS[s.unit].en[1]}))}) <i class="req">*</i>`;if(c!==lastCat||u.value!==s.unit&&!s.free){u.value=s.unit;u.dispatchEvent(new Event("change"))}u.disabled=!s.free;
+      $("f-mhint").textContent=s.route?t("routeHint"):t("measureHint")}
+    else{qlab.textContent=t("fQty");u.disabled=false;$("f-mhint").textContent=""}
+    $("f-route").hidden=!(s&&s.route);if(s&&s.route){fillRoute();if(c!==lastCat)routeKm()}
+    lastCat=c};
+  $("f-cat").addEventListener("change",apply);["f-from","f-to"].forEach(id=>$(id).addEventListener("change",()=>{$("f-to").dataset.set=1;routeKm()}));
+  const _as=applyStatic;applyStatic=function(){_as();lastCat=null;apply()};
+  let route=null;
+  f.addEventListener("submit",()=>{const s=spec();route=s&&s.route&&$("f-from").value!==$("f-to").value?{from:$("f-from").value,to:$("f-to").value}:null},true);
+  f.addEventListener("submit",()=>{const s=spec(),r=route;if(s&&$("f-err").textContent===t("eQty"))$("f-err").textContent=t("eMeasure",{q:L(s.q)});
+    setTimeout(()=>{const j=st.userJobs[0];if(j&&r&&Date.now()-(+j.id.slice(1)||0)<3000&&!j.from){j.from=r.from;j.to=r.to;save();renderAll()}lastCat=null;delete $("f-to").dataset.set;apply()},0)});
+  apply()})();
+/* card: route instead of a bare distance */
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);if(!j.from||!j.to)return h;return h.replace(esc(fmtQty(j)),`${esc(j.from)} → ${esc(j.to)} · ${esc(fmtQty(j))}`)}}
+
 /* ================= JOBS: COLLECT OFFERS INSTEAD OF SETTING A PRICE ================= */
 Object.assign(LANGS.sl,{pmFixed:"Določim ceno",pmQuotes:"Zberi ponudbe",pmQuotesD:"Ne veste, koliko bo stalo? Mojstri vam pošljejo svoje cene, vi izberete najboljšo ponudbo.",
  priceHint:"Podobna dela v tej kategoriji: {r}",collectingQ:"Zbiramo ponudbe",nOffers:"{n} ponudb",nOffers1:"1 ponudba",nOffers2:"2 ponudbi",nOffers34:"{n} ponudbe",firstOffer:"Bodite prvi",
  ptFixed:"Fiksna cena",ptHour:"Na uro",ptInspect:"Po ogledu",ptInspectD:"Najprej si delo ogledate, nato pošljete končno ceno. Spodaj lahko vpišete okvirno ceno.",
  hourRate:"Urna postavka (€)",hoursEst:"Ocena ur",estPrice:"Okvirna cena (€)",totalEst:"Skupaj okvirno {p}",perHourShort:"{p}/h",afterInspect:"po ogledu",approx:"okvirno",
  offersRecv:"Prejete ponudbe",noOffersYet:"Ponudbe še prihajajo. Mojstri v bližini so obveščeni.",sortPrice:"Najcenejše",sortRating:"Najbolje ocenjeni",cheapest:"Najnižja cena",topRated:"Najboljša ocena",
- pickOffer:"Izberi",nNewOffer:"Nova ponudba za »{y}«: {x}, {p}",quotesTag:"Ponudbe",offerFrom:"Ponudba"});
+ pickOffer:"Izberi",billLbl:"Obračun",qtyFromPost:"Količina iz objave",lockedHint:"Enoto in količino je določila stranka. Vpišite samo svojo ceno na enoto, skupni znesek se izračuna sam.",ptUnitGen:"Na enoto",unitPriceGen:"Cena (€)",perUnitLbl:"Enota",qtyEstU:"Ocena količine",billTotal:"Za celo delo",billPer:"Na {u}",priceFromU:"Cena od (€/{u})",priceToU:"do (€/{u})",totalFor:"Skupaj okvirno {r} za {q}",ptUnit:"Na {u}",unitPrice:"Cena na {u} (€)",inTotal:"skupaj",perUnitHint:"Mojstri bodo ponudili ceno na {u}.",nNewOffer:"Nova ponudba za »{y}«: {x}, {p}",quotesTag:"Ponudbe",offerFrom:"Ponudba"});
 Object.assign(LANGS.en,{pmFixed:"I'll set the price",pmQuotes:"Collect offers",pmQuotesD:"Not sure what it costs? Pros send you their prices and you pick the best offer.",
  priceHint:"Similar jobs in this category: {r}",collectingQ:"Collecting offers",nOffers:"{n} offers",nOffers1:"1 offer",nOffers2:"2 offers",nOffers34:"{n} offers",firstOffer:"Be the first",
  ptFixed:"Fixed price",ptHour:"Hourly",ptInspect:"After a visit",ptInspectD:"You look at the job first, then send a final price. You can add a rough estimate below.",
  hourRate:"Hourly rate (€)",hoursEst:"Estimated hours",estPrice:"Rough price (€)",totalEst:"About {p} in total",perHourShort:"{p}/h",afterInspect:"after a visit",approx:"approx.",
  offersRecv:"Offers received",noOffersYet:"Offers are on their way. Pros nearby have been notified.",sortPrice:"Cheapest",sortRating:"Top rated",cheapest:"Lowest price",topRated:"Best rated",
- pickOffer:"Choose",nNewOffer:"New offer for “{y}”: {x}, {p}",quotesTag:"Offers",offerFrom:"Offer"});
+ pickOffer:"Choose",billLbl:"Pricing",qtyFromPost:"Quantity from the post",lockedHint:"The client set the unit and quantity. Just enter your price per unit, the total is worked out for you.",ptUnitGen:"Per unit",unitPriceGen:"Price (€)",perUnitLbl:"Unit",qtyEstU:"Estimated quantity",billTotal:"For the whole job",billPer:"Per {u}",priceFromU:"Price from (€/{u})",priceToU:"to (€/{u})",totalFor:"About {r} in total for {q}",ptUnit:"Per {u}",unitPrice:"Price per {u} (€)",inTotal:"total",perUnitHint:"Pros will quote a price per {u}.",nNewOffer:"New offer for “{y}”: {x}, {p}",quotesTag:"Offers",offerFrom:"Offer"});
 {const css=document.createElement("style");css.textContent=`.price.qprice{display:inline-flex;align-items:baseline;gap:6px}
 .pmseg{margin:0}.pmhint{margin:-4px 0 0}.ptseg{margin:0 0 10px}.ptseg button{font-size:13px;padding:8px 4px}
 .qlist{display:flex;flex-direction:column;gap:8px;margin-top:6px}.qrow{display:grid;grid-template-columns:40px 1fr auto;gap:6px 10px;align-items:center;background:var(--bg);border-radius:14px;padding:10px}
 .qrow .nm{background:none;border:0;padding:0;font:inherit;font-weight:700;font-size:15px;color:var(--ink);cursor:pointer;text-align:left}.qrow .qp small{display:inline}.qrow .qp small.b{display:block}.qrow small{display:block;color:var(--muted);font-size:12px}.qrow .qp{font-weight:800;font-size:16px;text-align:right;white-space:nowrap}.qrow .qp small{font-weight:600}
 .qrow .qnote{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted);font-style:italic}.qrow .qtags{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
-.qrow .pick-btn{grid-column:1/-1;justify-self:stretch}.qsort{display:flex;gap:6px;margin:4px 0 2px}.qsort .ghost.sm{margin:0}`;document.head.appendChild(css)}
+#of-uqty[readonly],#of-unit:disabled{opacity:.7;cursor:not-allowed}.qrow .pick-btn{grid-column:1/-1;justify-self:stretch}.qsort{display:flex;gap:6px;margin:4px 0 2px}.qsort .ghost.sm{margin:0}`;document.head.appendChild(css)}
+Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]},kg:{sl:["kg","kg","kg","kg"],en:["kg","kg"]},t:{sl:["tona","toni","tone","ton"],en:["tonne","tonnes"]}});
+const U_SHORT={km:{sl:"km",en:"km"},pcs:{sl:"kos",en:"pc"},m2:{sl:"m²",en:"m²"},m:{sl:"m",en:"m"},m3:{sl:"m³",en:"m³"},kg:{sl:"kg",en:"kg"},t:{sl:"t",en:"t"},trees:{sl:"drevo",en:"tree"},rooms:{sl:"sobo",en:"room"},hours:{sl:"h",en:"h"}};
+const uSh=u=>L(U_SHORT[unitKey(u)]||U_SHORT.pcs),canPer=j=>unitKey(j.unit)!=="hours"&&Number(j.qty)>1,r1=x=>Math.round(x*10)/10;
 const nOffersT=n=>n===1?t("nOffers1"):n===2?t("nOffers2"):(lang==="sl"&&(n===3||n===4))?t("nOffers34",{n}):t("nOffers",{n});
 /* typical price range per category, from jobs that do have a price */
 function catRange(c){const xs=DEMO_JOBS.filter(j=>j.cat===c&&!j.quotes);if(!xs.length)return null;const s=a=>a.slice().sort((x,y)=>x-y),mid=a=>a[Math.floor(a.length/2)];
   const lo=mid(s(xs.map(j=>j.min))),hi=mid(s(xs.map(j=>j.max)));return [Math.round(lo/5)*5,Math.max(Math.round(lo/5)*5+10,Math.round(hi/5)*5)]}
 /* about a quarter of the demo jobs collect offers */
 DEMO_JOBS.forEach(j=>{if(hashN(j.id)%4===0)j.quotes=true});
+DEMO_JOBS.forEach(j=>{if(["m2","m","m3","km"].includes(unitKey(j.unit))&&Number(j.qty)>1){j.per=true;if(!j.quotes){j.umin=r1(j.min/j.qty);j.umax=Math.max(r1(j.min/j.qty)+.1,r1(j.max/j.qty))}}});
 const jobTs=j=>j.ts||(/^u\d+$/.test(j.id)?+j.id.slice(1):0);
-function priceTxt(o){if(!o)return "";if(o.ptype==="hour")return `${t("perHourShort",{p:money(o.rate)})} · ~${num(o.hours)} h (${money(o.price)})`;
+function priceTxt(o){if(!o)return "";if(o.ptype==="unit")return `${money(o.uprice)}/${uSh(o.unit)} · ${num(o.qty)} ${uSh(o.unit)} (${money(o.price)})`;if(o.ptype==="hour")return `${t("perHourShort",{p:money(o.rate)})} · ~${num(o.hours)} h (${money(o.price)})`;
   if(o.ptype==="inspect")return `${t("afterInspect")}${o.price?` · ${t("approx")} ${money(o.price)}`:""}`;return money(o.price)}
 /* fictional offers from nearby pros on the user's own "collect offers" posts */
-function quotesFor(j){const ll=coords(j)||TOWNS[st.home],est=catRange(j.cat)||[j.min||40,j.max||90],mid=(est[0]+est[1])/2;
+const U_DEF={km:[.8,2.2],m2:[4,12],m:[8,25],m3:[25,60],kg:[1,3],t:[40,120]};
+function unitMid(j){const k=unitKey(j.unit),xs=DEMO_JOBS.filter(x=>x.cat===j.cat&&unitKey(x.unit)===k&&x.umin>0);if(xs.length)return xs.reduce((s,x)=>s+(x.umin+x.umax)/2,0)/xs.length;
+  if(j.umin>0)return (j.umin+j.umax)/2;const d=U_DEF[k];return d?(d[0]+d[1])/2:null}
+function quotesFor(j){const ll=coords(j)||TOWNS[st.home],est=catRange(j.cat)||[j.min||40,j.max||90],um=j.per&&canPer(j)?unitMid(j):null,mid=um?um*Number(j.qty):(est[0]+est[1])/2;
   const pros=PEOPLE.filter(p=>p.role==="mojster"&&p.cats.includes(j.cat)&&TOWNS[p.loc]).map(p=>({p,d:km(ll,TOWNS[p.loc])})).filter(x=>x.d<=Math.max(st.radius,40)).sort((a,b)=>a.d-b.d).slice(0,5);
   const ts=jobTs(j),age=ts?Date.now()-ts:1e9,shown=ts?Math.min(pros.length,age<6000?0:1+Math.floor((age-6000)/25000)):pros.length,dates=dateOpts();
   return pros.slice(0,shown).map(({p,d},i)=>{const R=rng(hashN(j.id+"|"+p.id)),r=R(),pt=r<.6?"fixed":r<.85?"hour":"inspect";
     const price=Math.max(15,Math.round(mid*(.72+R()*.6)/5)*5),rate=[20,22,25,28,30,35,40][Math.floor(R()*7)],hours=Math.max(1,Math.round(price/rate*2)/2);
     const o={pro:p.id,d,ptype:pt,price:pt==="hour"?Math.round(rate*hours):price,rate,hours,date:dates[1+Math.floor(R()*5)][0],time:["08:00","09:00","10:00","14:00","16:00"][Math.floor(R()*5)]};
+    if(j.cat==="selitev"&&!(j.per&&canPer(j))&&R()<.45){o.ptype="unit";o.unit="km";o.qty=10+Math.floor(R()*50);o.uprice=r1(.8+R()*1.4);o.price=Math.round(o.uprice*o.qty)}
+    else if(canPer(j)&&(j.per?R()<.75:R()<.2)){o.ptype="unit";o.unit=unitKey(j.unit);o.qty=Number(j.qty);o.uprice=Math.max(.5,r1(price/o.qty));o.price=Math.round(o.uprice*o.qty)}
     o.note=[ {sl:"Imam vse orodje s sabo, delo opravim v enem obisku.",en:"I bring all the tools and finish in one visit."},{sl:"Material lahko priskrbim po nabavni ceni.",en:"I can supply materials at cost."},
       {sl:"Pred začetkom pridem na kratek ogled, brez stroškov.",en:"I'll pop by for a quick look first, free of charge."},{sl:"Garancija na opravljeno delo 12 mesecev.",en:"12-month guarantee on the work."},{sl:"",en:""}][Math.floor(R()*5)];
     return o})}
@@ -2822,15 +2903,19 @@ let qSort={};
 {const _oo=openOffer;openOffer=function(jobId){_oo(jobId);const j=jobById(jobId),S=$("sheet");if(!j||!sheetOpts||sheetOpts.offer!==jobId||!$("of-price"))return;
   if(j.quotes){const sm=S.querySelector(".offerjob small");if(sm)sm.textContent=`${pName(person(j.client))} · ${j.loc} · ${t("collectingQ")}`;const q=S.querySelector(".quick");if(q)q.remove();$("of-price").value=""}
   const pc=$("of-price").closest(".pcard"),lab=$("of-price").closest("label");let pt="fixed";
-  pc.insertAdjacentHTML("afterbegin",`<div class="seg ptseg" role="group"><button type="button" data-pt="fixed" aria-pressed="true">${t("ptFixed")}</button><button type="button" data-pt="hour" aria-pressed="false">${t("ptHour")}</button><button type="button" data-pt="inspect" aria-pressed="false">${t("ptInspect")}</button></div>`);
+  const cp=canPer(j),us=uSh(j.unit),OU=["km","m","m2","m3","kg","t","pcs"];if(cp&&!OU.includes(unitKey(j.unit)))OU.push(unitKey(j.unit));const du=cp?unitKey(j.unit):j.cat==="selitev"?"km":"m2",same=cp;if(cp)pt="unit";
+  pc.insertAdjacentHTML("afterbegin",`<div class="seg ptseg" role="group"><button type="button" data-pt="unit" aria-pressed="false">${t("ptUnitGen")}</button><button type="button" data-pt="fixed" aria-pressed="true">${t("ptFixed")}</button><button type="button" data-pt="hour" aria-pressed="false">${t("ptHour")}</button><button type="button" data-pt="inspect" aria-pressed="false">${t("ptInspect")}</button></div>`);
   lab.insertAdjacentHTML("afterend",`<div class="two" id="of-hr" hidden><label>${t("hourRate")}<div class="pricein"><input id="of-rate" type="number" min="1" inputmode="numeric" value="25"><span>€</span></div></label>
-    <label>${t("hoursEst")}<div class="pricein"><input id="of-hours" type="number" min="0.5" step="0.5" inputmode="decimal" value="2"><span>h</span></div></label></div><p class="hint" id="of-hrtot" hidden></p><p class="hint" id="of-insp" hidden>${t("ptInspectD")}</p>`);
-  const capEl=lab.firstChild,tot=()=>{const r=+$("of-rate").value||0,h=+$("of-hours").value||0;$("of-hrtot").textContent=t("totalEst",{p:money(Math.round(r*h))})};
-  const upd=()=>{S.querySelectorAll("[data-pt]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pt===pt));lab.hidden=pt==="hour";$("of-hr").hidden=pt!=="hour";$("of-hrtot").hidden=pt!=="hour";$("of-insp").hidden=pt!=="inspect";
+    <label>${t("hoursEst")}<div class="pricein"><input id="of-hours" type="number" min="0.5" step="0.5" inputmode="decimal" value="2"><span>h</span></div></label></div><p class="hint" id="of-hrtot" hidden></p><p class="hint" id="of-insp" hidden>${t("ptInspectD")}</p><div id="of-un" hidden><div class="two"><label>${cp?t("unitPrice",{u:us}):t("unitPriceGen")}<div class="pricein"><input id="of-uprice" type="number" min="0.1" step="0.1" inputmode="decimal" value="${!same?"":j.umin?r1((j.umin+j.umax)/2):r1(((j.min||0)+(j.max||0))/2/(Number(j.qty)||1))||""}"><span>€</span></div></label>
+    <label>${t("perUnitLbl")}<select id="of-unit"${cp?" disabled":""}>${OU.map(k=>`<option value="${k}"${k===du?" selected":""}>€/${uSh(k)}</option>`).join("")}</select></label></div>
+    <label>${cp?t("qtyFromPost"):t("qtyEstU")}<div class="pricein"><input id="of-uqty" type="number" min="0.1" step="any" inputmode="decimal" value="${same?Number(j.qty):""}"${cp?" readonly":""}><span id="of-qu"></span></div></label><p class="hint" id="of-utot"></p>${cp?`<p class="hint">${t("lockedHint")}</p>`:""}</div>`);
+  const capEl=lab.firstChild,tot=()=>{const r=+$("of-rate").value||0,h=+$("of-hours").value||0;$("of-hrtot").textContent=t("totalEst",{p:money(Math.round(r*h))});const u=+$("of-uprice").value||0,q=+$("of-uqty").value||0,uk=$("of-unit").value;$("of-qu").textContent=uSh(uk);$("of-utot").textContent=u>0&&q>0?t("totalFor",{r:money(Math.round(u*q)),q:num(q)+" "+uSh(uk)}):""};
+  const upd=()=>{S.querySelectorAll("[data-pt]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pt===pt));lab.hidden=pt==="hour"||pt==="unit";$("of-un").hidden=pt!=="unit";$("of-hr").hidden=pt!=="hour";$("of-hrtot").hidden=pt!=="hour";$("of-insp").hidden=pt!=="inspect";
     if(capEl&&capEl.nodeType===3)capEl.textContent=pt==="inspect"?t("estPrice"):t("yourPrice");const qk=S.querySelector(".quick");if(qk)qk.hidden=pt!=="fixed";tot()};
-  S.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{pt=b.dataset.pt;upd()});["of-rate","of-hours"].forEach(id=>$(id).addEventListener("input",tot));upd();
+  S.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{pt=b.dataset.pt;upd()});["of-rate","of-hours","of-uprice","of-uqty"].forEach(id=>$(id).addEventListener("input",tot));$("of-unit").addEventListener("change",()=>{if(cp&&$("of-unit").value===unitKey(j.unit)&&!$("of-uqty").value)$("of-uqty").value=Number(j.qty);tot()});upd();
   $("ofYes").onclick=()=>{let price=+$("of-price").value,o;
     if(pt==="hour"){const rate=+$("of-rate").value,hours=+$("of-hours").value;if(!(rate>0)||!(hours>0)){toast(t("eNum"));return}o={ptype:"hour",rate,hours,price:Math.round(rate*hours)}}
+    else if(pt==="unit"){const u=+$("of-uprice").value,q=+$("of-uqty").value,uk=$("of-unit").value;if(!(u>0)||!(q>0)){toast(t("eNum"));return}o={ptype:"unit",uprice:u,qty:q,unit:uk,price:Math.round(u*q)}}
     else if(pt==="inspect")o={ptype:"inspect",price:price>0?price:0};
     else{if(!(price>0)){toast(t("eNum"));return}o={ptype:"fixed",price}}
     const d=newDeal({kind:"job",item:j.id,other:j.client,role:"pro",status:"offer",offer:Object.assign(o,{date:$("of-date").value,time:$("of-time").value,note:$("of-note").value.trim()})});
@@ -2845,7 +2930,7 @@ let qSort={};
 /* client picks an offer: the deal takes that offer's price and terms */
 {const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
   if(j&&j.quotes&&!dealFor("job",jobId,proId)){const q=quotesFor(j).find(x=>x.pro===proId);
-    if(q){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,date:q.date,time:q.time,note:L(q.note)}});
+    if(q){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,uprice:q.uprice,qty:q.qty,unit:q.unit,date:q.date,time:q.time,note:L(q.note)}});
       sysMsg(d,"mAgreed",{p:priceTxt(q),d:fmtDay(q.date),h:q.time});later(1500,()=>theirMsg(st.deals.find(x=>x.id===d.id),t("rProThanks",{d:fmtDay(q.date)})));notify("nMatch",{x:dealOther(d).name,y:L(j.title)},{chat:d.id})}}
   _cp(jobId,proId)}}
 /* "My posts": offers list for posts that collect offers */
@@ -2861,10 +2946,10 @@ let qSort={};
      ${qs.length>1?`<div class="qsort"><button class="ghost sm" data-qs="${j.id}|price" aria-pressed="${srt==="price"}">${t("sortPrice")}</button><button class="ghost sm" data-qs="${j.id}|rating" aria-pressed="${srt==="rating"}">${t("sortRating")}</button></div>`:""}
      ${qs.length?`<div class="qlist">${list.map(({q,p,rt})=>`<div class="qrow">${av(p)}<div style="min-width:0"><button class="nm" data-person="${p.id}">${esc(p.name)}</button>
         <small>${rt.n?stars(rt.avg)+" "+f1(rt.avg):t("newShort")} · ${fkm(q.d)} · ${fmtDay(q.date)} ${q.time}</small></div>
-        <div class="qp">${q.ptype==="hour"?`${money(q.rate)}<small>/h</small><small class="b">~${num(q.hours)} h · ${money(q.price)}</small>`:q.ptype==="inspect"?`<small class="b">${t("afterInspect")}</small><small>${t("approx")}</small> ${money(q.price)}`:money(q.price)}</div>
+        <div class="qp">${q.ptype==="unit"?`${money(q.uprice)}<small>/${uSh(q.unit)}</small><small class="b">${num(q.qty)} ${uSh(q.unit)} · ${money(q.price)}</small>`:q.ptype==="hour"?`${money(q.rate)}<small>/h</small><small class="b">~${num(q.hours)} h · ${money(q.price)}</small>`:q.ptype==="inspect"?`<small class="b">${t("afterInspect")}</small><small>${t("approx")}</small> ${money(q.price)}`:money(q.price)}</div>
         ${q.price===minP||rt.avg===maxR&&rt.n?`<div class="qtags">${q.price===minP&&qs.length>1?`<span class="status ok">${t("cheapest")}</span>`:""}${rt.avg===maxR&&rt.n&&qs.length>1?`<span class="status">${t("topRated")} ★</span>`:""}</div>`:""}
         ${L(q.note)?`<p class="qnote">„${esc(L(q.note))}“</p>`:""}
-        <button class="pick-btn" data-qpick="${j.id}" data-m="${p.id}">${t("pickOffer")} · ${esc(q.ptype==="hour"?t("perHourShort",{p:money(q.rate)}):money(q.price))}</button></div>`).join("")}</div>`
+        <button class="pick-btn" data-qpick="${j.id}" data-m="${p.id}">${t("pickOffer")} · ${esc(q.ptype==="unit"?money(q.uprice)+"/"+uSh(q.unit):q.ptype==="hour"?t("perHourShort",{p:money(q.rate)}):money(q.price))}</button></div>`).join("")}</div>`
       :`<p class="hint">${t("noOffersYet")}</p>`}`)});
   P.querySelectorAll("[data-qs]").forEach(b=>b.onclick=()=>{const [id,s]=b.dataset.qs.split("|");qSort[id]=s;renderPosts()});
   P.querySelectorAll(".qlist [data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));
@@ -2873,6 +2958,65 @@ let qSort={};
 setInterval(()=>{let ch=false;st.userJobs.filter(j=>j.quotes&&!st.chosen[j.id]).forEach(j=>{const qs=quotesFor(j);if(qs.length>(j.seenQ||0)){const q=qs[qs.length-1];
     if(j.seenQ!==undefined)notify("nNewOffer",{x:person(q.pro).name,y:L(j.title),p:priceTxt(q)});j.seenQ=qs.length;ch=true}});
   if(ch){save();if(!$("v-mine").hidden)renderPosts();render()}},8000);
+
+/* --- post form: price per unit (m, m², m³ …) --- */
+(function(){const f=$("f"),row=$("f-min").closest(".two"),qrow=$("f-qty").closest(".two");if(!f||!row||!qrow)return;
+  qrow.insertAdjacentHTML("afterend",`<label id="f-billw"><span></span><select id="f-bill"><option value="total"></option><option value="per"></option></select></label>`);
+  row.insertAdjacentHTML("afterend",`<p class="hint" id="f-utot" hidden></p>`);let touched=false;
+  const upd=()=>{const u=$("f-unit").value,q=+$("f-qty").value||0,us=uSh(u),bs=$("f-bill"),per=bs.value==="per";
+    $("f-billw").querySelector("span").textContent=t("billLbl");bs.options[0].text=t("billTotal");bs.options[1].text=t("billPer",{u:us});
+    const sp=row.querySelectorAll("label>span");if(sp[0])sp[0].textContent=per?t("priceFromU",{u:us}):t("fMin");if(sp[1])sp[1].textContent=per?t("priceToU",{u:us}):t("fMax");
+    const a=+$("f-min").value,b=+$("f-max").value,ut=$("f-utot");
+    if(per&&row.hidden){ut.hidden=false;ut.textContent=t("perUnitHint",{u:us})}else{ut.hidden=!(per&&q>0&&a>0&&b>0);if(!ut.hidden)ut.textContent=t("totalFor",{r:range(Math.round(a*q),Math.round(b*q)),q:num(q)+" "+us})}
+    $("f-billw").hidden=u==="hours"};
+  $("f-unit").addEventListener("change",()=>{if(!touched)$("f-bill").value=["km","m2","m","m3","kg","t"].includes($("f-unit").value)?"per":"total";upd()});
+  $("f-bill").addEventListener("change",()=>{touched=true;upd()});["f-qty","f-min","f-max"].forEach(id=>$(id).addEventListener("input",upd));
+  if($("f-pm"))$("f-pm").addEventListener("click",()=>setTimeout(upd,0));
+  const _as=applyStatic;applyStatic=function(){_as();upd()};
+  let pend=null;
+  let qPerC=false;f.addEventListener("submit",()=>{pend=null;qPerC=$("f-bill").value==="per"&&row.hidden&&$("f-unit").value!=="hours";if($("f-bill").value!=="per"||$("f-unit").value==="hours"||row.hidden)return;const q=+$("f-qty").value,a=+$("f-min").value,b=+$("f-max").value;if(!(q>0&&a>0&&b>0))return;
+    pend={umin:a,umax:b};$("f-min").value=Math.round(a*q);$("f-max").value=Math.round(b*q)},true);
+  f.addEventListener("submit",()=>{const p=pend,qPer=qPerC;setTimeout(()=>{const j=st.userJobs[0],fresh=j&&Date.now()-jobTs(j)<3000&&!j._u;
+    if(!fresh){if(p){$("f-min").value=p.umin;$("f-max").value=p.umax}upd();return}
+    j._u=1;if(p){j.per=true;j.umin=p.umin;j.umax=p.umax}else if(qPer)j.per=true;touched=false;$("f-bill").value="total";save();renderAll();upd()},0)});
+  applyStatic()})();
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);if(!j.per)return h;const us=uSh(j.unit);
+  if(j.quotes)return h.replace(/(<div class="price qprice">[\s\S]*?)(<\/small><\/div>)/,`$1 · €/${us}$2`);
+  if(!(j.umin>0))return h;
+  return h.replace(/<div class="price">[\s\S]*?<\/div>/,`<div class="price">${range(j.umin,j.umax)}<small>/${us} · ${t("inTotal")} ${range(j.min,j.max)}</small></div>`)}}
+
+/* ================= JOBS: DETAIL SHEET FOR PROS (what exactly, how much) ================= */
+Object.assign(LANGS.sl,{dCat:"Vrsta dela",dBill:"Obračun",dPrice:"Cena",dWhere:"Lokacija",dWhen:"Kdaj",dRoute:"Pot",dQty:"Količina",dClient:"Stranka",dDesc:"Opis",dTotalEst:"skupaj okvirno",dNoDesc:"Stranka ni dodala opisa."});
+Object.assign(LANGS.en,{dCat:"Type of work",dBill:"Pricing",dPrice:"Price",dWhere:"Location",dWhen:"When",dRoute:"Route",dQty:"Quantity",dClient:"Client",dDesc:"Description",dTotalEst:"about",dNoDesc:"The client didn't add a description."});
+{const css=document.createElement("style");css.textContent=`.mbox{display:flex;flex-direction:column;gap:2px;background:linear-gradient(135deg,var(--a1),var(--a2) 55%,var(--a3));color:#fff;border-radius:20px;padding:16px 18px;margin:14px 0}
+.mbox span{font-size:13px;font-weight:600;opacity:.9}.mbox b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1}.mbox small{font-size:13.5px;font-weight:600;opacity:.92}
+.jdesc{margin:12px 0 0;line-height:1.5;font-size:14.5px}.jdhead{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}.jdhead .thumb{width:64px;height:64px}
+.jdhead h2{margin:0;font-size:21px;letter-spacing:-.02em;line-height:1.2}.jdhead .nm{background:none;border:0;padding:0;font:inherit;color:var(--muted);cursor:pointer;text-align:left;font-size:13.5px}
+.jdbtns{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:16px}`;document.head.appendChild(css)}
+function openJobDetail(id){const j=jobById(id);if(!j)return;sheetOpts={job:id};
+  const s=MEASURE[j.cat],us=uSh(j.unit),p=person(j.client),rt=rating(p.id),d=dist(j),mine=j.client==="me",deal=!mine&&dealFor("job",id);
+  const priceT=j.quotes?t("collectingQ"):j.per&&j.umin>0?`${range(j.umin,j.umax)}/${us}`:range(j.min,j.max);
+  const totalT=!j.quotes&&j.per&&j.umin>0?`${t("dTotalEst")} ${range(j.min,j.max)}`:"";
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+  <div class="jdhead"><div class="thumb" style="background:${cat(j).bg}">${art(j)}</div><div style="min-width:0"><h2>${esc(L(j.title))}</h2>
+   <button class="nm" data-person="${p.id}">${esc(pName(p))}${vBadge(p.id)} · ${rt.n?stars(rt.avg)+" "+f1(rt.avg):t("newClient")}</button></div></div>
+  <div class="mbox"><span>${esc(s?L(s.q):t("dQty"))}</span><b>${esc(fmtQty(j))}</b>
+   <small>${j.from&&j.to?`${esc(j.from)} → ${esc(j.to)}`:`${esc(catName(j.cat))}`}${j.per?` · ${esc(t("billPer",{u:us}).toLowerCase())}`:""}</small></div>
+  <div class="addesc">
+   <div class="kv"><span>${t("dCat")}</span><b>${esc(catName(j.cat))}</b></div>
+   <div class="kv"><span>${esc(s?L(s.q):t("dQty"))}</span><b>${esc(fmtQty(j))}</b></div>
+   ${j.from&&j.to?`<div class="kv"><span>${t("dRoute")}</span><b>${esc(j.from)} → ${esc(j.to)}</b></div>`:""}
+   <div class="kv"><span>${t("dBill")}</span><b>${j.per?esc(t("billPer",{u:us})):esc(t("billTotal"))}</b></div>
+   <div class="kv"><span>${t("dPrice")}</span><b>${esc(priceT)}${totalT?`<br><small style="font-weight:600;color:var(--muted)">${esc(totalT)}</small>`:""}</b></div>
+   <div class="kv"><span>${t("dWhere")}</span><b>${esc(j.loc||"—")}${d!==null?" · "+fkm(d):""}</b></div>
+   <div class="kv"><span>${t("dWhen")}</span><b>${esc(whenTxt(j.when))}</b></div>
+  </div>
+  <div class="h3">${t("dDesc")}</div><p class="jdesc">${typeof j.desc==="object"&&j.desc&&L(j.desc)?esc(L(j.desc)):j.desc&&typeof j.desc==="string"?esc(j.desc):`<span style="color:var(--muted)">${t("dNoDesc")}</span>`}</p>
+  ${mine?"":`<div class="jdbtns"><button class="ghost" id="jdClose">${t("close")}</button><button class="primary" id="jdGo">${deal?t("openChat"):t("sendOffer")}</button></div>`}`;
+  $("cls").onclick=closeSheet;if($("jdClose"))$("jdClose").onclick=closeSheet;
+  $("sheet").querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));
+  if($("jdGo"))$("jdGo").onclick=()=>{if(deal)openChat(deal.id);else openOffer(id)};
+  openSheet(L(j.title))}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
