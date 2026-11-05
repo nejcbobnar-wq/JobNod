@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="19";
+const APP_VER="20";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3043,6 +3043,60 @@ Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take
     if(tgt)setTimeout(()=>{scrollToEl(tgt,"start");tgt.classList.add("flash");setTimeout(()=>tgt.classList.remove("flash"),1400)},80)},0)}))}}
 {const css=document.createElement("style");css.textContent=`.rolenote{margin:8px 0 0;padding:9px 12px;background:var(--soft);border-radius:12px;color:var(--ink)}
 .pcard.flash{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s}`;document.head.appendChild(css)}
+
+/* ================= "OTHER – TYPE YOUR OWN" WHEREVER A LIST CAN MISS SOMETHING ================= */
+const OTHER_CAT={sl:"Drugo (vpišite sami)",en:"Other (type your own)"},OTHER_SEC={sl:"Drugo področje",en:"Other field"};
+CATS.drugo={name:OTHER_CAT,bg:"linear-gradient(160deg,#B9A7E8,#6C5BB8)",svg:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="#fff"/><path d="M50 36v28M36 50h28" stroke="#6C5BB8" stroke-opacity=".6" stroke-width="8" stroke-linecap="round"/></svg>'};
+SECTORS.drugo={name:OTHER_SEC,bg:"linear-gradient(160deg,#B9A7E8,#6C5BB8)",svg:CATS.drugo.svg};
+MEASURE.drugo={unit:"pcs",q:{sl:"Količina",en:"Quantity"},free:true};
+PEOPLE.filter(p=>p.role==="mojster").forEach(p=>{if(hashN(p.id+"drugo")%2===0&&!p.cats.includes("drugo"))p.cats.push("drugo")});
+Object.assign(PR_EMPTY,{catsOther:"",skillsOther:"",sectorsOther:"",langsOther:"",licencesOther:""});
+Object.assign(PR_EMPTY.co,{actOther:""});
+Object.assign(LANGS.sl,{otherType:"Opišite vrsto dela",otherTypePh:"npr. Čiščenje fasade s paro",otherPh:"Drugo, vpišite sami (ločite z vejico)",otherAct:"Vpišite dejavnost",otherActPh:"npr. Čiščenje fasad",otherSec:"Vpišite področje",otherSecPh:"npr. Turizem in vodenje",eOther:"Opišite, kaj potrebujete."});
+Object.assign(LANGS.en,{otherType:"Describe the type of work",otherTypePh:"e.g. steam cleaning a facade",otherPh:"Other, type your own (separate with commas)",otherAct:"Type the activity",otherActPh:"e.g. facade cleaning",otherSec:"Type the field",otherSecPh:"e.g. tourism and guiding",eOther:"Describe what you need."});
+/* replace a label in the text of an element tree */
+function swapText(root,from,to){if(!root||!to)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())if(n.nodeValue.includes(from))n.nodeValue=n.nodeValue.split(from).join(to)}
+/* --- post a job: "Other" category with your own description --- */
+(function(){const f=$("f");if(!f)return;const lab=$("f-cat").closest("label");
+  lab.insertAdjacentHTML("afterend",`<label id="f-catOw" hidden><span><span id="f-catOl"></span> <i class="req">*</i></span><input id="f-catO" maxlength="50"></label>`);
+  const upd=()=>{const on=$("f-cat").value==="drugo";$("f-catOw").hidden=!on;$("f-catOl").textContent=t("otherType");$("f-catO").placeholder=t("otherTypePh")};
+  $("f-cat").addEventListener("change",()=>{upd();if($("f-cat").value==="drugo")setTimeout(()=>$("f-catO").focus(),50)});
+  const _as=applyStatic;applyStatic=function(){_as();upd()};upd();
+  let custom="";
+  f.addEventListener("submit",e=>{custom="";if($("f-cat").value!=="drugo")return;custom=$("f-catO").value.trim();
+    if(!custom){e.preventDefault();e.stopImmediatePropagation();$("f-err").textContent=t("eOther");$("f-catO").focus()}},true);
+  f.addEventListener("submit",()=>{const c=custom;if(!c)return;setTimeout(()=>{const j=st.userJobs[0];if(j&&j.cat==="drugo"&&!j.catCustom&&Date.now()-(+String(j.id).slice(1)||0)<3000){j.catCustom=c;save();renderAll()}
+    $("f-catO").value="";upd()},0)})})();
+{const _jc=jobCard;jobCard=function(j){const h=_jc(j);return j.catCustom?h.split(esc(L(OTHER_CAT))).join(esc(j.catCustom)):h}}
+{const _od=openJobDetail;openJobDetail=function(id){_od(id);const j=jobById(id);if(j&&j.catCustom)swapText($("sheet"),L(OTHER_CAT),j.catCustom)}}
+{const _rp=renderPosts;renderPosts=function(){_rp();allJobs().filter(j=>j.client==="me"&&j.catCustom).forEach(j=>{const d=$("posts").querySelector(`[data-del="${j.id}"]`);if(d)swapText(d.closest(".post"),L(OTHER_CAT),j.catCustom)})}}
+{const _oo=openOffer;openOffer=function(id){_oo(id);const j=jobById(id);if(j&&j.catCustom)swapText($("sheet"),L(OTHER_CAT),j.catCustom)}}
+/* --- profile: a free-text "other" under every list of choices --- */
+{const _v=prValidate;prValidate=function(p){const e=_v(p);if(e.cats&&String(p.catsOther||"").trim())delete e.cats;if(e.sectors&&String(p.sectorsOther||"").trim())delete e.sectors;
+  if(p.hasCo&&p.co&&p.co.act==="other"&&!String(p.co.actOther||"").trim())e["co.actOther"]=t("eReq");return e}}
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P)return;const p=pd;
+  ["cats","skills","sectors","langs","licences"].forEach(k=>{const cb=P.querySelector(`[data-arr="${k}"]`);if(!cb)return;const fs=cb.closest("fieldset");
+    fs.querySelectorAll('input[value="drugo"]').forEach(i=>{const l=i.closest("label");if(l)l.remove()});
+    if(fs.querySelector(`[data-k="${k}Other"]`))return;
+    fs.insertAdjacentHTML("beforeend",`<input class="otherin" id="p-${k}Other" data-k="${k}Other" maxlength="120" placeholder="${esc(t("otherPh"))}" value="${esc(p[k+"Other"]||"")}">`)});
+  const act=P.querySelector('[id="p-co.act"]');if(act&&!P.querySelector('[id="p-co.actOther"]')){act.closest("label").insertAdjacentHTML("afterend",`<div id="coActOw"${act.value==="other"?"":" hidden"}>${fIn("co.actOther",t("otherAct"),p.co.actOther||"",{req:1,ph:t("otherActPh"),max:60})}</div>`);
+    act.addEventListener("change",()=>{$("coActOw").hidden=act.value!=="other"})}
+  P.querySelectorAll('.otherin,[id="p-co.actOther"]').forEach(el=>el.addEventListener("input",()=>{setK(el.dataset.k,el.value.trimStart());const k=el.dataset.k;
+    const base=k.replace(/Other$/,"");[k,base].forEach(x=>{if(pdErrs[x]){delete pdErrs[x];const e=$("e-"+x);if(e)e.textContent=""}});markDirty()}))}}
+/* --- company job ads: "Other field" with your own description --- */
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const s=$("ca-sec");if(!s||$("ca-secOw"))return;
+  s.closest(".two").insertAdjacentHTML("afterend",`<label id="ca-secOw"${s.value==="drugo"?"":" hidden"}><span>${t("otherSec")} <i class="req">*</i></span><input id="ca-secO" maxlength="50" placeholder="${esc(t("otherSecPh"))}" value="${esc((coForm&&coForm.secCustom)||"")}"></label>`);
+  s.addEventListener("change",()=>{$("ca-secOw").hidden=s.value!=="drugo";if(s.value==="drugo")$("ca-secO").focus()});
+  $("ca-secO").addEventListener("input",e=>{if(coForm)coForm.secCustom=e.target.value})}}
+let caCustom="";
+document.addEventListener("submit",e=>{if(!e.target||e.target.id!=="caF")return;caCustom="";const s=$("ca-sec");if(!s||s.value!=="drugo")return;caCustom=$("ca-secO").value.trim();
+  if(!caCustom){e.preventDefault();e.stopImmediatePropagation();const w=$("ca-secOw");if(w&&!w.querySelector(".ferr"))w.insertAdjacentHTML("beforeend",`<div class="ferr" role="alert">${esc(t("eReq"))}</div>`);$("ca-secO").focus();return}
+  const c=caCustom;setTimeout(()=>{const a=st.myAds[0];if(a&&a.sec==="drugo"&&!a.secCustom&&Date.now()-a.ts<3000){a.secCustom=c;save();syncMyAds();renderHire();renderStud();renderCoAds()}},0)},true);
+{const _ac=adCard;adCard=function(a){const h=_ac(a);return a.secCustom?h.split(esc(L(OTHER_SEC))).join(esc(a.secCustom)):h}}
+{const _sc=studCard;studCard=function(a){const h=_sc(a);return a.secCustom?h.split(esc(L(OTHER_SEC))).join(esc(a.secCustom)):h}}
+{const _oa=openAd;openAd=function(id){_oa(id);const a=adById(id);if(a&&a.secCustom)swapText($("sheet"),L(OTHER_SEC),a.secCustom)}}
+{const css=document.createElement("style");css.textContent=`.otherin{margin-top:8px;width:100%}`;document.head.appendChild(css)}
+applyStatic();
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
