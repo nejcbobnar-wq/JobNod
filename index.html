@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="30";
+const APP_VER="31";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3520,6 +3520,27 @@ function faDraw(err){let w=$("fbAdmin");if(!w){w=document.createElement("div");w
 async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&order=created_at.desc&limit=300");faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
 function faCheck(){if(location.hash==="#mnenja")faLoad();else{const w=$("fbAdmin");if(w)w.remove()}}
 addEventListener("hashchange",faCheck);setTimeout(faCheck,300);
+/* ================= USE MY CURRENT LOCATION ================= */
+Object.assign(LANGS.sl,{geoBtn:"📍 Uporabi mojo trenutno lokacijo",geoFinding:"Iščem tvojo lokacijo …",geoSet:"Tvoja lokacija: {x}. Prikazujem dela v okolici.",geoDenied:"Dostop do lokacije je zavrnjen. Dovoli ga v nastavitvah brskalnika za jobnodapp.com.",
+ geoFail:"Lokacije ni bilo mogoče določiti. Poskusi znova ali izberi kraj ročno.",geoNo:"Ta naprava ne podpira lokacije.",geoNear:"Najbližji kraj: {x} ({d})",geoOn:"Lokacija se samodejno posodablja"});
+Object.assign(LANGS.en,{geoBtn:"📍 Use my current location",geoFinding:"Finding your location …",geoSet:"Your location: {x}. Showing jobs nearby.",geoDenied:"Location access was denied. Allow it in your browser settings for jobnodapp.com.",
+ geoFail:"Couldn't get your location. Try again or pick a town.",geoNo:"This device doesn't support location.",geoNear:"Nearest town: {x} ({d})",geoOn:"Location updates automatically"});
+{const css=document.createElement("style");css.textContent=`.geobtn{width:100%;margin:0 0 4px}.geohint{font-size:12.5px;color:var(--muted);margin:0 0 6px}`;document.head.appendChild(css)}
+function geoNearest(lat,lng){let best=null,bd=1e9;Object.keys(TOWNS).forEach(k=>{if(k.includes("–"))return;const d=km([lat,lng],TOWNS[k]);if(d<bd){bd=d;best=k}});return [best,bd]}
+function geoLocate(silent){return new Promise(done=>{if(!navigator.geolocation){if(!silent)toast(t("geoNo"));return done(false)}
+  if(!silent)toast(t("geoFinding"));
+  navigator.geolocation.getCurrentPosition(p=>{const [town,d]=geoNearest(p.coords.latitude,p.coords.longitude);if(!town)return done(false);
+      const moved=town!==st.home;st.geo={lat:+p.coords.latitude.toFixed(4),lng:+p.coords.longitude.toFixed(4),town,d:Math.round(d),ts:Date.now(),auto:true};st.home=town;
+      if(moved){st.pos=0;st.posA=0;st.posS=0;st.last=null;st.lastA=null;st.lastS=null;if($("f-loc"))$("f-loc").value=town}
+      save();if(moved||!silent)renderAll();if(!silent)toast(t("geoSet",{x:town}));done(true)},
+    e=>{if(!silent)toast(e&&e.code===1?t("geoDenied"):t("geoFail"));if(e&&e.code===1&&st.geo){st.geo.auto=false;save()}done(false)},
+    {enableHighAccuracy:false,timeout:12000,maximumAge:5*60*1000})})}
+/* the button in the "where" sheet */
+{const _om=openMap;openMap=function(view){_om(view);const sel=$("m-home");if(!sel||$("geoB"))return;const lab=sel.closest("label");
+  lab.insertAdjacentHTML("beforebegin",`<button class="ghost geobtn" type="button" id="geoB">${t("geoBtn")}</button>${st.geo&&st.geo.town===st.home?`<p class="geohint">${esc(t("geoNear",{x:st.geo.town,d:fkm(st.geo.d||0)}))}${st.geo.auto?" · "+t("geoOn"):""}</p>`:""}`);
+  $("geoB").onclick=async()=>{const b=$("geoB");b.disabled=true;b.textContent=t("geoFinding");const ok=await geoLocate(false);if(sheetOpts.map)openMap("local");else{b.disabled=false;b.textContent=t("geoBtn")}}}}
+/* if the person already allowed location, keep it current when the app opens */
+setTimeout(()=>{if(!st.geo||!st.geo.auto)return;try{if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:"geolocation"}).then(r=>{if(r.state==="granted")geoLocate(true)}).catch(()=>{})}catch(_){}},1500);
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
