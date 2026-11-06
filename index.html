@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="37";
+const APP_VER="38";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3724,6 +3724,21 @@ CH_KEYS.delete("nLiveMsg");
   tog.insertAdjacentHTML("afterend",`<label class="tog"><span><b>${t("msSound")}</b><small style="display:block;color:var(--muted);font-weight:500">${t("msDesc")}</small></span><input type="checkbox" role="switch" id="msSnd"${st.msgSound!==false?" checked":""}><i aria-hidden="true"></i></label>`);
   $("msSnd").onchange=e=>{st.msgSound=e.target.checked;save()};
   const tb=c.querySelector("#maTest");if(tb)tb.insertAdjacentHTML("afterend",`<button class="ghost sm" type="button" id="msTest">${t("msTest")}</button>`);$("msTest").onclick=()=>msBlop()}}
+/* ================= WORLD VIEW: POSTS GROUPED BY COUNTRY, TAP TO SEE THE CITIES ================= */
+Object.assign(LANGS.sl,{topCountries:"Objave po državah",nCities:"{n} krajev",nCity1:"1 kraj"});
+Object.assign(LANGS.en,{topCountries:"Posts by country",nCities:"{n} places",nCity1:"1 place"});
+{const css=document.createElement("style");css.textContent=`.glc{background:var(--surface);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.glc summary{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;font:600 14.5px var(--font);color:var(--ink)}.glc summary::-webkit-details-marker{display:none}
+.glc summary .fl{font-size:20px;line-height:1}.glc summary .nm{flex:1;min-width:0}.glc summary .nm small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.glc summary .ct{color:var(--accent);font-weight:800;font-variant-numeric:tabular-nums}.glc summary .ch{transition:transform .2s;color:var(--muted);font-size:13px}.glc[open] summary .ch{transform:rotate(90deg)}
+.glc .gl-cities{padding:0 10px 10px;display:grid;gap:6px}.glc .gl-cities button{background:var(--bg);box-sizing:border-box;width:100%;min-width:0}.glc .gl-cities button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;document.head.appendChild(css)}
+const glFlag=cc=>/^[A-Z]{2}$/.test(cc)?String.fromCodePoint(...[...cc].map(c=>127397+c.charCodeAt(0))):"🌍";
+{const _dg=drawGlobeView;drawGlobeView=function(){const h=_dg(),i=h.lastIndexOf('<div class="h3">');if(i<0)return h;
+  const by={};globeItems().forEach(it=>{const cc=countryOf(it.town);(by[cc]=by[cc]||{cc,n:0,towns:[]}).n+=it.n;by[cc].towns.push(it)});
+  const list=Object.values(by).sort((a,b)=>b.n-a.n);
+  return h.slice(0,i)+`<div class="h3">${t("topCountries")}</div>`+list.map(c=>{const nm=COUNTRY[c.cc]?L(COUNTRY[c.cc]):c.cc,tw=c.towns.sort((a,b)=>b.n-a.n);
+    return `<details class="glc"${c.cc===countryOf(st.home)?" open":""}><summary><span class="fl" aria-hidden="true">${glFlag(c.cc)}</span><span class="nm">${esc(nm)}<small>${tw.length} ${pl(tw.length,["kraj","kraja","kraji","krajev"],["place","places"])}</small></span><span class="ct">${num(c.n)}</span><span class="ch" aria-hidden="true">▶</span></summary>
+     <div class="gl-cities">${tw.map(x=>`<button data-town="${esc(x.town)}"><span>${esc(x.town)}</span><span>${num(x.n)}</span></button>`).join("")}</div></details>`}).join("")}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
