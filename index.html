@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="38";
+const APP_VER="39";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3739,6 +3739,42 @@ const glFlag=cc=>/^[A-Z]{2}$/.test(cc)?String.fromCodePoint(...[...cc].map(c=>12
   return h.slice(0,i)+`<div class="h3">${t("topCountries")}</div>`+list.map(c=>{const nm=COUNTRY[c.cc]?L(COUNTRY[c.cc]):c.cc,tw=c.towns.sort((a,b)=>b.n-a.n);
     return `<details class="glc"${c.cc===countryOf(st.home)?" open":""}><summary><span class="fl" aria-hidden="true">${glFlag(c.cc)}</span><span class="nm">${esc(nm)}<small>${tw.length} ${pl(tw.length,["kraj","kraja","kraji","krajev"],["place","places"])}</small></span><span class="ct">${num(c.n)}</span><span class="ch" aria-hidden="true">▶</span></summary>
      <div class="gl-cities">${tw.map(x=>`<button data-town="${esc(x.town)}"><span>${esc(x.town)}</span><span>${num(x.n)}</span></button>`).join("")}</div></details>`}).join("")}}
+/* ================= CV TRAVELS WITH THE APPLICATION; COMPANY CAN OPEN IT ================= */
+Object.assign(LANGS.sl,{cvOpening:"Odpiram CV …",cvNoLive:"Kandidat ob prijavi ni priložil CV.",cvFail:"CV-ja ni bilo mogoče odpreti. Poskusi znova.",cvDemoTitle:"CV kandidata (demo)",cvDemoNote:"Demo: izmišljen kandidat, CV je ustvarjen samodejno.",cvBack:"Nazaj na kandidata",cvAbout:"O meni",cvAboutTxt:"Zanesljiv in komunikativen, vajen dela z ljudmi in v izmenah."});
+Object.assign(LANGS.en,{cvOpening:"Opening CV …",cvNoLive:"The candidate didn't attach a CV.",cvFail:"Couldn't open the CV. Try again.",cvDemoTitle:"Candidate CV (demo)",cvDemoNote:"Demo: a fictional candidate, the CV is generated.",cvBack:"Back to candidate",cvAbout:"About me",cvAboutTxt:"Reliable and friendly, used to working with people and in shifts."});
+IDB.get=async function(k){const d=await this.open();return new Promise((res,rej)=>{const tx=d.transaction("files","readonly"),r=tx.objectStore("files").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})};
+const cvB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]||"");r.onerror=no;r.readAsDataURL(b)});
+/* upload my CV once (again only when it changes) */
+async function cvEnsure(){const p=st.profile||{};if(!p.cvName)return null;const sig=p.cvName+"|"+p.cvSize;if(st.cvRemote&&st.cvRemote.sig===sig)return st.cvRemote.id;
+  const f=await IDB.get("cv").catch(()=>null);if(!f)return null;const data=await cvB64(f);if(data.length>7400000)return null;
+  const [row]=await sb("cv_files",{method:"POST",prefer:"return=representation",body:{user_id:st.liveId,name:p.cvName,size:p.cvSize||f.size,data}});
+  st.cvRemote={id:row.id,sig};save();return row.id}
+{const _sb=sb;sb=async function(path,opt={}){if(path==="applications"&&opt&&opt.method==="POST"&&opt.body&&opt.body.data){try{const id=await cvEnsure();if(id)opt.body.data.cv_id=id}catch(e){console.warn("cv upload",e)}}
+  return _sb(path,opt)}}
+/* company side: real testers carry their CV id */
+{const _ca=coApplicants;coApplicants=function(a){const list=_ca(a);if(!a.rid)return list;const rows=LA.apps[a.rid]||[];
+  list.forEach(x=>{if(!x.live)return;const r=rows.find(z=>"L"+z.id===x.k),d=(r&&r.data)||{};x.cvId=d.cv_id||null;x.uid=r&&r.user_id;x.cv=!!(d.cv_id||d.cv)});return list}}
+async function cvOpenRemote(id){toast(t("cvOpening"));try{const rows=await sb(`cv_files?id=eq.${id}&select=name,data`);const r=rows&&rows[0];if(!r)throw 0;
+  const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));const w=window.open(url,"_blank");
+  if(!w){const a=document.createElement("a");a.href=url;a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove()}
+  setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){console.warn(e);toast(t("cvFail"))}}
+/* fictional candidates: a generated CV to show in demos */
+function cvDemo(a,x){const kv=(l,v)=>v?`<div class="kv"><span>${l}</span><b>${esc(v)}</b></div>`:"";sheetOpts={cand:x.k};
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+   <p class="hint" style="background:#FFF4D6;color:#8A5A00;border-radius:10px;padding:6px 10px;margin:0 52px 10px 0">${t("cvDemoNote")}</p>
+   <h2 style="margin:0">${esc(x.name)}</h2><p style="margin:2px 0 10px;color:var(--accent);font-weight:700">${esc(x.last||L(a.title))}</p>
+   <div class="addesc">${kv(t("dWhere"),x.town)}${kv(t("cdExp"),x.exp?cdYrs(x.exp):t("cdNoExp"))}${kv(t("cdLast"),x.last)}${kv(t("cdSkills"),(x.skills||[]).join(", "))}${kv(t("cdLangs"),(x.langs||[]).join(", "))}</div>
+   <div class="h3">${t("cvAbout")}</div><p class="jdesc">${t("cvAboutTxt")}</p>
+   <div class="jdbtns" style="grid-template-columns:1fr"><button class="ghost" id="cvBk">${t("cvBack")}</button></div>`;
+  $("cls").onclick=closeSheet;$("cvBk").onclick=()=>cdOpen(a.id,x.k);openSheet(t("cvDemoTitle"))}
+{const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const b=$("cdCv");const a=st.myAds.find(z=>z.id===adId),x=a&&coApplicants(a).find(z=>z.k===k);
+  if(!b||!x)return;b.onclick=async()=>{if(!x.live)return cvDemo(a,x);let id=x.cvId;
+    if(!id&&x.uid){try{const r=await sb(`cv_files?user_id=eq.${encodeURIComponent(x.uid)}&select=id&order=created_at.desc&limit=1`);id=r&&r[0]&&r[0].id}catch(_){}}
+    id?cvOpenRemote(id):toast(t("cvNoLive"))}}}
+/* my CV goes to the cloud as soon as I add it (and on start, for CVs added before), so companies can open it */
+{const _up=uploadCv;uploadCv=function(f,done){_up(f,()=>{done&&done();setTimeout(()=>cvEnsure().catch(e=>console.warn("cv upload",e)),800)})}}
+setTimeout(()=>{if(st.profile&&st.profile.cvName)cvEnsure().catch(()=>{})},4000);
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
