@@ -1617,8 +1617,8 @@ const distT=loc=>TOWNS[loc]?km(TOWNS[st.home],TOWNS[loc]):null;
 function secChips(el,key){el.innerHTML=[["all",t("all")],...Object.keys(SECTORS).filter(k=>!SECTORS[k].stud).map(k=>[k,secName(k)])].map(([k,n])=>`<button data-c="${k}" aria-pressed="${st[key]===k}">${esc(n)}</button>`).join("")}
 
 /* ================= WORKER: OPENINGS ================= */
-const deckA=()=>allAds().filter(a=>(st.hireSec==="all"||a.sec===st.hireSec)&&passAd(a)).map(a=>({a,d:distT(a.loc),m:matchPct(a)}))
-  .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0))).map(x=>x.a);
+const deckA=()=>allAds().filter(a=>(st.hireSec==="all"||a.sec===st.hireSec)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
+  .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>(!!y.a.live-!!x.a.live)||(st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0)))).map(x=>x.a);
 const adsPending=deckA;
 function adCard(a){const s=SECTORS[a.sec],c=coOf(a),d=distT(a.loc),ap=st.applied.some(x=>x.id===a.id);return `
  <div class="photo adph" style="background:${s.bg}">${s.svg}</div><div class="shade"></div>
@@ -1793,8 +1793,8 @@ const STUD=[];
 })();
 if(!st.studCat)st.studCat="all";
 const studSecs=["all",...new Set(STUD.map(a=>a.sec))];
-const deckS=()=>STUD.filter(a=>(st.studCat==="all"||a.sec===st.studCat)&&passAd(a)).map(a=>({a,d:distT(a.loc),m:matchPct(a)}))
-  .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0))).map(x=>x.a);
+const deckS=()=>STUD.filter(a=>(st.studCat==="all"||a.sec===st.studCat)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
+  .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>(!!y.a.live-!!x.a.live)||(st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0)))).map(x=>x.a);
 function studCard(a){const s=SECTORS[a.sec],c=coOf(a),d=distT(a.loc),ap=st.applied.some(x=>x.id===a.id);return `
  <div class="photo adph" style="background:${s.bg}">${s.svg}</div><div class="shade"></div>
  <div class="top"><span class="glass">${esc(L(STUD_DUR[a.dur]))}</span>${ap?`<span class="glass done">${t("appliedBadge")}</span>`:a.urgent?`<span class="glass hot">${t("startNow")}</span>`:a.both?`<span class="glass">${t("pupilsToo")}</span>`:""}</div>
@@ -2346,7 +2346,7 @@ function matchPct(a){const p=st.profile;let s=38;
   const d=distT(a.loc);s+=d===null?0:d<=10?16:d<=30?11:d<=60?6:0;
   if(p.pay&&a.unit==="m")s+=a.max>=+p.pay?8:0;else s+=4;
   if(p.cvName)s+=4;return Math.max(12,Math.min(98,s+(hashN(a.id)%7)))}
-function passAd(a){const f=st.fa;if(isBlocked(a.co))return false;if(f.types.length&&!f.types.includes(a.type))return false;
+function passAd(a){const f=st.fa;if(isBlocked(a.co))return false;if(a.live)return !a.closed;if(f.types.length&&!f.types.includes(a.type))return false;
   if(f.minPay){const monthly=a.unit==="h"?a.max*160:a.max;if(monthly<f.minPay)return false}return true}
 function renderAdBar(id){const el=$(id);if(!el)return;const n=(st.fa.minPay?1:0)+(st.fa.types.length?1:0);
   el.innerHTML=`<button class="fbtn${n?" on":""}" data-afilter>${FSVG}<span>${t("filters")}${n?` · ${n}`:""}</span></button>
@@ -2366,14 +2366,14 @@ function openAdFilters(){sheetOpts={afilters:true};const f=JSON.parse(JSON.strin
 /* ---------- application status progression ---------- */
 const APP_FLOW=["sent","seen","review","interview"];
 function tickApps(){let ch=false;const n=now();
-  st.applied.forEach(x=>{if(!x.status){x.status="sent";x.ts=n;ch=true;return}const age=n-(x.ts||n);
+  st.applied.forEach(x=>{if(String(x.id).startsWith("LA")){if(!x.status)x.status="sent";return}if(!x.status){x.status="sent";x.ts=n;ch=true;return}const age=n-(x.ts||n);
     if(x.status==="sent"&&age>6000){x.status="seen";x.ts=n;ch=true;const a=adById(x.id);if(a)notify("nSeen",{x:coOf(a).name,y:L(a.title)},{view:"apps"})}
     else if(x.status==="seen"&&age>9000){const a=adById(x.id);const inv=hashN(x.id)%10<5;x.status=inv?"interview":"review";x.ts=n;ch=true;
       if(inv&&a){const dt=dateOpts()[2+hashN(x.id)%4][0],hr=["09:00","10:30","13:00","15:30"][hashN(x.id)%4];x.iv={date:dt,time:hr};
         const d=newDeal({kind:"app",item:x.id,other:a.co,role:"seeker",status:"interview",offer:{date:dt,time:hr}});
         sysMsg(d,"mInterview",{d:fmtDay(dt),h:hr});theirMsg(d,t("rInterview",{d:fmtDay(dt),h:hr}));notify("nInterview",{x:coOf(a).name,d:fmtDay(dt),h:hr},{chat:d.id})}}});
   if(ch){save();if(!$("v-apps").hidden)renderApps();renderAgenda();updBell()}}
-const appStatusTxt=x=>t({sent:"stSent",seen:"stSeen",review:"stReview",interview:"stInterview"}[x.status||"sent"]);
+const appStatusTxt=x=>t({sent:"stSent",seen:"stSeen",review:"stReview",interview:"stInterview",rejected:"stRejected"}[x.status||"sent"]);
 
 /* ---------- deals & chat ---------- */
 function newDeal(o){const d=Object.assign({id:"d"+now()+Math.random().toString(36).slice(2,5),msgs:[],unread:0,pay:"none",created:now()},o);st.deals.unshift(d);save();return d}
@@ -2666,7 +2666,7 @@ function renderCoAds(){const box=$("coads");if(!box)return;
     ${coConfirm===a.id?`<div class="two"><button class="ghost" data-cano="1">${t("no")}</button><button class="primary" data-cayes="${a.id}">${t("removeAd")}</button></div>`:""}
     <div class="h3" style="margin:4px 0 0;font-size:15px">${t("applicantsN")} <small>${ap.length}</small></div>
     ${ap.length?ap.map(x=>{const s=(a.apSt||{})[x.k];return `<div class="aprow">${coAv({name:x.name,sec:a.sec},"md")}
-      <div style="min-width:0"><h4>${esc(x.name)}</h4><p>${esc(x.town)} · ${nYears(x.age)} · ${x.cv?t("cvAtt"):t("noCv")}</p></div>
+      <div style="min-width:0"><h4>${esc(x.name)}</h4><p>${esc(x.town)}${x.age?" · "+nYears(x.age):""} · ${x.cv?t("cvAtt"):t("noCv")}</p></div>
       <span class="status${x.m>=75?" ok":""}">${t("matchPct",{n:x.m})}</span>
       ${s?`<span class="status apst${s==="inv"?" ok":""}">${s==="inv"?t("invited")+" ✓":t("rejected")}</span>`:`<div class="apbtns"><button class="primary sm" data-cainv="${a.id}|${x.k}|${esc(x.name)}">${t("invite")}</button><button class="ghost sm" data-carej="${a.id}|${x.k}">${t("reject")}</button></div>`}</div>`}).join("")
      :`<p class="hint">${t("noApplicants")}</p>`}</div>`}).join(""):`<p style="color:var(--muted)">${t("noMyAds")}</p>`}</div>
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="23";
+const APP_VER="24";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3156,7 +3156,7 @@ async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created
 /* --- chat: messages in live deals go to the other tester instead of an automatic reply --- */
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||!d.live)return;
   const send=txt=>{txt=String(txt||"").trim();if(!txt)return;d.msgs.push({from:"me",text:txt,ts:now()});save();drawChat(id);setTimeout(()=>{const b=$("chatBox");if(b)b.scrollTop=b.scrollHeight},20);
-    const go=()=>d.rid?sb("messages",{method:"POST",body:{offer_id:d.rid,from_id:st.liveId,from_name:liveName(),body:txt.slice(0,1000)}}).catch(e=>console.warn("live msg",e)):setTimeout(go,1500);go()};
+    const go=()=>d.rid?sb(d.kind==="app"?"app_messages":"messages",{method:"POST",body:Object.assign(d.kind==="app"?{app_id:d.rid}:{offer_id:d.rid},{from_id:st.liveId,from_name:liveName(),body:txt.slice(0,1000)})}).catch(e=>console.warn("live msg",e)):setTimeout(go,1500);go()};
   if($("chatForm"))$("chatForm").onsubmit=e=>{e.preventDefault();send($("chatTxt").value)};
   $("sheet").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q))}}
 /* --- polling --- */
@@ -3172,7 +3172,7 @@ async function liveTick(){if(LIVE.busy||document.hidden||LIVE.ok===false&&!LIVE.
     if(sent.length){const rows=await sb(`offers?id=in.(${sent.map(d=>d.rid).join(",")})&select=id,status`);rows.forEach(r=>{const d=sent.find(x=>x.rid===r.id);if(!d)return;
       if(r.status==="accepted"&&d.status==="offer"){d.status="agreed";sysMsg(d,"mAgreed",{p:priceTxt(d.offer),d:fmtDay(d.offer.date),h:d.offer.time});notify("nLiveAcc",{x:dealOther(d).name,y:dealTitle(d)},{chat:d.id});if(typeof showMatch==="function")showMatch(d)}
       if(r.status==="declined"&&d.status==="offer"){d.status="declined";notify("nLiveDec",{x:dealOther(d).name,y:dealTitle(d)},{chat:d.id})}})}
-    const live=st.deals.filter(d=>d.live&&d.rid);
+    const live=st.deals.filter(d=>d.live&&d.rid&&d.kind!=="app");
     if(live.length){const rows=await sb(`messages?offer_id=in.(${live.map(d=>d.rid).join(",")})&order=created_at.asc&select=*`);
       rows.forEach(m=>{if(m.from_id===st.liveId)return;const d=live.find(x=>x.rid===m.offer_id);if(!d)return;d.seenM=d.seenM||[];if(d.seenM.includes(m.id))return;d.seenM.push(m.id);
         theirMsg(d,m.body);if(!LIVE.first&&sheetOpts.chat!==d.id)notify("nLiveMsg",{x:m.from_name,y:m.body.slice(0,60)},{chat:d.id})})}
@@ -3183,6 +3183,99 @@ async function liveTick(){if(LIVE.busy||document.hidden||LIVE.ok===false&&!LIVE.
 {const css=document.createElement("style");css.textContent=`.glass.live{background:rgba(22,176,122,.85);color:#fff;border-color:transparent}`;document.head.appendChild(css)}
 setTimeout(liveTick,800);setInterval(liveTick,6000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)liveTick()});
 
+/* ================= LIVE: JOB ADS & STUDENT JOBS BETWEEN TESTERS ================= */
+Object.assign(LANGS.sl,{stRejected:"Zavrnjeno",nLiveRej:"{x} je zavrnil/a vašo prijavo »{y}«.",nLiveAd:"Nov oglas v živo: {x} – {y}",liveApplicants:"Prijave so od pravih testerjev.",mIvOk:"Potrjujem razgovor {d} ob {h}."});
+Object.assign(LANGS.en,{stRejected:"Declined",nLiveRej:"{x} declined your application “{y}”.",nLiveAd:"New live ad: {x} – {y}",liveApplicants:"Applications come from real testers.",mIvOk:"I confirm the interview on {d} at {h}."});
+const LA={first:true,busy:false,apps:{},sig:"",seen:new Set(),pushing:new Set()};
+function liveCo(id,name,sec,loc){const cid="lv_co_"+id;let c=CO_MAP.get(cid);
+  if(!c){c={id:cid,name:name||"Podjetje",sec:SECTORS[sec]?sec:"pis",loc:TOWNS[loc]?loc:st.home,size:0,live:true};CO_MAP.set(cid,c)}else if(name)c.name=name;return cid}
+/* people and companies from earlier live chats, so the chats still open after a reload */
+st.deals.forEach(d=>{if(d.kind!=="app"||!d.live)return;if(d.role==="company")livePerson(String(d.other).slice(3),d.oname,"iskalec");
+  else if(!CO_MAP.has(d.other))CO_MAP.set(d.other,{id:d.other,name:d.oname||"Podjetje",sec:SECTORS[d.osec]?d.osec:"pis",loc:st.home,size:0,live:true})});
+function adFromRow(r){const d=r.data||{},tt=String(d.title||"").slice(0,80)||"—",ds=String(d.desc||tt).slice(0,600),stud=r.kind==="stud";
+  return {id:"LA"+r.id,rid:r.id,live:true,kind:stud?"stud":"zap",ts:Date.parse(r.created_at)||Date.now(),co:liveCo(r.author_id,r.author_name,d.sec,d.loc),sec:SECTORS[d.sec]?d.sec:"pis",
+    secCustom:d.secCustom||undefined,title:{sl:tt,en:tt},desc:{sl:ds,en:ds},unit:stud||d.unit==="h"?"h":"m",min:+d.min||0,max:+d.max||0,
+    type:stud?"student":ETYPES[d.type]?d.type:"full",shifts:Array.isArray(d.shifts)&&d.shifts.filter(k=>SHIFTS[k]).length?d.shifts.filter(k=>SHIFTS[k]):["flex"],
+    bens:Array.isArray(d.bens)?d.bens.filter(k=>BENEFITS[k]):[],open:+d.open||1,loc:TOWNS[d.loc]?d.loc:st.home,posted:String(r.created_at||"").slice(0,10),
+    urgent:!!d.urgent,dur:STUD_DUR[d.dur]?d.dur:Object.keys(STUD_DUR)[0],hrs:d.hrs||"",both:!!d.both,closed:r.status!=="open"}}
+/* --- company: my ads go to the shared list --- */
+async function pushAd(a){if(a.rid||LA.pushing.has(a.id))return;LA.pushing.add(a.id);const c=myCo();
+  try{const [row]=await sb("ads",{method:"POST",prefer:"return=representation",body:{author_id:st.liveId,author_name:c.name,kind:a.kind==="stud"?"stud":"zap",
+      data:{sec:a.sec,secCustom:a.secCustom||null,title:L(a.title),desc:L(a.desc),unit:a.unit,min:a.min,max:a.max,type:a.type,shifts:a.shifts,bens:a.bens,open:a.open,loc:a.loc,
+        urgent:!!a.urgent,dur:a.dur||null,hrs:a.hrs||null,both:!!a.both}}});a.rid=row.id;save()}
+  catch(e){console.warn("live ad",e)}finally{LA.pushing.delete(a.id)}}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cayes]");if(!b)return;const a=st.myAds.find(x=>x.id===b.dataset.cayes);
+  if(a&&a.rid)sb(`ads?id=eq.${a.rid}`,{method:"PATCH",body:{status:"removed"}}).catch(()=>{})},true);
+/* real applicants replace the made-up ones */
+{const _ca=coApplicants;coApplicants=function(a){if(!a.rid)return _ca(a);
+  return (LA.apps[a.rid]||[]).map(r=>{const d=r.data||{};return {k:"L"+r.id,name:r.user_name||"Tester",town:d.town||"—",m:+d.m||70,cv:!!d.cv,age:0,live:true}}).sort((x,y)=>y.m-x.m)}}
+/* invite or decline a real applicant */
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cainv],[data-carej]");if(!b)return;const inv=!!b.dataset.cainv,[id,k]=(b.dataset.cainv||b.dataset.carej).split("|");
+  if(!k||!k.startsWith("L"))return;const rid=k.slice(1),a=st.myAds.find(x=>x.id===id),r=a&&(LA.apps[a.rid]||[]).find(x=>x.id===rid);if(!r)return;
+  if(!inv){r.status="rejected";sb(`applications?id=eq.${rid}`,{method:"PATCH",body:{status:"rejected"}}).catch(e=>console.warn("live rej",e));return}
+  const dt=(dateOpts().slice(1).find(o=>{const w=new Date(o[0]+"T12:00").getDay();return w>0&&w<6})||dateOpts()[2])[0],hr="10:00";r.status="interview";
+  sb(`applications?id=eq.${rid}`,{method:"PATCH",body:{status:"interview",iv_date:dt,iv_time:hr}}).catch(e=>console.warn("live inv",e));
+  if(!st.deals.some(d=>d.kind==="app"&&d.rid===rid)){const pid=livePerson(r.user_id,r.user_name,"iskalec",(r.data||{}).town);
+    const d=newDeal({kind:"app",item:a.id,other:pid,role:"company",status:"interview",offer:{date:dt,time:hr}});d.live=true;d.rid=rid;d.oname=r.user_name;
+    sysMsg(d,"mInterview",{d:fmtDay(dt),h:hr});save();updBell()}},true);
+{const _do=dealOther;dealOther=function(d){if(d.kind==="app"&&d.role==="company"){const p=person(d.other);if(p)return {id:p.id,name:pName(p),av:av(p,"md"),co:false}}return _do(d)}}
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.role!=="company")return;
+  const b=$("sheet").querySelector('[data-act="ivok"]');if(b){const w=b.parentElement;b.remove();if(w&&w.classList.contains("chatacts")&&!w.children.length)w.remove()}}}
+{const _da=dealAct;dealAct=function(id,act){const d=st.deals.find(x=>x.id===id);
+  if(d&&d.live&&d.kind==="app"&&act==="ivok"){d.status="ivok";sysMsg(d,"mIvConfirmed",{d:fmtDay(d.offer.date),h:d.offer.time});
+    const txt=t("mIvOk",{d:fmtDay(d.offer.date),h:d.offer.time});d.msgs.push({from:"me",text:txt,ts:now()});save();
+    if(d.rid)sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:txt}}).catch(e=>console.warn("live msg",e));
+    drawChat(id);renderAgenda();return}
+  return _da(id,act)}}
+/* live badge and "real testers" note */
+{const tag=h=>h.replace('<div class="top">',`<div class="top"><span class="glass live">${t("liveBadge")}</span>`);
+  const _ac=adCard;adCard=function(a){const h=_ac(a);return a.live?tag(h):h};const _sc=studCard;studCard=function(a){const h=_sc(a);return a.live?tag(h):h}}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const n=$("coads")&&$("coads").querySelector(".demo-note");if(n&&st.myAds.some(a=>a.rid))n.textContent=t("liveApplicants")}}
+/* --- seeker: pull ads from other testers --- */
+async function pullAds(){const keep=st.applied.filter(x=>String(x.id).startsWith("LA")).map(x=>x.id.slice(2));
+  const q=keep.length?`ads?or=(status.eq.open,id.in.(${keep.join(",")}))`:"ads?status=eq.open";
+  const rows=await sb(q+"&order=created_at.desc&limit=200&select=*"),fresh=[];
+  for(const arr of [ADS,STUD])for(let i=arr.length-1;i>=0;i--)if(arr[i].live)arr.splice(i,1);
+  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const a=adFromRow(r);(a.kind==="stud"?STUD:ADS).unshift(a);if(!LA.first&&!a.closed&&!LA.seen.has(a.id))fresh.push(a);LA.seen.add(a.id)});
+  if(fresh.some(a=>a.kind!=="stud")){st.posA=0;st.lastA=null}if(fresh.some(a=>a.kind==="stud")){st.posS=0;st.lastS=null}
+  fresh.forEach(a=>notify("nLiveAd",{x:coOf(a).name,y:L(a.title)}));
+  return rows.map(r=>r.id+r.status).join(",")}
+async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let changed=false;
+  try{const sig=await pullAds();if(sig!==LA.sig){LA.sig=sig;changed=true}
+    /* company side */
+    if(isCo()){for(const a of st.myAds.filter(x=>!x.rid))await pushAd(a);
+      const rids=st.myAds.filter(a=>a.rid).map(a=>a.rid);
+      if(rids.length){const rows=await sb(`applications?ad_id=in.(${rids.join(",")})&order=created_at.asc&select=*`),by={};
+        rows.forEach(r=>{(by[r.ad_id]=by[r.ad_id]||[]).push(r);if(!LA.seen.has("ap"+r.id)){const a=st.myAds.find(x=>x.rid===r.ad_id);
+          if(!LA.first)notify("nApplicant",{x:r.user_name||"Tester",y:a?L(a.title):""},{view:"coads"});LA.seen.add("ap"+r.id)}});
+        st.myAds.forEach(a=>{if(!a.rid)return;const list=by[a.rid]||[];a.seenN=list.length;a.apSt=a.apSt||{};
+          list.forEach(r=>{if(r.status==="interview")a.apSt["L"+r.id]="inv";else if(r.status==="rejected")a.apSt["L"+r.id]="rej"})});
+        const s=JSON.stringify(rows.map(r=>r.id+r.status));if(s!==LA.asig){LA.asig=s;changed=true}LA.apps=by}}
+    /* seeker side: send my applications, then follow their status */
+    const mine=st.applied.filter(x=>String(x.id).startsWith("LA")),pr=st.profile||{};
+    for(const x of mine.filter(y=>!y.rid)){const a=adById(x.id);if(!a||LA.pushing.has(x.id))continue;LA.pushing.add(x.id);
+      try{const [row]=await sb("applications",{method:"POST",prefer:"return=representation",body:{ad_id:a.rid,user_id:st.liveId,user_name:liveName(),
+          data:{town:pr.postCity||pr.town||st.home,cv:!!pr.cvName,m:matchPct(a)}}});x.rid=row.id;x.status="sent";x.ts=null;save();changed=true}
+      catch(e){console.warn("live apply",e)}finally{LA.pushing.delete(x.id)}}
+    const sent=mine.filter(x=>x.rid);
+    if(sent.length){const rows=await sb(`applications?id=in.(${sent.map(x=>x.rid).join(",")})&select=id,status,iv_date,iv_time`);
+      rows.forEach(r=>{const x=sent.find(y=>y.rid===r.id),a=x&&adById(x.id);if(!a)return;const c=coOf(a);
+        if(r.status==="interview"&&x.status!=="interview"){x.status="interview";x.iv={date:r.iv_date,time:r.iv_time};changed=true;
+          if(!st.deals.some(d=>d.kind==="app"&&d.rid===r.id)){const d=newDeal({kind:"app",item:x.id,other:a.co,role:"seeker",status:"interview",offer:{date:r.iv_date,time:r.iv_time}});
+            d.live=true;d.rid=r.id;d.oname=c.name;d.osec=a.sec;sysMsg(d,"mInterview",{d:fmtDay(r.iv_date),h:r.iv_time});
+            notify("nInterview",{x:c.name,d:fmtDay(r.iv_date),h:r.iv_time},{chat:d.id})}}
+        if(r.status==="rejected"&&x.status!=="rejected"){x.status="rejected";changed=true;notify("nLiveRej",{x:c.name,y:L(a.title)},{view:"apps"})}})}
+    /* chat in live interviews */
+    const ch=st.deals.filter(d=>d.live&&d.kind==="app"&&d.rid);
+    if(ch.length){const rows=await sb(`app_messages?app_id=in.(${ch.map(d=>d.rid).join(",")})&order=created_at.asc&select=*`);
+      rows.forEach(m=>{if(m.from_id===st.liveId)return;const d=ch.find(x=>x.rid===m.app_id);if(!d)return;d.seenM=d.seenM||[];if(d.seenM.includes(m.id))return;d.seenM.push(m.id);
+        theirMsg(d,m.body);if(!LA.first&&sheetOpts.chat!==d.id)notify("nLiveMsg",{x:m.from_name,y:m.body.slice(0,60)},{chat:d.id})})}
+    save();LA.first=false;
+    if(changed){const drag=["stackA","stackS"].some(k=>{const s=$(k),c=s&&s.querySelector(".card:not(.back)");return c&&c.classList.contains("dragging")});
+      if(!drag){renderHire();renderStud()}if(!$("v-apps").hidden)renderApps();if(!$("v-coads").hidden)renderCoAds();if(!$("v-msgs").hidden)renderMsgs()}updBell()}
+  catch(e){console.warn("live ads",e)}finally{LA.busy=false}}
+setTimeout(adTick,2500);setInterval(adTick,6000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(adTick,800)});
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#a-yes,#s-yes,#adApply,#caF button[type=submit]"))setTimeout(adTick,1200)},true);
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
