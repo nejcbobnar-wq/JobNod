@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="27";
+const APP_VER="28";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3415,10 +3415,10 @@ STUD_POS.drugo=[];
 for(const o of [CATS,SECTORS,MEASURE]){if(o.drugo){const d=o.drugo;delete o.drugo;o.drugo=d}}
 applyStatic();
 /* ================= APPLICATIONS: AFTER AN INTERVIEW INVITE, OPEN THE CHAT WITH ALL AD DETAILS ================= */
-Object.assign(LANGS.sl,{adDetails:"Podatki o oglasu",iPos:"Delovno mesto",iCo:"Podjetje",iPay:"Plačilo",iType:"Vrsta dela",iWhere:"Kraj",iHrs:"Ur na teden",iShift:"Urnik",iBen:"Ugodnosti",iDesc:"Opis",iApplied:"Prijava poslana",openTalk:"💬 Odpri pogovor",iPerH:"na uro",iPerM:"na mesec"});
-Object.assign(LANGS.en,{adDetails:"Job ad details",iPos:"Position",iCo:"Company",iPay:"Pay",iType:"Type",iWhere:"Location",iHrs:"Hours per week",iShift:"Schedule",iBen:"Benefits",iDesc:"Description",iApplied:"Applied",openTalk:"💬 Open chat",iPerH:"per hour",iPerM:"per month"});
+Object.assign(LANGS.sl,{adDetails:"Podatki o oglasu",iPos:"Delovno mesto",iCo:"Podjetje",iPay:"Plačilo",iType:"Vrsta dela",iWhere:"Kraj",iHrs:"Ur na teden",iShift:"Urnik",iBen:"Ugodnosti",iDesc:"Opis",iApplied:"Prijava poslana",openTalk:"💬 Pogovor",iPerH:"na uro",ivShort:"Razgovor",iPerM:"na mesec"});
+Object.assign(LANGS.en,{adDetails:"Job ad details",iPos:"Position",iCo:"Company",iPay:"Pay",iType:"Type",iWhere:"Location",iHrs:"Hours per week",iShift:"Schedule",iBen:"Benefits",iDesc:"Description",iApplied:"Applied",openTalk:"💬 Chat",iPerH:"per hour",ivShort:"Interview",iPerM:"per month"});
 {const css=document.createElement("style");css.textContent=`.adinfo{background:var(--bg);border-radius:16px;padding:10px 14px;margin:10px 0}.adinfo summary{font-weight:700;cursor:pointer;padding:4px 0}
-.adinfo .kv{padding:6px 0}.adinfo p{margin:6px 0 2px;font-size:14px;line-height:1.45}.row.ivrow{cursor:pointer;outline:2px solid #16B07A;outline-offset:-2px}.ivbtn{margin-top:8px;width:100%}`;document.head.appendChild(css)}
+.adinfo .kv{padding:6px 0}.adinfo p{margin:6px 0 2px;font-size:14px;line-height:1.45}.row.ivrow{cursor:pointer;outline:2px solid #16B07A;outline-offset:-2px}.ivrow .status{font-size:12px!important;padding:4px 10px!important;white-space:nowrap;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block}.ivbtn{display:inline-flex!important;width:auto!important;min-height:0!important;margin:6px 0 0!important;padding:5px 12px!important;font-size:13px!important;border-radius:999px!important;line-height:1.2}`;document.head.appendChild(css)}
 const ivDeal=adId=>st.deals.find(d=>d.kind==="app"&&d.item===adId&&d.role!=="company"&&["interview","ivok"].includes(d.status));
 function adInfoHtml(a,applied){const c=coOf(a)||{name:"—"},kv=(k,v)=>v?`<div class="kv"><span>${t(k)}</span><b>${esc(v)}</b></div>`:"";
   return `<details class="adinfo" open><summary>${t("adDetails")}</summary>
@@ -3436,7 +3436,7 @@ function adInfoHtml(a,applied){const c=coOf(a)||{name:"—"},kv=(k,v)=>v?`<div c
 /* my applications: once invited, the row opens the chat */
 {const _ra=renderApps;renderApps=function(){_ra();const A=$("apps");if(!A)return;
   A.querySelectorAll("[data-ad]").forEach(b=>{const d=ivDeal(b.dataset.ad);if(!d)return;const row=b.closest(".row");if(!row||row.classList.contains("selectable"))return;
-    row.classList.add("ivrow");const info=row.children[1];if(info&&!info.querySelector(".ivbtn"))info.insertAdjacentHTML("beforeend",`<button class="primary sm ivbtn" data-iv="${d.id}">${t("openTalk")}${d.unread?` (${d.unread})`:""}</button>`);
+    row.classList.add("ivrow");const sb=row.querySelector(".status.st-interview");if(sb)sb.textContent="✓ "+t("ivShort");const info=row.children[1];if(info&&!info.querySelector(".ivbtn"))info.insertAdjacentHTML("beforeend",`<button class="primary sm ivbtn" data-iv="${d.id}">${t("openTalk")}${d.unread?` (${d.unread})`:""}</button>`);
     row.onclick=e=>{if(e.target.closest("[data-ad],[data-wd]"))return;openChat(d.id)}})}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
