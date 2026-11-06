@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="32";
+const APP_VER="33";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3564,6 +3564,103 @@ const tsAgo=s=>{const m=Math.round((Date.now()-new Date(s))/60000);return m<2?"z
      <small>${esc(x.device||"—")} · različica ${esc(x.ver||"?")}${x.place?" · "+esc(x.place):""}</small><small>${x.opens||1}× odprl</small></div>`).join("")}
    ${T.length>8?`<button class="tsmore" id="tsMore">${faTsAll?"Pokaži manj":`Pokaži vse (${T.length})`}</button>`:""}`}</div>`);
   if($("tsMore"))$("tsMore").onclick=()=>{faTsAll=!faTsAll;faDraw()}}}
+/* ================= COMPANIES: RANKED CANDIDATES WITH REASONS; SEEKERS: WHY YOU MATCH ================= */
+Object.assign(LANGS.sl,{cdTitle:"Kandidat",cdMatch:"ujemanje",cdWhy:"Zakaj se ujema",cdMiss:"Kaj manjka",cdExp:"Izkušnje",cdLast:"Zadnje delo",cdSkills:"Znanja",cdLangs:"Jeziki",cdAvail:"Razpoložljivost",cdCv:"CV",
+ cdCvOpen:"Odpri CV",cdCvDemo:"Demo: CV kandidata bi se odprl tukaj.",cdNoCv:"Ni priložil CV",cdTop:"⭐ Top",cdChat:"💬 Pogovor",cdYrs:"{n} let izkušenj",cdYr1:"1 leto izkušenj",cdNoExp:"Brez izkušenj",
+ cdNear:"Živi blizu ({d})",cdFar:"Daleč od dela ({d})",cdSec:"Izkušnje v panogi",cdNoSec:"Brez izkušenj v tej panogi",cdShift:"Lahko dela: {x}",cdNoShift:"Ne more: {x}",cdHasCv:"Priložen CV",cdLang:"Govori {x}",cdNoLang:"Ne govori {x}",
+ cdFilter:"Prikaži",cdAll:"Vse",cdWithCv:"S CV",cdClose15:"Do 15 km",cdTop3:"Top 3",cdNone:"Ni kandidatov s tem filtrom.",
+ whyYou:"Zakaj se ujemaš",whySec:"Tvoje področje: {x}",whyNoSec:"Drugo področje kot v tvojem profilu",whyType:"Vrsta dela, ki jo iščeš",whyNear:"Blizu tebe ({d})",whyFar:"Daleč ({d})",whyPay:"Plačilo ustreza tvojim pričakovanjem",whyLowPay:"Plačilo je pod tvojimi pričakovanji",whyCv:"Tvoj CV je priložen",whyNoCv:"Dodaj CV v profil za boljše ujemanje"});
+Object.assign(LANGS.en,{cdTitle:"Candidate",cdMatch:"match",cdWhy:"Why they match",cdMiss:"What's missing",cdExp:"Experience",cdLast:"Last job",cdSkills:"Skills",cdLangs:"Languages",cdAvail:"Availability",cdCv:"CV",
+ cdCvOpen:"Open CV",cdCvDemo:"Demo: the candidate's CV would open here.",cdNoCv:"No CV attached",cdTop:"⭐ Top",cdChat:"💬 Chat",cdYrs:"{n} years of experience",cdYr1:"1 year of experience",cdNoExp:"No experience",
+ cdNear:"Lives nearby ({d})",cdFar:"Far from the job ({d})",cdSec:"Experience in this field",cdNoSec:"No experience in this field",cdShift:"Can work: {x}",cdNoShift:"Can't do: {x}",cdHasCv:"CV attached",cdLang:"Speaks {x}",cdNoLang:"Doesn't speak {x}",
+ cdFilter:"Show",cdAll:"All",cdWithCv:"With CV",cdClose15:"Within 15 km",cdTop3:"Top 3",cdNone:"No candidates match this filter.",
+ whyYou:"Why you match",whySec:"Your field: {x}",whyNoSec:"Different field from your profile",whyType:"The type of work you want",whyNear:"Close to you ({d})",whyFar:"Far away ({d})",whyPay:"Pay meets your expectations",whyLowPay:"Pay is below your expectations",whyCv:"Your CV is attached",whyNoCv:"Add a CV to your profile for a better match"});
+{const css=document.createElement("style");css.textContent=`.aprow.cd{cursor:pointer}.aprow .why{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin:0;white-space:normal}.aprow .why b{color:#16B07A;font-weight:700}.aprow .why i{color:#D9485F;font-style:normal;font-weight:700}
+.aprow .topb{font-size:11.5px;font-weight:800;background:#FFF4D6;color:#8A5A00;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.cdfil{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}.cdfil button{margin:0;padding:6px 11px;border-radius:999px;font-size:12.5px}
+.cdhead{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding-right:52px}.cdhead .av{width:56px;height:56px;font-size:18px}.cdhead h2{margin:0;font-size:21px}.cdhead small{color:var(--muted)}
+.cdpct{font-size:26px;font-weight:800;color:#16B07A;text-align:right;line-height:1}.cdpct small{display:block;font-size:11.5px;font-weight:600;color:var(--muted)}
+.cdlist{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:6px}.cdlist li{font-size:14.5px;line-height:1.35}.cdlist.ok li::before{content:"✓ ";color:#16B07A;font-weight:800}.cdlist.no li::before{content:"✗ ";color:#D9485F;font-weight:800}
+.whybox{background:var(--bg);border-radius:16px;padding:10px 14px;margin:12px 0}.whybox b{display:block;margin-bottom:2px}`;document.head.appendChild(css)}
+/* what each kind of work typically asks for */
+const CD_SKILLS={gost:["strežba","delo z blagajno","priprava kave","HACCP","delo v kuhinji","barmanstvo"],trg:["delo z blagajno","zlaganje blaga","svetovanje strankam","inventura"],proiz:["delo na liniji","viličar","kontrola kakovosti","CNC"],
+ log:["vozniški izpit B","vozniški izpit C","viličar","skladiščno poslovanje","dostava"],cisc:["čiščenje poslovnih prostorov","delo s stroji za čiščenje","pranje perila"],grad:["zidarska dela","delo na višini","branje načrtov","opaži"],
+ pis:["Excel","Word","komunikacija s strankami","arhiviranje","računovodski programi"],osk:["nega starejših","prva pomoč","delo v izmenah"],it:["JavaScript","Python","SQL","podpora uporabnikom","omrežja"],
+ fin:["Excel","DDV obračuni","Pantheon","knjigovodstvo"],prod:["prodaja po telefonu","CRM","vozniški izpit B","pogajanja"],mark:["družbena omrežja","Canva","pisanje besedil","Google Ads"],izob:["delo z otroki","angleščina","priprava ur"],
+ teh:["elektroinštalacije","branje shem","CNC","varjenje"],avtos:["diagnostika","menjava gum","servis vozil"],kmet:["delo s traktorjem","obiranje","delo z živino"],varn:["licenca za varnostnika","nočno delo","prva pomoč"],lep:["striženje","barvanje las","manikura"],
+ prom:["delo z ljudmi","javno nastopanje","anketiranje"],dog:["postavitev odra","delo z ljudmi","garderoba"],ins:["matematika","angleščina","delo z otroki"],dig:["Canva","družbena omrežja","Excel"],
+ sport:["plavanje","reševanje iz vode","animacija otrok"],tur:["angleščina","nemščina","vodenje skupin"],prev:["angleščina","hitro tipkanje","nemščina"],klic:["delo z ljudmi","hitro tipkanje","angleščina"],foto:["fotografiranje","montaža videa","TikTok"]};
+const CD_LANG={gost:"angleško",tur:"angleško",prev:"angleško",klic:"angleško",it:"angleško"};
+function cdEnrich(a,x){if(x._cd)return x;const R=rng([...String(x.k)].reduce((s,c)=>s*31+c.charCodeAt(0)|0,5)),pool=CD_SKILLS[a.sec]||["delo z ljudmi","zanesljivost","timsko delo"];
+  const good=x.m>=80,ok=x.m>=65,stud=a.kind==="stud"||a.type==="student";
+  const exp=stud?(good?Math.floor(R()*3)+1:Math.floor(R()*2)):good?Math.floor(R()*8)+2:ok?Math.floor(R()*4)+1:Math.floor(R()*2);
+  const secExp=good||(ok&&R()<.6),skills=[...pool].sort(()=>R()-.5).slice(0,good?3:ok?2:1);
+  const d=TOWNS[x.town]&&TOWNS[a.loc]?Math.round(km(TOWNS[x.town],TOWNS[a.loc])):null;
+  const sh=(a.shifts||[]).filter(k=>SHIFTS[k]),noSh=!good&&sh.length&&R()<.5?sh[Math.floor(R()*sh.length)]:null;
+  const lng=CD_LANG[a.sec],hasLang=lng?(good||R()<.6):true;
+  const last=secExp&&exp?pick2(R,{gost:["natakar","kuhar","barman"],trg:["prodajalec","blagajnik"],log:["voznik","skladiščnik"],pis:["administrator","referent"]}[a.sec]||[L(a.title)])+(exp>1?`, ${Math.min(exp,4)} leta`:""):"";
+  return Object.assign(x,{_cd:1,exp,secExp,skills,d,noSh,sh,lng,hasLang,last,langs:["slovensko",...(hasLang&&lng?[lng]:[]),...(R()<.3?["nemško"]:[])]})}
+const cdYrs=n=>lang==="sl"?`${n} ${pl(n,["leto","leti","leta","let"],["year","years"])} izkušenj`:`${n} ${n===1?"year":"years"} of experience`;
+function pick2(R,a){return a[Math.floor(R()*a.length)]}
+function cdReasons(a,x){const ok=[],no=[];
+  if(x.secExp)ok.push(t("cdSec"));else no.push(t("cdNoSec"));
+  if(x.exp>=1)ok.push(cdYrs(x.exp));else no.push(t("cdNoExp"));
+  if(x.d!==null&&x.d!==undefined){if(x.d<=20)ok.push(t("cdNear",{d:fkm(x.d)}));else if(x.d>40)no.push(t("cdFar",{d:fkm(x.d)}))}
+  const shOk=(x.sh||[]).filter(k=>k!==x.noSh).map(k=>L(SHIFTS[k]).toLowerCase());if(shOk.length)ok.push(t("cdShift",{x:shOk.join(", ")}));if(x.noSh)no.push(t("cdNoShift",{x:L(SHIFTS[x.noSh]).toLowerCase()}));
+  if(x.lng){if(x.hasLang)ok.push(t("cdLang",{x:x.lng}));else no.push(t("cdNoLang",{x:x.lng}))}
+  if(x.cv)ok.push(t("cdHasCv"));else no.push(t("cdNoCv"));
+  return {ok,no}}
+/* real testers: fill the same fields from what their application sent */
+function cdFromLive(a,x,r){const d=(r&&r.data)||{},dist=TOWNS[x.town]&&TOWNS[a.loc]?Math.round(km(TOWNS[x.town],TOWNS[a.loc])):null,exp=parseInt(d.exp)||0;
+  return Object.assign(x,{_cd:1,exp,secExp:(d.sectors||[]).includes(a.sec),skills:String(d.skills||"").split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).slice(0,5),d:dist,sh:[],noSh:null,lng:null,hasLang:true,last:d.last||"",langs:d.langs||[]})}
+{const _ca=coApplicants;coApplicants=function(a){const list=_ca(a);return list.map(x=>{if(x.live){const r=a.rid&&(LA.apps[a.rid]||[]).find(z=>"L"+z.id===x.k);return cdFromLive(a,x,r)}return cdEnrich(a,x)})}}
+/* applications from testers carry a short summary of the profile */
+{const _fetch=window.fetch;window.fetch=function(u,o){try{if(typeof u==="string"&&u.includes("/rest/v1/applications")&&o&&o.method==="POST"&&o.body){const b=JSON.parse(o.body),p=st.profile||{};
+    if(b&&b.data&&!b.data.exp){b.data=Object.assign(b.data,{exp:p.seekExp||"",skills:String(p.seekSkills||"").slice(0,200),last:String(p.lastJob||"").slice(0,80),sectors:p.sectors||[],langs:p.langs||[]});o=Object.assign({},o,{body:JSON.stringify(b)})}}}catch(_){}
+  return _fetch.call(this,u,o)}}
+/* company view: reasons under each candidate, top 3, filters, tap for details */
+const cdFil={};
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const box=$("coads");if(!box)return;
+  st.myAds.forEach(a=>{const cav=box.querySelector(`[data-cav="${a.id}"]`);if(!cav)return;const card=cav.closest(".pcard");if(!card)return;
+    const all=coApplicants(a),rows=[...card.querySelectorAll(".aprow")];if(!rows.length)return;
+    const f=cdFil[a.id]||"all",top=new Set(all.slice(0,3).map(x=>x.k));
+    rows.forEach((row,i)=>{const x=all[i];if(!x)return;row.classList.add("cd");row.dataset.cd=a.id+"|"+x.k;
+      const show=f==="all"||(f==="cv"&&x.cv)||(f==="near"&&x.d!==null&&x.d<=15)||(f==="top"&&top.has(x.k));row.hidden=!show;
+      const h=row.querySelector("h4");if(h&&top.has(x.k)&&all.length>3&&!h.querySelector(".topb"))h.insertAdjacentHTML("beforeend",`<span class="topb">${t("cdTop")}</span>`);
+      const rs=cdReasons(a,x),line=[...rs.ok.slice(0,2).map(s=>`<b>✓</b> ${esc(s)}`),...rs.no.slice(0,1).map(s=>`<i>✗</i> ${esc(s)}`)].join(" · ");
+      if(!row.querySelector(".why")){const nx=row.querySelector(".apbtns,.apst");if(nx)nx.insertAdjacentHTML("beforebegin",`<p class="why">${line}</p>`);else row.insertAdjacentHTML("beforeend",`<p class="why">${line}</p>`)}
+      row.onclick=e=>{if(e.target.closest("button"))return;cdOpen(a.id,x.k)}});
+    const head=[...card.querySelectorAll(".h3")].pop();
+    if(head&&all.length>1&&!card.querySelector(".cdfil"))head.insertAdjacentHTML("afterend",`<div class="cdfil">${[["all","cdAll"],["top","cdTop3"],["cv","cdWithCv"],["near","cdClose15"]].map(([k,l])=>`<button type="button" class="${f===k?"primary":"ghost"}" data-cdf="${a.id}|${k}">${t(l)}</button>`).join("")}</div>`);
+    if(!rows.some(r=>!r.hidden)&&!card.querySelector(".cdnone"))(card.querySelector(".cdfil")||head).insertAdjacentHTML("afterend",`<p class="hint cdnone">${t("cdNone")}</p>`)});
+  box.querySelectorAll("[data-cdf]").forEach(b=>b.onclick=()=>{const [id,k]=b.dataset.cdf.split("|");cdFil[id]=k;renderCoAds()})}}
+function cdOpen(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;const x=coApplicants(a).find(z=>z.k===k);if(!x)return;sheetOpts={cand:k};
+  const rs=cdReasons(a,x),stt=(a.apSt||{})[k],deal=st.deals.find(d=>d.kind==="app"&&d.role==="company"&&x.live&&d.rid===k.slice(1));
+  const kv=(l,v)=>v?`<div class="kv"><span>${t(l)}</span><b>${esc(v)}</b></div>`:"";
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+   <div class="cdhead">${coAv({name:x.name,sec:a.sec},"md")}<div style="min-width:0"><h2>${esc(x.name)}</h2><small>${esc(x.town)}${x.d!==null&&x.d!==undefined?" · "+fkm(x.d):""} · ${esc(L(a.title))}</small></div>
+    <div class="cdpct">${x.m} %<small>${t("cdMatch")}</small></div></div>
+   ${rs.ok.length?`<div class="h3">${t("cdWhy")}</div><ul class="cdlist ok">${rs.ok.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}
+   ${rs.no.length?`<div class="h3">${t("cdMiss")}</div><ul class="cdlist no">${rs.no.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}
+   <div class="addesc" style="margin-top:12px">${kv("cdExp",x.exp?(cdYrs(x.exp)):t("cdNoExp"))}${kv("cdLast",x.last)}${kv("cdSkills",(x.skills||[]).join(", "))}${kv("cdLangs",(x.langs||[]).join(", "))}
+    <div class="kv"><span>${t("cdCv")}</span><b>${x.cv?`<button class="ghost sm" id="cdCv" type="button" style="margin:0">${t("cdCvOpen")}</button>`:esc(t("cdNoCv"))}</b></div></div>
+   <div class="jdbtns">${deal?`<button class="ghost" id="cdX">${t("close")}</button><button class="primary" id="cdChat">${t("cdChat")}</button>`
+     :stt?`<button class="ghost" id="cdX" style="grid-column:1/-1">${stt==="inv"?t("invited")+" ✓":t("rejected")}</button>`
+     :`<button class="ghost" id="cdRej">${t("reject")}</button><button class="primary" id="cdInv">${t("invite")}</button>`}</div>`;
+  $("cls").onclick=closeSheet;if($("cdX"))$("cdX").onclick=closeSheet;if($("cdCv"))$("cdCv").onclick=()=>toast(t("cdCvDemo"));
+  if($("cdChat"))$("cdChat").onclick=()=>openChat(deal.id);
+  const act=sel=>{closeSheet();const b=$("coads").querySelector(`[${sel}^="${a.id}|${k}"]`);if(b)b.click();setTimeout(()=>{const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&x.live&&z.rid===k.slice(1));if(d&&sel==="data-cainv")openChat(d.id)},400)};
+  if($("cdInv"))$("cdInv").onclick=()=>act("data-cainv");if($("cdRej"))$("cdRej").onclick=()=>act("data-carej");
+  openSheet(t("cdTitle"))}
+/* seeker: why this ad suits you */
+{const _oa=openAd;openAd=function(id){_oa(id);const a=adById(id);if(!a||a.mine)return;const p=st.profile||{},ok=[],no=[],d=distT(a.loc);
+  if(p.sectors&&p.sectors.length){if(p.sectors.includes(a.sec))ok.push(t("whySec",{x:secName(a.sec)}));else no.push(t("whyNoSec"))}
+  if(p.etypes&&p.etypes.includes(a.type))ok.push(t("whyType"));
+  if(d!==null){if(d<=30)ok.push(t("whyNear",{d:fkm(d)}));else if(d>60)no.push(t("whyFar",{d:fkm(d)}))}
+  if(p.pay&&a.unit==="m"){if(a.max>=+p.pay)ok.push(t("whyPay"));else no.push(t("whyLowPay"))}
+  if(p.cvName)ok.push(t("whyCv"));else no.push(t("whyNoCv"));
+  const btn=$("adApply");if(!btn||(!ok.length&&!no.length))return;
+  btn.insertAdjacentHTML("beforebegin",`<div class="whybox"><b>${t("whyYou")} · ${matchPct(a)} %</b><ul class="cdlist ok">${ok.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>${no.length?`<ul class="cdlist no">${no.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}</div>`)}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
