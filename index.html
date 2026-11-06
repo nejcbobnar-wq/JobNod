@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="35";
+const APP_VER="36";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3700,6 +3700,13 @@ async function liveTickBg(){const h=Object.getOwnPropertyDescriptor(Document.pro
   if(anchor)anchor.insertAdjacentHTML("afterend",html);else P.insertAdjacentHTML("afterbegin",html);
   $("maSnd").onchange=e=>{st.matchSound=e.target.checked;save()};$("maTest").onclick=()=>{maChime()};
   if($("maAllow"))$("maAllow").onclick=async()=>{try{await Notification.requestPermission()}catch(_){}const P2=$("profile").querySelector(".macard");if(P2)P2.remove();renderProfile()}}}
+/* ================= SOUND ALSO FOR OFFERS, APPLICANTS, INVITES AND MESSAGES ================= */
+Object.assign(LANGS.sl,{maTitle:"Zvočna obvestila",maLead:"Telefon kratko zazvoni, ko: pride objava za tvoj profil, dobiš ponudbo mojstra, se nekdo prijavi na tvoj oglas, te povabijo na razgovor, sprejmejo tvojo ponudbo ali dobiš sporočilo."});
+Object.assign(LANGS.en,{maTitle:"Sound alerts",maLead:"Your phone plays a short sound when: a post matches your profile, a pro sends you an offer, someone applies to your ad, you're invited to an interview, your offer is accepted or you get a message."});
+const CH_KEYS=new Set(["nLiveOffer","nNewOffer","nApplicant","nLiveAcc","nMatch","nInterview","nLiveMsg","nSaved","nReminder","nLiveRej","nLiveDec","nDeclined"]);
+{const _nt=notify;notify=function(k,p,link){const r=_nt(k,p,link);
+  if(CH_KEYS.has(k)){const txt=t(k,p||{});if(st.matchSound!==false)maChime();toast("🔔 "+txt);maShow("JobNod",txt,k+"-"+((link&&(link.chat||link.job||link.ad))||Date.now()))}
+  return r}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
