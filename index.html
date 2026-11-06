@@ -2275,7 +2275,7 @@ if(!st.fa)st.fa={minPay:0,types:[],sort:"match"};
 if(!st.ver)st.ver={};
 const now=()=>Date.now();
 const hashN=s=>[...String(s)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
-const DEMO_TODAY=new Date(2026,10,5);
+const DEMO_TODAY=(()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
 const dayName=d=>d.toLocaleDateString(loc(),{weekday:"short",day:"numeric",month:"numeric"});
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const dateOpts=()=>Array.from({length:10},(_,i)=>{const d=new Date(DEMO_TODAY);d.setDate(d.getDate()+i+1);return [isoLocal(d),dayName(d)]});
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="47";
+const APP_VER="48";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4044,7 +4044,7 @@ function ivPicker(o){sheetOpts={ivpick:1};const s=$("sheet");let how="pick",err=
    ${o.allowChat?`<div class="ivseg">${["pick","chat"].map(k=>`<button type="button" class="${how===k?"primary":"ghost"}" data-how="${k}">${t(k==="pick"?"ivPick":"ivChat")}</button>`).join("")}</div>`:""}
    <form id="ivF" novalidate>${how==="pick"?`<div class="ivrow2"><label><span>${t("ivDate")}</span><input type="date" id="ivD" min="${ivIso(new Date())}" value="${esc(v.date)}"></label>
      <label><span>${t("ivTime")}</span><input type="time" id="ivT" step="900" value="${esc(v.time)}"></label></div>
-    <div class="ivmodes" role="group" aria-label="${esc(t("ivWhereL"))}">${["place","phone","video"].map(k=>`<button type="button" class="ivchip${v.mode===k?" on":""}" data-mode="${k}" aria-pressed="${v.mode===k}">${t({place:"ivPlace",phone:"ivPhone",video:"ivVideo"}[k])}</button>`).join("")}</div>
+    <div class="ivmodes"${o.placeOnly?" hidden":""} role="group" aria-label="${esc(t("ivWhereL"))}">${["place","phone","video"].map(k=>`<button type="button" class="ivchip${v.mode===k?" on":""}" data-mode="${k}" aria-pressed="${v.mode===k}">${t({place:"ivPlace",phone:"ivPhone",video:"ivVideo"}[k])}</button>`).join("")}</div>
     ${v.mode==="place"?`<label><span>${t("ivAddr")}</span><input id="ivA" maxlength="120" autocomplete="street-address" value="${esc(v.place)}" placeholder="${esc(t("ivAddrPh"))}"></label>`:""}`
     :`<p class="hint" style="margin:0">${t("ivChatHint")}</p>`}
     <div class="ferr" role="alert">${esc(err)}</div><button class="primary" type="submit">${esc(o.btn||t("ivSend"))}</button></form>`;
@@ -4176,6 +4176,117 @@ let NA_BACK=null;
 /* when the interview time passes while the chat is open, show the button */
 setInterval(()=>{const id=sheetOpts&&sheetOpts.chat;if(!id||document.hidden)return;const d=st.deals.find(x=>x.id===id);
   if(d&&d.role==="company"&&naIvDone(d)&&!$("naGo")&&!st.naps.some(z=>z.k===naKey(d))&&!($("sheet").querySelector(".napbox .napsteps")))drawChat(id)},30000);
+
+/* ================= DELA: VIEWING ("OGLED") TIME AGREED IN THE CHAT + ADD THE JOB OR THE VIEWING TO THE CALENDAR ================= */
+Object.assign(LANGS.sl,{ogSec:"🔍 Ogled pred delom",ogNo:"Brez ogleda",ogYes:"📅 Ogled",ogDate:"Datum ogleda",ogTime:"Ura ogleda",ogHint:"Stranka termin ogleda potrdi ali predlaga drugega v pogovoru.",
+ ogProp:"Predlog termina ogleda",ogDone:"✓ Ogled potrjen",ogTitle:"Termin ogleda",ogPropose:"🔍 Predlagaj ogled",ogChange:"↻ Spremeni ogled",ogWork:"📅 Dodaj delo v koledar",ogCalT:"📅 Dodaj ogled v koledar",
+ ogL:"Ogled",ogStProp:"Predlog – čaka potrditev",mOgOk:"Ogled potrjen: {d} ob {h}",rOgFine:"Ogled ob tem času mi ustreza, hvala!",ogCalOgled:"Ogled",ogCalWork:"Delo",
+ nOgProp:"{x} predlaga ogled: {d} ob {h}",nOgOk:"{x} je potrdil/a ogled: {d} ob {h}",nOgRemD:"Opomnik: jutri ob {h} imate ogled ({x})",nOgRemT:"Opomnik: danes ob {h} imate ogled ({x})",nOgRemH:"Čez 1 uro ({h}) imate ogled ({x})"});
+Object.assign(LANGS.en,{ogSec:"🔍 Visit before the job",ogNo:"No visit",ogYes:"📅 Visit",ogDate:"Visit date",ogTime:"Visit time",ogHint:"The client confirms the visit time or proposes another one in the chat.",
+ ogProp:"Proposed visit time",ogDone:"✓ Visit confirmed",ogTitle:"Visit time",ogPropose:"🔍 Propose a visit",ogChange:"↻ Change the visit",ogWork:"📅 Add the job to the calendar",ogCalT:"📅 Add the visit to the calendar",
+ ogL:"Visit",ogStProp:"Proposed – awaiting confirmation",mOgOk:"Visit confirmed: {d} at {h}",rOgFine:"That visit time works for me, thank you!",ogCalOgled:"Visit",ogCalWork:"Job",
+ nOgProp:"{x} proposed a visit: {d} at {h}",nOgOk:"{x} confirmed the visit: {d} at {h}",nOgRemD:"Reminder: visit tomorrow at {h} ({x})",nOgRemT:"Reminder: visit today at {h} ({x})",nOgRemH:"Visit in 1 hour ({h}) ({x})"});
+["nOgProp","nOgOk","nOgRemD","nOgRemT","nOgRemH"].forEach(k=>CH_KEYS.add(k));
+{const css=document.createElement("style");css.textContent=`.ogsec{display:flex;flex-direction:column;gap:10px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}.ogsec>b{font-size:14px}
+.ogsec .seg button{flex:1}.ogsec label{display:flex;flex-direction:column;gap:6px}.ogsec input[type=date]{width:100%;min-width:0}`;document.head.appendChild(css)}
+const ogJob=d=>jobById(d.item);
+const ogPlace=d=>{const j=ogJob(d);return j?[j.addr,j.loc].filter(Boolean).join(", "):""};
+function ogSend(d,body){if(!d.live)return;let n=0;const go=()=>{if(d.rid)sb("messages",{method:"POST",body:{offer_id:d.rid,from_id:st.liveId,from_name:liveName(),body}}).catch(e=>console.warn("og msg",e));else if(n++<20)setTimeout(go,1500)};go()}
+function ogPropose(d,p,who){p={date:p.date,time:p.time,place:String(p.place||ogPlace(d)).slice(0,120)};d.og=Object.assign({},p,{state:"prop",by:who});d.ogR1=d.ogR2=false;
+  d.msgs.push({from:who,text:"🔍 "+ivWhen(p)+" · "+p.place,ogc:p,ts:now()});
+  if(who==="them"&&sheetOpts.chat!==d.id)d.unread=(d.unread||0)+1;
+  if(who==="me"){if(d.live)ogSend(d,"⟦OG⟧"+JSON.stringify(p));else{const id=d.id;later(2200,()=>{const e=st.deals.find(x=>x.id===id);if(!e||!e.og||e.og.state!=="prop"||e.og.by!=="me")return;
+    theirMsg(e,t("rOgFine"));ogOk(e,"them");notify("nOgOk",{x:dealOther(e).name,d:fmtDay(e.og.date),h:e.og.time},{chat:id})})}}
+  ivRefresh(d)}
+function ogOk(d,who){const p=d.og;if(!p||!p.date)return;p.state="ok";p.okBy=who;d.ogR1=d.ogR2=false;sysMsg(d,"mOgOk",{d:fmtDay(p.date),h:p.time});
+  if(who==="me"&&d.live)ogSend(d,"⟦OGOK⟧"+JSON.stringify({date:p.date,time:p.time}));ivRefresh(d)}
+function ogAsk(d){const p=d.og&&d.og.date?d.og:null;ivPicker({title:t("ogTitle"),sub:dealOther(d).name+" · "+dealTitle(d),btn:t("ivSendP"),back:d.id,placeOnly:true,
+  init:p?{date:p.date,time:p.time,mode:"place",place:p.place}:{mode:"place",place:ogPlace(d)},onDone:q=>{const e=st.deals.find(x=>x.id===d.id);openChat(d.id);if(e)ogPropose(e,q,"me")}})}
+/* calendar for the job or the viewing */
+function ogCal(ev,how){const s=new Date(ev.date+"T"+ev.time),e=new Date(s.getTime()+(ev.mins||60)*60e3),
+  f=x=>x.getFullYear()+ivPad(x.getMonth()+1)+ivPad(x.getDate())+"T"+ivPad(x.getHours())+ivPad(x.getMinutes())+"00";
+  if(how==="g"){const tz=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone}catch(_){return "Europe/Ljubljana"}})();
+    const l=document.createElement("a");l.href="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(ev.title)+"&dates="+f(s)+"/"+f(e)+"&location="+encodeURIComponent(ev.loc)+"&details="+encodeURIComponent(ev.desc)+"&ctz="+encodeURIComponent(tz);
+    l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove();return}
+  const x=v=>String(v).replace(/\\/g,"\\\\").replace(/[;,]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//JobNod//SL","CALSCALE:GREGORIAN","BEGIN:VEVENT","UID:"+ev.uid+"@jobnodapp.com","DTSTAMP:"+new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z",
+    "DTSTART:"+f(s),"DTEND:"+f(e),"SUMMARY:"+x(ev.title),"LOCATION:"+x(ev.loc),"DESCRIPTION:"+x(ev.desc),"BEGIN:VALARM","TRIGGER:-PT1H","ACTION:DISPLAY","DESCRIPTION:"+x(ev.title),"END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const u=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"})),l=document.createElement("a");l.href=u;l.download="jobnod-termin.ics";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),8000)}
+function ogEv(d,kind){const o=dealOther(d),j=ogJob(d),title=(kind==="og"?t("ogCalOgled"):t("ogCalWork"))+": "+dealTitle(d)+" – "+o.name;
+  const p=kind==="og"?d.og:d.offer,loc=kind==="og"?(d.og.place||ogPlace(d)):ogPlace(d);
+  return {uid:d.id+"-"+kind+"-"+p.date+String(p.time).replace(":",""),title,loc,date:p.date,time:p.time,mins:kind==="og"?45:120,
+    desc:[d.role==="pro"?"Stranka: "+o.name:"Mojster: "+o.name,j?L(j.title):"",kind==="work"&&d.offer.price?priceTxt(d.offer):"","JobNod · https://jobnodapp.com"].filter(Boolean).join("\n")}}
+function ogCalMenu(btn,ev){const w=btn.parentElement;if(w.parentElement.querySelector(".ivcalm"))return;
+  w.insertAdjacentHTML("afterend",`<div class="ivcalm"><button class="ghost sm" data-cal="ics">${t("ivCalApple")}</button><button class="ghost sm" data-cal="g">${t("ivCalG")}</button></div>`);
+  w.parentElement.querySelectorAll("[data-cal]").forEach(b=>b.onclick=()=>ogCal(ev,b.dataset.cal))}
+/* offer form: visit or no visit */
+{const _oo=openOffer;openOffer=function(jobId){_oo(jobId);const ti=$("of-time");if(!ti||!sheetOpts||sheetOpts.offer!==jobId||$("ogSec"))return;const row=ti.closest(".two");if(!row)return;
+  let on=false;const j=jobById(jobId);
+  row.insertAdjacentHTML("afterend",`<div class="ogsec" id="ogSec"><b>${t("ogSec")}</b><div class="seg" role="group"><button type="button" data-og="0" aria-pressed="true">${t("ogNo")}</button><button type="button" data-og="1" aria-pressed="false">${t("ogYes")}</button></div>
+    <div id="ogF" hidden><div class="two"><label>${t("ogDate")}<input type="date" id="og-d" min="${ivIso(new Date())}" value="${ivNextWd()}"></label><label>${t("ogTime")}<input type="time" id="og-t" value="10:00"></label></div><p class="hint" style="margin:6px 0 0">${t("ogHint")}</p></div></div>`);
+  const S=$("sheet"),set=v=>{on=v;S.querySelectorAll("[data-og]").forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.og==="1")===on)));$("ogF").hidden=!on};
+  S.querySelectorAll("[data-og]").forEach(b=>b.onclick=()=>set(b.dataset.og==="1"));
+  S.querySelectorAll('[data-pt="inspect"]').forEach(b=>b.addEventListener("click",()=>set(true)));
+  const yes=$("ofYes");if(yes)yes.addEventListener("click",()=>{if(!on)return;const p={date:$("og-d").value,time:($("og-t")||{}).value||"10:00"};
+    if(!p.date||ivAt(p)<Date.now()){return}
+    setTimeout(()=>{const d=st.deals.find(x=>x.kind==="job"&&x.item===jobId&&x.role==="pro");if(d&&!d.og)ogPropose(d,Object.assign(p,{place:j?[j.addr,j.loc].filter(Boolean).join(", "):""}),"me")},50)},true)}}
+/* live: the visit travels as a chat message with a marker */
+{const _tm=theirMsg;theirMsg=function(d,text){const s=String(text||"");
+  if(d&&d.kind==="job"&&(s.startsWith("⟦OG⟧")||s.startsWith("⟦OGOK⟧"))){let j={};try{j=JSON.parse(s.slice(s.indexOf("⟧")+1))}catch(_){return}const nm=dealOther(d).name;
+    if(s.startsWith("⟦OGOK⟧")){d.og=Object.assign(d.og||{},{date:d.og&&d.og.date||j.date,time:d.og&&d.og.time||j.time,state:"ok",okBy:"them"});sysMsg(d,"mOgOk",{d:fmtDay(d.og.date),h:d.og.time});
+      if(sheetOpts.chat!==d.id)d.unread=(d.unread||0)+1;notify("nOgOk",{x:nm,d:fmtDay(d.og.date),h:d.og.time},{chat:d.id});ivRefresh(d);return}
+    if(!j.date||!j.time)return;ogPropose(d,j,"them");notify("nOgProp",{x:nm,d:fmtDay(j.date),h:j.time},{chat:d.id});return}
+  return _tm(d,text)}}
+{const _nf=notify;notify=function(k,p,l){if(k==="nLiveMsg"&&p&&/^⟦OG/.test(String(p.y||"")))return;return _nf(k,p,l)}}
+/* the chat: visit cards, buttons, add to calendar */
+function ogCardHtml(d,m,i,last){const p=m.ogc,mine=m.from==="me",isLast=i===last,ok=isLast&&d.og&&d.og.state==="ok";
+  const btns=ok?`<div class="ivbtns"><button class="ghost sm" data-ogcal="1">${t("ivCal")}</button></div>`
+    :isLast&&!mine?`<div class="ivbtns"><button class="primary sm" data-ogok="1">${t("ivOkBtn")}</button><button class="ghost sm" data-ogre="1">${t("ivOther")}</button></div>`
+    :isLast?`<span class="ivst">⏳ ${t("ivWait")}</span>`:`<span class="ivst">${t("ivOld")}</span>`;
+  return `<div class="ivcard ${mine?"me":"them"}${ok?" ok":""}${isLast?"":" old"}"><span class="ivk">${ok?t("ogDone"):"🔍 "+t("ogProp")}</span><span class="ivw">${esc(ivWhen(p))}</span><span class="ivl">${esc(p.place||"")}</span>${btns}<small class="ivl">${hhmm(m.ts)}</small></div>`}
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="job")return;const sh=$("sheet"),box=$("chatBox");if(!box)return;const og=d.og||{state:"none"};
+  if(og.date){const top=`<div class="dealcard ogtop"><div><span>🔍 ${t("ogL")}</span><b>${esc(fmtDay(og.date)+" · "+og.time)}</b></div><div><span>${t("ivWhereL")}</span><b>${esc(og.place||"")}</b></div><div><span>${t("ivStateL")}</span>${og.state==="ok"?`<b class="ivokb">${t("ogDone")}</b>`:`<b>${t("ogStProp")}</b>`}</div></div>`;
+    const dc=sh.querySelector(".dealcard");if(dc)dc.insertAdjacentHTML("afterend",top);else box.insertAdjacentHTML("beforebegin",top)}
+  const kids=[...box.children],last=d.msgs.map(m=>!!m.ogc).lastIndexOf(true);
+  if(kids.length===d.msgs.length)d.msgs.forEach((m,i)=>{if(m.ogc)kids[i].outerHTML=ogCardHtml(d,m,i,last)});
+  box.querySelectorAll("[data-ogok]").forEach(b=>b.onclick=()=>ogOk(d,"me"));box.querySelectorAll("[data-ogre]").forEach(b=>b.onclick=()=>ogAsk(d));
+  box.querySelectorAll("[data-ogcal]").forEach(b=>b.onclick=()=>ogCalMenu(b,ogEv(d,"og")));
+  const acts=[],before=["offer","agreed"].includes(d.status);
+  if(["agreed","progress"].includes(d.status)&&d.offer&&d.offer.date)acts.push(`<div class="ivbtns"><button class="ghost" data-ogwork="1">${t("ogWork")}</button></div>`);
+  if(before&&og.state!=="prop")acts.push(`<button class="ghost" data-ogask="1">${og.state==="ok"?t("ogChange"):t("ogPropose")}</button>`);
+  if(acts.length){box.insertAdjacentHTML("afterend",`<div class="chatacts ogacts">${acts.join("")}</div>`);const A=sh.querySelector(".ogacts");
+    const w=A.querySelector("[data-ogwork]");if(w)w.onclick=()=>ogCalMenu(w,ogEv(d,"work"));const a=A.querySelector("[data-ogask]");if(a)a.onclick=()=>ogAsk(d)}
+  box.scrollTop=box.scrollHeight}}
+/* reminders before a confirmed visit */
+setInterval(()=>{const n=Date.now();let ch=false;st.deals.forEach(d=>{if(d.kind!=="job"||!d.og||d.og.state!=="ok"||!d.og.date||isBlocked(d.other))return;const at=ivAt(d.og),left=at-n;if(left<=0)return;const x=dealOther(d).name,h=d.og.time;
+  if(!d.ogR2&&left<=3600e3){d.ogR2=d.ogR1=true;ch=true;notify("nOgRemH",{x,h},{chat:d.id})}else if(!d.ogR1&&left<=24*3600e3){d.ogR1=true;ch=true;notify(ivIso(new Date(at))===ivIso(new Date())?"nOgRemT":"nOgRemD",{x,h},{chat:d.id})}});if(ch)save()},60000);
+/* keep the calendar choice open if the chat redraws */
+let OG_MENU=null;
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-ivcal],[data-ogcal],[data-ogwork]");if(b){OG_MENU={id:sheetOpts.chat,sel:b.dataset.ivcal?"[data-ivcal]":b.dataset.ogcal?"[data-ogcal]":"[data-ogwork]"};return}
+  if(e.target.closest&&e.target.closest("[data-cal]"))OG_MENU=null},true);
+{const _dc=drawChat;drawChat=function(id){_dc(id);if(!OG_MENU)return;if(OG_MENU.id!==id){OG_MENU=null;return}const b=$("sheet").querySelector(OG_MENU.sel);if(b&&!$("sheet").querySelector(".ivcalm"))b.onclick&&b.onclick()}}
+
+/* ================= TIME: SCROLL WHEELS FOR HOURS AND MINUTES (00:00–23:55) ================= */
+{const css=document.createElement("style");css.textContent=`.tw{position:relative;display:flex;justify-content:center;align-items:center;gap:4px;background:var(--surface);border-radius:14px;height:132px;overflow:hidden;user-select:none;-webkit-user-select:none}
+.tw::before{content:"";position:absolute;left:10px;right:10px;top:44px;height:44px;border-radius:12px;background:rgba(255,94,58,.12);pointer-events:none}
+.tw::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(var(--surface),transparent 34%,transparent 66%,var(--surface))}
+.twc{position:relative;width:64px;height:132px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;padding:44px 0;box-sizing:border-box;overscroll-behavior:contain;touch-action:pan-y}
+.twc::-webkit-scrollbar{display:none}.twc div{height:44px;line-height:44px;text-align:center;font-size:24px;font-weight:700;scroll-snap-align:center;color:var(--muted);font-variant-numeric:tabular-nums;cursor:pointer}
+.twc div.on{color:var(--ink,inherit)}.tw b{position:relative;z-index:1;font-size:24px;line-height:1}`;document.head.appendChild(css)}
+const TW_H=Array.from({length:24},(_,i)=>String(i).padStart(2,"0")),TW_M=Array.from({length:12},(_,i)=>String(i*5).padStart(2,"0"));
+function twMake(id,val){const [h0,m0]=String(val||"10:00").split(":"),hi=Math.min(23,Math.max(0,+h0||0)),mi=Math.min(11,Math.round((+m0||0)/5));
+  const w=document.createElement("div");w.className="tw";w.setAttribute("role","group");w.setAttribute("aria-label",t("ivTime"));
+  w.innerHTML=`<div class="twc" data-tw="h" tabindex="0" aria-label="h">${TW_H.map(x=>`<div>${x}</div>`).join("")}</div><b>:</b><div class="twc" data-tw="m" tabindex="0" aria-label="min">${TW_M.map(x=>`<div>${x}</div>`).join("")}</div><input type="hidden" id="${id}">`;
+  const inp=w.querySelector("input"),[ch,cm]=w.querySelectorAll(".twc"),idx=c=>Math.max(0,Math.min(c.children.length-1,Math.round(c.scrollTop/44)));
+  const mark=()=>{[ch,cm].forEach(c=>{const i=idx(c);[...c.children].forEach((e,j)=>e.classList.toggle("on",j===i))});inp.value=TW_H[idx(ch)]+":"+TW_M[idx(cm)];inp.dispatchEvent(new Event("change",{bubbles:true}))};
+  [ch,cm].forEach(c=>{let tm;c.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(mark,90)},{passive:true});
+    c.addEventListener("click",e=>{const el=e.target.closest(".twc>div");if(el)c.scrollTo({top:[...c.children].indexOf(el)*44,behavior:"smooth"})});
+    c.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();c.scrollTop+=e.key==="ArrowDown"?44:-44}})});
+  inp.value=TW_H[hi]+":"+TW_M[mi];const set=()=>{ch.scrollTop=hi*44;cm.scrollTop=mi*44;[ch,cm].forEach((c,k)=>[...c.children].forEach((e,j)=>e.classList.toggle("on",j===(k?mi:hi))))};
+  requestAnimationFrame(set);setTimeout(set,60);return w}
+/* every time field in a sheet becomes the wheel */
+function twEnhance(root){root.querySelectorAll('input[type="time"],select#of-time').forEach(el=>{if(el.dataset.tw)return;el.dataset.tw="1";el.replaceWith(twMake(el.id,el.value))})}
+{const sh=$("sheet");if(sh)new MutationObserver(()=>twEnhance(sh)).observe(sh,{childList:true,subtree:true})}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
