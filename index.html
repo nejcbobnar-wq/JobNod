@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="44";
+const APP_VER="45";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3215,11 +3215,11 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cainv],[data-carej]");if(!b)return;const inv=!!b.dataset.cainv,[id,k]=(b.dataset.cainv||b.dataset.carej).split("|");
   if(!k||!k.startsWith("L"))return;const rid=k.slice(1),a=st.myAds.find(x=>x.id===id),r=a&&(LA.apps[a.rid]||[]).find(x=>x.id===rid);if(!r)return;
   if(!inv){r.status="rejected";sb(`applications?id=eq.${rid}`,{method:"PATCH",body:{status:"rejected"}}).catch(e=>console.warn("live rej",e));return}
-  const dt=(dateOpts().slice(1).find(o=>{const w=new Date(o[0]+"T12:00").getDay();return w>0&&w<6})||dateOpts()[2])[0],hr="10:00";r.status="interview";
+  const IP=window.IVP&&IVP.p,dt=IP?(IP.date||null):(dateOpts().slice(1).find(o=>{const w=new Date(o[0]+"T12:00").getDay();return w>0&&w<6})||dateOpts()[2])[0],hr=IP?(IP.time||null):"10:00";r.status="interview";
   sb(`applications?id=eq.${rid}`,{method:"PATCH",body:{status:"interview",iv_date:dt,iv_time:hr}}).catch(e=>console.warn("live inv",e));
   if(!st.deals.some(d=>d.kind==="app"&&d.rid===rid)){const pid=livePerson(r.user_id,r.user_name,"iskalec",(r.data||{}).town);
-    const d=newDeal({kind:"app",item:a.id,other:pid,role:"company",status:"interview",offer:{date:dt,time:hr}});d.live=true;d.rid=rid;d.oname=r.user_name;
-    sysMsg(d,"mInterview",{d:fmtDay(dt),h:hr});save();updBell()}},true);
+    const d=newDeal({kind:"app",item:a.id,other:pid,role:"company",status:"interview",offer:dt?{date:dt,time:hr}:null});d.live=true;d.rid=rid;d.oname=r.user_name;
+    sysMsg(d,dt?"mInterview":"mIvChat",dt?{d:fmtDay(dt),h:hr}:{});save();updBell()}},true);
 {const _do=dealOther;dealOther=function(d){if(d.kind==="app"&&d.role==="company"){const p=person(d.other);if(p)return {id:p.id,name:pName(p),av:av(p,"md"),co:false}}return _do(d)}}
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.role!=="company")return;
   const b=$("sheet").querySelector('[data-act="ivok"]');if(b){const w=b.parentElement;b.remove();if(w&&w.classList.contains("chatacts")&&!w.children.length)w.remove()}}}
@@ -3264,8 +3264,8 @@ async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let chan
       rows.forEach(r=>{const x=sent.find(y=>y.rid===r.id),a=x&&adById(x.id);if(!a)return;const c=coOf(a);
         if(r.status==="interview"&&x.status!=="interview"){x.status="interview";x.iv={date:r.iv_date,time:r.iv_time};changed=true;
           if(!st.deals.some(d=>d.kind==="app"&&d.rid===r.id)){const d=newDeal({kind:"app",item:x.id,other:a.co,role:"seeker",status:"interview",offer:{date:r.iv_date,time:r.iv_time}});
-            d.live=true;d.rid=r.id;d.oname=c.name;d.osec=a.sec;sysMsg(d,"mInterview",{d:fmtDay(r.iv_date),h:r.iv_time});
-            notify("nInterview",{x:c.name,d:fmtDay(r.iv_date),h:r.iv_time},{chat:d.id})}}
+            d.live=true;d.rid=r.id;d.oname=c.name;d.osec=a.sec;d.iv={state:"none"};if(!r.iv_date)d.offer=null;sysMsg(d,r.iv_date?"mInterview":"mIvChat",r.iv_date?{d:fmtDay(r.iv_date),h:r.iv_time}:{});
+            notify(r.iv_date?"nInterview":"nIvChat",{x:c.name,d:r.iv_date?fmtDay(r.iv_date):"",h:r.iv_time||""},{chat:d.id})}}
         if(r.status==="rejected"&&x.status!=="rejected"){x.status="rejected";changed=true;notify("nLiveRej",{x:c.name,y:L(a.title)},{view:"apps"})}})}
     /* chat in live interviews */
     const ch=st.deals.filter(d=>d.live&&d.kind==="app"&&d.rid);
@@ -3962,6 +3962,176 @@ async function napPdfById(id){try{const rows=await sb(`napotnice?id=eq.${encodeU
 /* ================= LABEL: "SUITABLE FOR UNDER-18 PUPILS" ================= */
 Object.assign(LANGS.sl,{caMinors:"Primerno za mladoletne dijake",caMinorsHint:"Delo lahko opravljajo tudi dijaki, mlajši od 18 let (ne ponoči in ne na nevarnih delih).",pupilsToo:"Primerno za mladoletne",studPupils:"Študenti in mladoletni dijaki"});
 Object.assign(LANGS.en,{caMinors:"Suitable for under-18 pupils",caMinorsHint:"Pupils under 18 can do this job too (no night work or hazardous work).",pupilsToo:"OK for under-18s",studPupils:"Students and under-18 pupils"});
+/* ================= INTERVIEW TIME: CHOSEN BY THE EMPLOYER OR AGREED IN THE CHAT, CONFIRMED BY BOTH ================= */
+Object.assign(LANGS.sl,{ivTitle:"Povabilo na razgovor",ivPick:"📅 Izberem termin",ivChat:"💬 Dogovoriva se v pogovoru",ivChatHint:"Odpre se pogovor s kandidatom. Termin lahko kadar koli predlaga kdorkoli od vaju z gumbom 📅, drugi ga potrdi.",
+ ivDate:"Datum",ivTime:"Ura",ivPlace:"📍 Na lokaciji",ivPhone:"📞 Po telefonu",ivVideo:"🎥 Video klic",ivAddr:"Naslov",ivAddrPh:"npr. Cesta 12, Kranj",
+ ivSend:"Pošlji povabilo",ivSendP:"Pošlji predlog",ivNewT:"Predlagaj drug termin",ivPropose:"📅 Predlagaj termin",ivChange:"↻ Spremeni termin",ivOkBtn:"✓ Potrdi",ivOther:"↻ Drug termin",
+ ivWait:"Čaka na potrditev",ivDone:"✓ Razgovor potrjen",ivCal:"📅 Dodaj v koledar",ivCalApple:"Koledar telefona (.ics)",ivCalG:"Google Koledar",ivProp:"Predlog termina razgovora",ivOld:"Nadomeščen predlog",
+ ivNoTime:"Dogovor v pogovoru",ivWhen:"{d} ob {h}",ivWhereL:"Kje",ivStateL:"Stanje",ivStProp:"Predlog – čaka potrditev",ivStNone:"Termin še ni določen",ivNeedOk:"Potrdi termin",
+ ivEDate:"Izberi datum in uro v prihodnosti.",ivEAddr:"Vpiši naslov.",ivWhereP:"Na lokaciji",ivWherePh:"Po telefonu",ivWhereV:"Video klic",
+ mIvChat:"Vabilo na razgovor – termin se dogovorita v pogovoru.",rIvChatCo:"Pozdravljeni! Vabimo vas na razgovor. Kdaj vam ustreza? Termin lahko predlagate z gumbom 📅 spodaj.",
+ rIvCand:"Pozdravljeni, hvala za povabilo! Bi vam ustrezal ta termin?",rIvFine:"Ta termin mi ustreza, hvala!",rIvOther:"Takrat žal ne morem. Predlagam drug termin.",
+ nIvChat:"{x} vas vabi na razgovor – dogovorita se za termin",nIvProp:"{x} predlaga termin razgovora: {d} ob {h}",nIvOk:"{x} je potrdil/a razgovor: {d} ob {h}",
+ nIvRemD:"Opomnik: jutri ob {h} imate razgovor ({x})",nIvRemT:"Opomnik: danes ob {h} imate razgovor ({x})",nIvRemH:"Čez 1 uro ({h}) imate razgovor ({x})"});
+Object.assign(LANGS.en,{ivTitle:"Interview invitation",ivPick:"📅 I'll pick a time",ivChat:"💬 Let's agree in the chat",ivChatHint:"A chat with the candidate opens. Either of you can propose a time at any point with the 📅 button, and the other confirms it.",
+ ivDate:"Date",ivTime:"Time",ivPlace:"📍 In person",ivPhone:"📞 By phone",ivVideo:"🎥 Video call",ivAddr:"Address",ivAddrPh:"e.g. 12 Main St, Kranj",
+ ivSend:"Send invitation",ivSendP:"Send proposal",ivNewT:"Propose another time",ivPropose:"📅 Propose a time",ivChange:"↻ Change time",ivOkBtn:"✓ Confirm",ivOther:"↻ Other time",
+ ivWait:"Waiting for confirmation",ivDone:"✓ Interview confirmed",ivCal:"📅 Add to calendar",ivCalApple:"Phone calendar (.ics)",ivCalG:"Google Calendar",ivProp:"Proposed interview time",ivOld:"Replaced proposal",
+ ivNoTime:"To be agreed in the chat",ivWhen:"{d} at {h}",ivWhereL:"Where",ivStateL:"Status",ivStProp:"Proposed – awaiting confirmation",ivStNone:"No time set yet",ivNeedOk:"Confirm the time",
+ ivEDate:"Pick a date and time in the future.",ivEAddr:"Enter the address.",ivWhereP:"In person",ivWherePh:"By phone",ivWhereV:"Video call",
+ mIvChat:"Interview invitation – the time will be agreed in the chat.",rIvChatCo:"Hello! We'd like to invite you to an interview. When suits you? You can propose a time with the 📅 button below.",
+ rIvCand:"Hello, thanks for the invitation! Would this time work for you?",rIvFine:"That time works for me, thank you!",rIvOther:"Unfortunately I can't make it then. Let me propose another time.",
+ nIvChat:"{x} invited you to an interview – agree on a time",nIvProp:"{x} proposed an interview time: {d} at {h}",nIvOk:"{x} confirmed the interview: {d} at {h}",
+ nIvRemD:"Reminder: interview tomorrow at {h} ({x})",nIvRemT:"Reminder: interview today at {h} ({x})",nIvRemH:"Interview in 1 hour ({h}) ({x})"});
+if(typeof CH_KEYS!=="undefined")["nIvChat","nIvProp","nIvOk","nIvRemD","nIvRemT","nIvRemH"].forEach(k=>CH_KEYS.add(k));
+{const css=document.createElement("style");css.textContent=`.ivcard{max-width:88%;border:1.5px solid var(--line);background:var(--surface);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ivcard.me{align-self:flex-end;border-bottom-right-radius:6px}.ivcard.them{align-self:flex-start;border-bottom-left-radius:6px}
+.ivcard .ivk{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.ivcard .ivw{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.ivcard .ivl{color:var(--muted)}.ivcard .ivbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.ivcard .ivbtns button{margin:0;flex:1 1 auto}
+.ivcard.ok{border-color:#10B981;background:rgba(16,185,129,.1)}.ivcard.ok .ivk{color:#0E9F6E}.ivcard.old{opacity:.5}.ivcard.old .ivw{text-decoration:line-through}
+.ivcard .ivst{font-size:13px;font-weight:700;color:var(--muted)}.ivcard.ok .ivst{color:#0E9F6E}.ivcalm{display:flex;flex-direction:column;gap:6px}.ivcalm button{margin:0}
+.dealcard .ivokb{color:#0E9F6E}#ivF{display:flex;flex-direction:column;gap:12px}#ivF label{display:flex;flex-direction:column;gap:6px}#ivF label span{font-size:13px;font-weight:600;color:var(--muted)}
+.ivseg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 14px}.ivseg button{margin:0;padding:12px 8px;font-size:14px}
+.ivrow2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ivrow2 input{width:100%;min-width:0}.ivmodes{display:flex;gap:6px;flex-wrap:wrap}
+.ivchip{border:1.5px solid var(--line);background:none;border-radius:999px;padding:8px 12px;font:inherit;font-size:14px;color:inherit;cursor:pointer}
+.ivchip.on{border-color:var(--accent);background:rgba(255,94,58,.1);color:var(--accent);font-weight:700}.ivh{margin:4px 0 4px;font-size:22px;letter-spacing:-.02em}`;document.head.appendChild(css)}
+window.IVP={pass:false,p:null};
+const ivPad=n=>String(n).padStart(2,"0"),ivIso=x=>x.getFullYear()+"-"+ivPad(x.getMonth()+1)+"-"+ivPad(x.getDate());
+const ivAt=p=>new Date(p.date+"T"+(p.time||"00:00")).getTime();
+function ivNextWd(skip){const x=new Date();x.setDate(x.getDate()+1);let n=skip||0;for(;;){const w=x.getDay();if(w>0&&w<6){if(!n)break;n--}x.setDate(x.getDate()+1)}return ivIso(x)}
+const ivAddWd=(iso,k)=>{const x=new Date(iso+"T12:00");let n=k;while(n>0){x.setDate(x.getDate()+1);const w=x.getDay();if(w>0&&w<6)n--}return ivIso(x)};
+const ivWhere=p=>p.mode==="phone"?t("ivWherePh"):p.mode==="video"?t("ivWhereV"):(p.place||t("ivWhereP"));
+const ivWhen=p=>t("ivWhen",{d:fmtDay(p.date),h:p.time});
+const ivSum=p=>"📅 "+ivWhen(p)+" · "+ivWhere(p);
+function ivMyAddr(){try{const c=st.profile&&st.profile.co;const a=typeof napAddr==="function"?napAddr(c):"";if(a)return a;const tw=(c&&c.loc)||st.home;return TOWNS[tw]?tw:""}catch(_){return ""}}
+const ivName=d=>{try{return dealOther(d).name}catch(_){return ""}};
+function ivSend(d,body){if(d.live&&d.rid)sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body}}).catch(e=>console.warn("iv msg",e))}
+function ivRefresh(d){save();updBell();if(sheetOpts.chat===d.id)drawChat(d.id);if(!$("v-msgs").hidden)renderMsgs();if(!$("v-apps").hidden)renderApps();renderAgenda()}
+/* older interview chats (made before this update) get a proposal card */
+function ivInit(d){if(d.kind!=="app"||d.iv)return;
+  if(d.offer&&d.offer.date){const a=adById(d.item),tw=a&&TOWNS[a.loc]?a.loc:"";
+    d.iv={date:d.offer.date,time:d.offer.time,mode:"place",place:d.role==="company"?ivMyAddr():tw,state:d.status==="ivok"?"ok":"prop",by:d.role==="company"?"me":"them"};
+    const m={from:d.iv.by,text:ivSum(d.iv),ivc:{date:d.iv.date,time:d.iv.time,mode:d.iv.mode,place:d.iv.place},ts:d.created||now()};
+    const i=d.msgs.findIndex(x=>x.from==="them");d.msgs.splice(i<0?d.msgs.length:i+1,0,m);save();return true}
+  d.iv={state:"none"};save()}
+/* a new proposal (from me or from them) */
+function ivPropose(d,p,who){p={date:p.date,time:p.time,mode:p.mode||"place",place:p.mode==="place"||!p.mode?String(p.place||"").slice(0,120):""};
+  d.iv=Object.assign({},p,{state:"prop",by:who});d.offer={date:p.date,time:p.time};if(d.status==="ivok")d.status="interview";d.ivR1=d.ivR2=false;
+  d.msgs.push({from:who,text:ivSum(p),ivc:p,ts:now()});
+  if(who==="them"){if(sheetOpts.chat!==d.id)d.unread=(d.unread||0)+1;if(typeof msBlop==="function"&&st.msgSound!==false&&sheetOpts.chat===d.id)msBlop()}
+  if(who==="me"){if(d.live)ivSend(d,"⟦IV⟧"+JSON.stringify(p));else ivFake(d,"prop")}
+  ivRefresh(d)}
+function ivConfirm(d,who){const p=d.iv;if(!p||!p.date)return;p.state="ok";p.okBy=who;d.status="ivok";d.offer={date:p.date,time:p.time};d.ivR1=d.ivR2=false;
+  sysMsg(d,"mIvConfirmed",{d:fmtDay(p.date),h:p.time});
+  if(who==="me"){if(d.live)ivSend(d,"⟦IVOK⟧"+JSON.stringify({date:p.date,time:p.time}));else later(1400,()=>{const e=st.deals.find(x=>x.id===d.id);if(e)theirMsg(e,t("rIvThanks"))})}
+  ivRefresh(d)}
+/* demo: made-up people and companies answer by themselves */
+function ivFake(d,what){if(d.live)return;const id=d.id;
+  later(2200+hashN(id+d.msgs.length)%1500,()=>{const e=st.deals.find(x=>x.id===id);if(!e||!e.iv)return;const nm=ivName(e);
+    if(what==="chat"){const p={date:ivNextWd(1+hashN(id)%3),time:["09:00","10:30","13:00","15:00"][hashN(id)%4],mode:"place",place:ivMyAddr()};
+      theirMsg(e,t("rIvCand"));ivPropose(e,p,"them");notify("nIvProp",{x:nm,d:fmtDay(p.date),h:p.time},{chat:id});return}
+    const n=e.msgs.filter(m=>m.ivc&&m.from==="me").length;
+    if(e.role==="company"&&n===1&&hashN(id)%3===0){theirMsg(e,t("rIvOther"));const q=Object.assign({},e.iv,{date:ivAddWd(e.iv.date,1),time:ivPad(Math.min(16,+e.iv.time.slice(0,2)+1))+":"+e.iv.time.slice(3)});
+      ivPropose(e,q,"them");notify("nIvProp",{x:nm,d:fmtDay(q.date),h:q.time},{chat:id});return}
+    theirMsg(e,t("rIvFine"));const p=e.iv;p.state="ok";p.okBy="them";e.status="ivok";e.offer={date:p.date,time:p.time};sysMsg(e,"mIvConfirmed",{d:fmtDay(p.date),h:p.time});
+    notify("nIvOk",{x:nm,d:fmtDay(p.date),h:p.time},{chat:id});ivRefresh(e)})}
+/* --- the time picker --- */
+function ivPicker(o){sheetOpts={ivpick:1};const s=$("sheet");let how="pick",err="";const v=Object.assign({date:ivNextWd(),time:"10:00",mode:"place",place:ivMyAddr()},o.init||{});
+  if(o.init&&o.init.date&&ivAt(o.init)<Date.now()){v.date=ivNextWd()}
+  const grab=()=>{if($("ivD"))v.date=$("ivD").value;if($("ivT"))v.time=$("ivT").value;if($("ivA"))v.place=$("ivA").value};
+  const back=()=>{if(o.back)openChat(o.back);else closeSheet()};
+  const draw=()=>{s.innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="ivh">${esc(o.title)}</h2>${o.sub?`<p class="hint" style="margin:0 0 12px">${esc(o.sub)}</p>`:""}
+   ${o.allowChat?`<div class="ivseg">${["pick","chat"].map(k=>`<button type="button" class="${how===k?"primary":"ghost"}" data-how="${k}">${t(k==="pick"?"ivPick":"ivChat")}</button>`).join("")}</div>`:""}
+   <form id="ivF" novalidate>${how==="pick"?`<div class="ivrow2"><label><span>${t("ivDate")}</span><input type="date" id="ivD" min="${ivIso(new Date())}" value="${esc(v.date)}"></label>
+     <label><span>${t("ivTime")}</span><input type="time" id="ivT" step="900" value="${esc(v.time)}"></label></div>
+    <div class="ivmodes" role="group" aria-label="${esc(t("ivWhereL"))}">${["place","phone","video"].map(k=>`<button type="button" class="ivchip${v.mode===k?" on":""}" data-mode="${k}" aria-pressed="${v.mode===k}">${t({place:"ivPlace",phone:"ivPhone",video:"ivVideo"}[k])}</button>`).join("")}</div>
+    ${v.mode==="place"?`<label><span>${t("ivAddr")}</span><input id="ivA" maxlength="120" autocomplete="street-address" value="${esc(v.place)}" placeholder="${esc(t("ivAddrPh"))}"></label>`:""}`
+    :`<p class="hint" style="margin:0">${t("ivChatHint")}</p>`}
+    <div class="ferr" role="alert">${esc(err)}</div><button class="primary" type="submit">${esc(o.btn||t("ivSend"))}</button></form>`;
+   $("cls").onclick=back;
+   s.querySelectorAll("[data-how]").forEach(b=>b.onclick=()=>{grab();how=b.dataset.how;err="";draw()});
+   s.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{grab();v.mode=b.dataset.mode;err="";draw()});
+   $("ivF").onsubmit=e=>{e.preventDefault();if(how==="chat"){o.onDone({chat:true});return}grab();
+     if(!v.date||!v.time||ivAt(v)<Date.now()+5*60e3){err=t("ivEDate");draw();return}
+     if(v.mode==="place"&&!String(v.place).trim()){err=t("ivEAddr");draw();return}
+     o.onDone({date:v.date,time:v.time,mode:v.mode,place:v.mode==="place"?String(v.place).trim():""})}};
+  draw();openSheet(o.title)}
+/* --- employer: "Invite to interview" first asks for the time --- */
+window.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cainv]");if(!b||IVP.pass)return;
+  const val=b.dataset.cainv,[id,k,name]=val.split("|"),a=st.myAds.find(z=>z.id===id);if(!a||!k)return;
+  e.stopImmediatePropagation();e.preventDefault();
+  ivPicker({title:t("ivTitle"),sub:(name||"")+" · "+L(a.title),allowChat:true,onDone:p=>{closeSheet();
+    const live=k.startsWith("L"),cand=live?null:coApplicants(a).find(x=>x.k===k);
+    IVP.pass=true;IVP.p=p;try{const nb=[...document.querySelectorAll("[data-cainv]")].find(x=>x.dataset.cainv===val)||b;nb.click()}finally{IVP.pass=false;IVP.p=null}
+    let d;
+    if(live){d=st.deals.find(x=>x.kind==="app"&&x.rid===k.slice(1));if(!d)return}
+    else{const fid="fk_"+k;livePerson(fid,name,"iskalec",cand&&cand.town);const pp=person("lv_"+fid);if(pp)pp.live=false;
+      d=st.deals.find(x=>x.kind==="app"&&x.fk&&x.fk.id===fid);
+      if(!d){d=newDeal({kind:"app",item:a.id,other:"lv_"+fid,role:"company",status:"interview",offer:p.chat?null:{date:p.date,time:p.time}});d.fk={id:fid,name,town:cand&&cand.town};d.oname=name;
+        sysMsg(d,p.chat?"mIvChat":"mInterview",p.chat?{}:{d:fmtDay(p.date),h:p.time})}}
+    d.iv={state:"none"};
+    if(p.chat){d.offer=null;d.msgs.push({from:"me",text:t("rIvChatCo"),ts:now()});if(d.live)ivSend(d,t("rIvChatCo"));else ivFake(d,"chat");save()}
+    else ivPropose(d,p,"me");
+    setTimeout(()=>openChat(d.id),60)}})},true);
+/* made-up candidates from earlier sessions keep their chat partner */
+st.deals.forEach(d=>{if(d.fk){livePerson(d.fk.id,d.fk.name,"iskalec",d.fk.town);const pp=person("lv_"+d.fk.id);if(pp)pp.live=false}});
+/* --- live: proposals and confirmations travel as chat messages --- */
+{const _tm=theirMsg;theirMsg=function(d,text){const s=String(text||"");
+  if(d&&d.kind==="app"&&(s.startsWith("⟦IV⟧")||s.startsWith("⟦IVOK⟧"))){let j={};try{j=JSON.parse(s.slice(s.indexOf("⟧")+1))}catch(_){return}ivInit(d);const nm=ivName(d);
+    if(s.startsWith("⟦IVOK⟧")){if(!d.iv.date){d.iv=Object.assign(d.iv,{date:j.date,time:j.time})}d.iv.state="ok";d.iv.okBy="them";d.status="ivok";d.offer={date:d.iv.date,time:d.iv.time};
+      sysMsg(d,"mIvConfirmed",{d:fmtDay(d.iv.date),h:d.iv.time});if(sheetOpts.chat!==d.id)d.unread=(d.unread||0)+1;notify("nIvOk",{x:nm,d:fmtDay(d.iv.date),h:d.iv.time},{chat:d.id});ivRefresh(d);return}
+    if(!j.date||!j.time)return;const fresh=Date.now()-(d.created||0)>15000||d.msgs.some(m=>m.ivc);
+    ivPropose(d,j,"them");if(fresh)notify("nIvProp",{x:nm,d:fmtDay(j.date),h:j.time},{chat:d.id});return}
+  return _tm(d,text)}}
+/* --- the chat: proposal cards, confirm / other time, add to calendar --- */
+function ivCardHtml(d,m,i,last){const p=m.ivc,mine=m.from==="me",isLast=i===last,ok=isLast&&d.iv.state==="ok",old=!isLast;
+  const btns=ok?`<div class="ivbtns"><button class="ghost sm" data-ivcal="1">${t("ivCal")}</button></div>`
+    :isLast&&!mine?`<div class="ivbtns"><button class="primary sm" data-ivok="1">${t("ivOkBtn")}</button><button class="ghost sm" data-ivre="1">${t("ivOther")}</button></div>`
+    :isLast&&mine?`<span class="ivst">⏳ ${t("ivWait")}</span>`:`<span class="ivst">${t("ivOld")}</span>`;
+  return `<div class="ivcard ${mine?"me":"them"}${ok?" ok":""}${old?" old":""}"><span class="ivk">${ok?t("ivDone"):"📅 "+t("ivProp")}</span><span class="ivw">${esc(ivWhen(p))}</span><span class="ivl">${esc(ivWhere(p))}</span>${btns}<small class="ivl">${hhmm(m.ts)}</small></div>`}
+function ivTopHtml(d){const p=d.iv,st0=p.state==="ok"?`<b class="ivokb">${t("ivDone")}</b>`:p.state==="prop"?`<b>${t("ivStProp")}</b>`:`<b>${t("ivStNone")}</b>`;
+  return `<div class="dealcard ivtop"><div><span>${t("interview")}</span><b>${p.date?esc(fmtDay(p.date)+" · "+p.time):t("ivNoTime")}</b></div>${p.date?`<div><span>${t("ivWhereL")}</span><b>${esc(ivWhere(p))}</b></div>`:""}<div><span>${t("ivStateL")}</span>${st0}</div></div>`}
+function ivCalendar(d,how){const p=d.iv,a=adById(d.item),s=new Date(p.date+"T"+p.time),e=new Date(s.getTime()+3600e3),
+  f=x=>x.getFullYear()+ivPad(x.getMonth()+1)+ivPad(x.getDate())+"T"+ivPad(x.getHours())+ivPad(x.getMinutes())+"00",
+  title=t("interview")+": "+(a?L(a.title)+" – ":"")+ivName(d),loc=ivWhere(p);
+  if(how==="g"){const tz=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone}catch(_){return "Europe/Ljubljana"}})();
+    const u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+f(s)+"/"+f(e)+"&location="+encodeURIComponent(loc)+"&details="+encodeURIComponent("JobNod · https://jobnodapp.com")+"&ctz="+encodeURIComponent(tz);
+    const l=document.createElement("a");l.href=u;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove();return}
+  const x=v=>String(v).replace(/\\/g,"\\\\").replace(/[;,]/g,m=>"\\"+m).replace(/\n/g,"\\n"),n=new Date();
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//JobNod//SL","CALSCALE:GREGORIAN","BEGIN:VEVENT","UID:"+d.id+"-"+p.date+p.time.replace(":","")+"@jobnodapp.com",
+    "DTSTAMP:"+n.toISOString().replace(/[-:]/g,"").slice(0,15)+"Z","DTSTART:"+f(s),"DTEND:"+f(e),"SUMMARY:"+x(title),"LOCATION:"+x(loc),"DESCRIPTION:"+x("JobNod – https://jobnodapp.com"),
+    "BEGIN:VALARM","TRIGGER:-PT1H","ACTION:DISPLAY","DESCRIPTION:"+x(title),"END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const u=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"})),l=document.createElement("a");l.href=u;l.download="razgovor-jobnod.ics";
+  document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),8000)}
+function ivCalMenu(btn,d){const w=btn.parentElement;if(w.querySelector(".ivcalm"))return;
+  w.insertAdjacentHTML("afterend",`<div class="ivcalm"><button class="ghost sm" data-cal="ics">${t("ivCalApple")}</button><button class="ghost sm" data-cal="g">${t("ivCalG")}</button></div>`);
+  w.parentElement.querySelectorAll("[data-cal]").forEach(b=>b.onclick=()=>ivCalendar(d,b.dataset.cal))}
+function ivAsk(d){const p=d.iv&&d.iv.date?d.iv:null;ivPicker({title:p?t("ivNewT"):t("ivPropose").replace("📅 ",""),sub:ivName(d),btn:t("ivSendP"),back:d.id,
+  init:p?{date:p.date,time:p.time,mode:p.mode,place:p.place}:{place:d.role==="company"?ivMyAddr():""},onDone:q=>{const e=st.deals.find(x=>x.id===d.id);openChat(d.id);if(e)ivPropose(e,q,"me")}})}
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;if(ivInit(d))return drawChat(id);const sh=$("sheet"),box=$("chatBox");
+  sh.querySelectorAll('[data-act="ivok"]').forEach(b=>{const w=b.parentElement;b.remove();if(w&&w.classList.contains("chatacts")&&!w.children.length)w.remove()});
+  const top=ivTopHtml(d),dc=sh.querySelector(".dealcard");if(dc)dc.outerHTML=top;else{const an=sh.querySelector(".adinfo")||box;if(an)an.insertAdjacentHTML("beforebegin",top)}
+  if(box){const kids=[...box.children],last=d.msgs.map(m=>!!m.ivc).lastIndexOf(true);
+    if(kids.length===d.msgs.length)d.msgs.forEach((m,i)=>{if(m.ivc)kids[i].outerHTML=ivCardHtml(d,m,i,last)});
+    box.querySelectorAll("[data-ivok]").forEach(b=>b.onclick=()=>ivConfirm(d,"me"));
+    box.querySelectorAll("[data-ivre]").forEach(b=>b.onclick=()=>ivAsk(d));
+    box.querySelectorAll("[data-ivcal]").forEach(b=>b.onclick=()=>ivCalMenu(b,d));
+    const acts=[];if(d.iv.state==="none")acts.push(`<button class="primary" data-ivask="1">${t("ivPropose")}</button>`);
+    if(d.iv.state==="ok")acts.push(`<button class="ghost" data-ivask="1">${t("ivChange")}</button>`);
+    if(acts.length){box.insertAdjacentHTML("afterend",`<div class="chatacts ivacts">${acts.join("")}</div>`);sh.querySelector(".ivacts [data-ivask]").onclick=()=>ivAsk(d)}
+    box.scrollTop=box.scrollHeight}}}
+/* my applications: show the agreed time */
+{const _ra=renderApps;renderApps=function(){_ra();const A=$("apps");if(!A||typeof ivDeal!=="function")return;
+  A.querySelectorAll(".ivrow [data-ad]").forEach(b=>{const d=ivDeal(b.dataset.ad),row=b.closest(".row"),s=row&&row.querySelector(".status");if(!d||!s)return;ivInit(d);const p=d.iv;
+    s.textContent=p.state==="ok"&&p.date?"✓ "+fmtDay(p.date)+" · "+p.time:p.state==="prop"&&p.by==="them"?"📅 "+t("ivNeedOk"):p.state==="prop"?"⏳ "+t("ivWait"):"💬 "+t("ivNoTime")})}}
+/* reminders: a day before and one hour before (while the app is open) */
+function ivRemind(){const n=Date.now();let ch=false;st.deals.forEach(d=>{if(d.kind!=="app"||!d.iv||d.iv.state!=="ok"||!d.iv.date||isBlocked(d.other))return;
+  const at=ivAt(d.iv),left=at-n;if(left<=0)return;const x=ivName(d),h=d.iv.time;
+  if(!d.ivR2&&left<=3600e3){d.ivR2=d.ivR1=true;ch=true;notify("nIvRemH",{x,h},{chat:d.id})}
+  else if(!d.ivR1&&left<=24*3600e3){d.ivR1=true;ch=true;notify(ivIso(new Date(at))===ivIso(new Date())?"nIvRemT":"nIvRemD",{x,h},{chat:d.id})}});if(ch)save()}
+{const _nf=notify;notify=function(k,p,l){if(k==="nLiveMsg"&&p&&/^⟦IV/.test(String(p.y||"")))return;return _nf(k,p,l)}}
+setTimeout(ivRemind,5000);setInterval(ivRemind,60000);
+
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
