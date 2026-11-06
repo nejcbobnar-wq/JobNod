@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="45";
+const APP_VER="46";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4131,6 +4131,25 @@ function ivRemind(){const n=Date.now();let ch=false;st.deals.forEach(d=>{if(d.ki
   else if(!d.ivR1&&left<=24*3600e3){d.ivR1=true;ch=true;notify(ivIso(new Date(at))===ivIso(new Date())?"nIvRemT":"nIvRemD",{x,h},{chat:d.id})}});if(ch)save()}
 {const _nf=notify;notify=function(k,p,l){if(k==="nLiveMsg"&&p&&/^⟦IV/.test(String(p.y||"")))return;return _nf(k,p,l)}}
 setTimeout(ivRemind,5000);setInterval(ivRemind,60000);
+
+/* ================= MAP & GLOBE: CURRENT LOCATION ON / OFF; "WORLD" IS NOW "GLOBE" ================= */
+Object.assign(LANGS.sl,{viewWorld:"Globus",lsTitle:"📍 Trenutna lokacija",lsOn:"Vklopljeno · {x} ({d})",lsOff:"Izklopljeno · kraj izbereš ročno",lsBusy:"Iščem tvojo lokacijo …",lsOffT:"Trenutna lokacija izklopljena. Kraj: {x}"});
+Object.assign(LANGS.en,{viewWorld:"Globe",lsTitle:"📍 Current location",lsOn:"On · {x} ({d})",lsOff:"Off · you pick the town yourself",lsBusy:"Finding your location …",lsOffT:"Current location off. Town: {x}"});
+{const css=document.createElement("style");css.textContent=`.locsw{background:var(--surface);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex}.locsw.busy{opacity:.6;pointer-events:none}`;document.head.appendChild(css)}
+const lsOn=()=>!!(st.geo&&st.geo.auto);
+{const _om=openMap;openMap=function(view){_om(view);const sh=$("sheet"),tabs=sh.querySelector(".maptabs");if(!tabs||$("lsSw"))return;
+  const g=$("geoB");if(g){const h=g.nextElementSibling;if(h&&h.classList.contains("geohint"))h.remove();g.remove()}
+  const on=lsOn(),cur=sheetOpts.world?"world":"local";
+  tabs.insertAdjacentHTML("afterend",`<label class="tog locsw" id="lsBox"><span><b>${t("lsTitle")}</b><small id="lsTxt">${esc(on?t("lsOn",{x:st.geo.town,d:fkm(st.geo.d||0)}):t("lsOff"))}</small></span><input type="checkbox" role="switch" id="lsSw"${on?" checked":""}><i aria-hidden="true"></i></label>`);
+  $("lsSw").onchange=async e=>{const box=$("lsBox");
+    if(e.target.checked){if(!lsOn())st.homeManual=st.home;box.classList.add("busy");$("lsTxt").textContent=t("lsBusy");
+      const ok=await geoLocate(false);if(ok&&st.geo)st.geo.auto=true;else e.target.checked=false;save()}
+    else{if(st.geo)st.geo.auto=false;const back=st.homeManual&&TOWNS[st.homeManual]?st.homeManual:st.home;
+      if(back!==st.home){st.home=back;st.pos=0;st.posA=0;st.posS=0;st.last=null;st.lastA=null;st.lastS=null;if($("f-loc"))$("f-loc").value=back}
+      save();renderAll();toast(t("lsOffT",{x:townLabel(st.home)}))}
+    if(sheetOpts.map)openMap(cur)};
+  /* picking a town by hand turns the current location off */
+  const sel=$("m-home");if(sel)sel.addEventListener("change",()=>{if(lsOn()){st.geo.auto=false;st.homeManual=sel.value;save();const s=$("lsSw");if(s)s.checked=false;const tx=$("lsTxt");if(tx)tx.textContent=t("lsOff")}})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
