@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="25";
+const APP_VER="26";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3287,6 +3287,133 @@ function goNote(n){const ln=n.link||{},mode=m=>{if(st.mode!==m)setMode(m)};close
   openNotes()}
 {const _on=openNotes;openNotes=function(){_on();$("sheet").querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const n=st.notes.find(x=>x.id===b.dataset.n);if(!n)return;
   n.read=true;save();updBell();goNote(n)})}}
+/* ================= MORE CATEGORIES: JOBS, EMPLOYMENT FIELDS, STUDENT WORK ================= */
+{const S=(b,c)=>`<svg viewBox="0 0 100 100">${b}</svg>`,W='fill="#fff"',G='fill="#fff" fill-opacity=".7"';
+Object.assign(CATS,{
+ streha:{name:{sl:"Streha in žlebovi",en:"Roof & gutters"},bg:"linear-gradient(160deg,#F49A8C,#B4413A)",svg:S(`<path d="M8 54 50 18l42 36z" ${W}/><rect x="20" y="54" width="60" height="32" ${G}/><path d="M66 24h10v16" stroke="#fff" stroke-width="6" fill="none"/>`)},
+ zidar:{name:{sl:"Zidarska dela",en:"Masonry"},bg:"linear-gradient(160deg,#E8A87C,#9C5A3C)",svg:S(`<g ${W}><rect x="10" y="20" width="36" height="16" rx="2"/><rect x="50" y="20" width="40" height="16" rx="2" fill-opacity=".7"/><rect x="10" y="40" width="20" height="16" rx="2" fill-opacity=".7"/><rect x="34" y="40" width="36" height="16" rx="2"/><rect x="74" y="40" width="16" height="16" rx="2"/><rect x="10" y="60" width="36" height="16" rx="2"/><rect x="50" y="60" width="40" height="16" rx="2" fill-opacity=".7"/></g>`)},
+ suhomont:{name:{sl:"Suhomontažna dela (knauf)",en:"Drywall"},bg:"linear-gradient(160deg,#C7CEDB,#6B7A99)",svg:S(`<rect x="16" y="14" width="30" height="72" rx="2" ${W}/><rect x="54" y="14" width="30" height="72" rx="2" ${G}/><g fill="#000" fill-opacity=".15"><circle cx="24" cy="22" r="2.5"/><circle cx="38" cy="22" r="2.5"/><circle cx="24" cy="78" r="2.5"/><circle cx="38" cy="78" r="2.5"/></g>`)},
+ okna:{name:{sl:"Okna, vrata in senčila",en:"Windows, doors & blinds"},bg:"linear-gradient(160deg,#8FD3F4,#3A7BD5)",svg:S(`<rect x="18" y="14" width="64" height="72" rx="4" ${W}/><g fill="#000" fill-opacity=".14"><rect x="26" y="22" width="20" height="26"/><rect x="54" y="22" width="20" height="26"/><rect x="26" y="54" width="20" height="24"/><rect x="54" y="54" width="20" height="24"/></g>`)},
+ mizar:{name:{sl:"Mizarstvo in pohištvo",en:"Carpentry & furniture"},bg:"linear-gradient(160deg,#D6A77A,#7B4B2A)",svg:S(`<rect x="14" y="40" width="72" height="12" rx="3" ${W}/><rect x="20" y="52" width="8" height="34" ${G}/><rect x="72" y="52" width="8" height="34" ${G}/><path d="M30 14h40l-6 22H36z" ${W}/>`)},
+ montaza:{name:{sl:"Montaža pohištva",en:"Furniture assembly"},bg:"linear-gradient(160deg,#B8E1A0,#4F8A3A)",svg:S(`<rect x="16" y="28" width="46" height="58" rx="3" ${W}/><path d="M39 28v58" stroke="#000" stroke-opacity=".14" stroke-width="3"/><path d="M68 20l16 16-6 6-16-16z" ${G}/><path d="M70 40 54 70" stroke="#fff" stroke-width="6" stroke-linecap="round"/>`)},
+ ogrevanje:{name:{sl:"Ogrevanje in klima",en:"Heating & air-con"},bg:"linear-gradient(160deg,#FFB27A,#3A86E0)",svg:S(`<rect x="12" y="20" width="76" height="26" rx="6" ${W}/><path d="M24 58c4 8-4 12 0 22M44 58c4 8-4 12 0 22M64 58c4 8-4 12 0 22" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>`)},
+ dimnik:{name:{sl:"Dimnikar in peči",en:"Chimney & stoves"},bg:"linear-gradient(160deg,#9CA3AF,#374151)",svg:S(`<rect x="34" y="30" width="32" height="56" rx="2" ${W}/><rect x="28" y="22" width="44" height="10" rx="2" ${W}/><circle cx="42" cy="12" r="6" ${G}/><circle cx="56" cy="8" r="5" ${G}/>`)},
+ vrt:{name:{sl:"Urejanje vrta",en:"Garden landscaping"},bg:"linear-gradient(160deg,#9BE15D,#2E9E5B)",svg:S(`<path d="M50 86V46" stroke="#fff" stroke-width="6"/><path d="M50 50c-22 0-30-16-30-30 18 0 30 10 30 30zM50 46c0-18 10-30 30-30 0 16-10 30-30 30z" ${W}/><rect x="14" y="80" width="72" height="8" rx="4" ${G}/>`)},
+ sneg:{name:{sl:"Pluženje in odstranjevanje snega",en:"Snow clearing"},bg:"linear-gradient(160deg,#D4ECFF,#6FA8DC)",svg:S(`<g stroke="#fff" stroke-width="6" stroke-linecap="round"><path d="M50 14v72M19 32l62 36M19 68l62-36"/></g><circle cx="50" cy="50" r="9" ${W}/>`)},
+ odvoz:{name:{sl:"Odvoz odpadkov in kosovnega",en:"Waste & bulky removal"},bg:"linear-gradient(160deg,#A3B18A,#4A5A3A)",svg:S(`<path d="M24 34h52l-6 52H30z" ${W}/><rect x="18" y="24" width="64" height="10" rx="3" ${W}/><rect x="40" y="16" width="20" height="8" rx="2" ${G}/>`)},
+ hisnik:{name:{sl:"Hišnik in manjša popravila",en:"Handyman & small repairs"},bg:"linear-gradient(160deg,#FFD36E,#E0892B)",svg:S(`<path d="M22 78 60 40" stroke="#fff" stroke-width="10" stroke-linecap="round"/><path d="M56 22a18 18 0 0 0 22 22l-8 8-22-22z" ${W}/>`)},
+ racunalnik:{name:{sl:"Računalniška pomoč",en:"Computer help"},bg:"linear-gradient(160deg,#7AA7FF,#3B3FB6)",svg:S(`<rect x="14" y="18" width="72" height="48" rx="5" ${W}/><rect x="22" y="26" width="56" height="32" rx="2" fill="#000" fill-opacity=".12"/><rect x="36" y="72" width="28" height="6" rx="2" ${G}/><rect x="26" y="80" width="48" height="6" rx="3" ${W}/>`)},
+ avto:{name:{sl:"Avtomehanik in servis vozil",en:"Car mechanic"},bg:"linear-gradient(160deg,#FF8A8A,#B91C1C)",svg:S(`<path d="M14 62l8-22h56l8 22v14H14z" ${W}/><circle cx="30" cy="78" r="9" ${G}/><circle cx="70" cy="78" r="9" ${G}/><rect x="30" y="44" width="40" height="12" rx="2" fill="#000" fill-opacity=".12"/>`)}});
+Object.assign(MEASURE,{
+ streha:{unit:"m2",q:{sl:"Površina strehe",en:"Roof area"}},zidar:{unit:"m2",q:{sl:"Površina zidu",en:"Wall area"}},suhomont:{unit:"m2",q:{sl:"Površina sten ali stropa",en:"Wall or ceiling area"}},
+ okna:{unit:"pcs",q:{sl:"Število oken ali vrat",en:"Number of windows or doors"}},mizar:{unit:"pcs",q:{sl:"Število kosov",en:"Number of pieces"},free:true},
+ montaza:{unit:"pcs",q:{sl:"Število kosov pohištva",en:"Pieces of furniture"}},ogrevanje:{unit:"pcs",q:{sl:"Število naprav",en:"Number of units"},free:true},
+ dimnik:{unit:"pcs",q:{sl:"Število dimnikov ali peči",en:"Chimneys or stoves"}},vrt:{unit:"m2",q:{sl:"Površina vrta",en:"Garden area"}},
+ sneg:{unit:"m2",q:{sl:"Površina za čiščenje snega",en:"Area to clear"}},odvoz:{unit:"m3",q:{sl:"Količina odpadkov",en:"Volume of waste"}},
+ hisnik:{unit:"pcs",q:{sl:"Število opravil",en:"Number of tasks"},free:true},racunalnik:{unit:"pcs",q:{sl:"Število naprav",en:"Number of devices"},free:true},
+ avto:{unit:"pcs",q:{sl:"Število vozil",en:"Number of vehicles"},free:true}});
+if(UNITS.m3&&!UNITS.m3.sl)UNITS.m3={sl:["m³","m³","m³","m³"],en:["m³","m³"]};
+}
+/* demo jobs for the new categories */
+(function(){const R=rng(9091),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),pick=a=>a[Math.floor(R()*a.length)],r5=x=>Math.round(x/5)*5,cls=PEOPLE.filter(p=>p.role==="stranka");if(!cls.length)return;
+  const T={streha:[[["Čiščenje žlebov","Gutter cleaning"],["Žlebi so polni listja, hiša je enonadstropna.","Gutters full of leaves, single-storey house."],"m2",60,160,1.2,40],[["Zamenjava strešnikov","Replacing roof tiles"],["Po neurju je nekaj strešnikov počenih.","Some tiles cracked after a storm."],"m2",10,40,18,80]],
+   zidar:[[["Zidava predelne stene","Building a partition wall"],["Stena iz opeke v kleti.","Brick wall in the basement."],"m2",8,25,38,60],[["Popravilo ometa v kleti","Basement plaster repair"],["Vlažen omet je odpadel.","Damp plaster has come off."],"m2",10,40,22,50]],
+   suhomont:[[["Spuščen strop iz mavčnih plošč","Plasterboard drop ceiling"],["Dnevna soba, z lučmi.","Living room, with lights."],"m2",15,45,24,60],[["Predelna stena iz knaufa","Drywall partition"],["Razdelitev otroške sobe na dve.","Splitting a kids' room in two."],"m2",8,20,30,80]],
+   okna:[[["Zamenjava oken","Replacing windows"],["Stara lesena okna zamenjati s PVC.","Old wooden windows to PVC."],"pcs",3,8,320,0],[["Montaža komarnikov","Fitting insect screens"],["Komarniki že kupljeni.","Screens already bought."],"pcs",3,10,25,20]],
+   mizar:[[["Kuhinja po meri","Fitted kitchen"],["Kuhinja v obliki črke L, 3,5 m.","L-shaped kitchen, 3.5 m."],"pcs",1,1,3800,0],[["Vgradna omara","Built-in wardrobe"],["Omara v niši, 2,4 m.","Wardrobe in an alcove, 2.4 m."],"pcs",1,2,900,0]],
+   montaza:[[["Sestavljanje IKEA pohištva","Assembling IKEA furniture"],["Omara, postelja in predalnik.","Wardrobe, bed and chest of drawers."],"pcs",2,6,35,20],[["Montaža kuhinje","Kitchen installation"],["Elementi so dostavljeni.","Units already delivered."],"pcs",6,14,30,60]],
+   ogrevanje:[[["Servis klime","Air-con service"],["Dve notranji enoti.","Two indoor units."],"pcs",1,3,60,20],[["Montaža klimatske naprave","Installing an air-con unit"],["Naprava je kupljena.","Unit is already bought."],"pcs",1,2,250,50]],
+   dimnik:[[["Čiščenje dimnika","Chimney sweeping"],["Pred kurilno sezono.","Before the heating season."],"pcs",1,2,45,10],[["Pregled peči na drva","Wood stove inspection"],["Peč dimi v prostor.","Stove smokes into the room."],"pcs",1,1,70,0]],
+   vrt:[[["Ureditev novega vrta","Landscaping a new garden"],["Trata, grmovnice in pot.","Lawn, shrubs and a path."],"m2",60,300,6,100],[["Zasaditev žive meje","Planting a hedge"],["Ok. 20 m ob ograji.","About 20 m along the fence."],"m2",10,40,9,60]],
+   sneg:[[["Pluženje dvorišča","Plowing a yard"],["Celo zimo, po potrebi.","All winter, as needed."],"m2",80,400,.3,30],[["Čiščenje snega s strehe","Clearing snow off a roof"],["Ravna streha garaže.","Flat garage roof."],"m2",30,90,1.5,40]],
+   odvoz:[[["Odvoz kosovnega odpada","Bulky waste removal"],["Stara kavč in omara.","Old sofa and wardrobe."],"m3",2,8,35,30],[["Praznjenje podstrešja","Clearing out an attic"],["Nalaganje in odvoz.","Loading and removal."],"m3",5,15,30,60]],
+   hisnik:[[["Manjša popravila v stanovanju","Small repairs in a flat"],["Obesiti police, popraviti kljuke.","Hang shelves, fix handles."],"pcs",3,8,15,25],[["Montaža luči in zaves","Fitting lights and curtains"],["Tri sobe.","Three rooms."],"pcs",3,6,18,20]],
+   racunalnik:[[["Nastavitev novega prenosnika","Setting up a new laptop"],["Prenos podatkov s starega.","Moving data from the old one."],"pcs",1,1,50,10],[["Wi-Fi ne seže v vse sobe","Wi-Fi doesn't reach every room"],["Hiša na dveh nadstropjih.","Two-storey house."],"pcs",1,2,40,30]],
+   avto:[[["Menjava zimskih gum","Swapping to winter tyres"],["Gume že imam.","I already have the tyres."],"pcs",1,2,25,0],[["Mali servis avtomobila","Small car service"],["Olje in filtri.","Oil and filters."],"pcs",1,1,120,0]]};
+  let n=1;Object.entries(T).forEach(([c,tpls])=>{for(let i=0;i<8;i++){const [tt,dd,unit,qa,qb,rate,fix]=pick(tpls);let qty=ri(qa,qb);if(qty>100)qty=Math.round(qty/10)*10;
+    const min=r5(Math.max(30,qty*rate+fix)),max=r5(min*(1.3+R()*.4));
+    DEMO_JOBS.push({id:"mc"+n++,cat:c,client:pick(cls).id,title:{sl:tt[0],en:tt[1]},desc:{sl:dd[0],en:dd[1]},qty,unit,min,max,loc:pick(TOWN_W),when:pick(["asap","week","month","deal"]),urgent:R()<.1})}});
+  PEOPLE.filter(p=>p.role==="mojster").forEach(p=>Object.keys(T).forEach(c=>{if(hashN(p.id+c)%5===0&&!p.cats.includes(c))p.cats.push(c)}))})();
+/* --- employment: more fields --- */
+{const S=b=>`<svg viewBox="0 0 100 100">${b}</svg>`,W='fill="#fff"',G='fill="#fff" fill-opacity=".7"';
+Object.assign(SECTORS,{
+ it:{name:{sl:"IT in programiranje",en:"IT & software"},bg:"linear-gradient(160deg,#6EA8FF,#2B3AA8)",svg:S(`<rect x="12" y="18" width="76" height="52" rx="5" ${W}/><path d="M36 36l-10 8 10 8M64 36l10 8-10 8" stroke="#2B3AA8" stroke-opacity=".5" stroke-width="5" fill="none"/><rect x="30" y="76" width="40" height="7" rx="3" ${G}/>`)},
+ fin:{name:{sl:"Finance in računovodstvo",en:"Finance & accounting"},bg:"linear-gradient(160deg,#7DE2B8,#1F7A5A)",svg:S(`<rect x="22" y="12" width="56" height="76" rx="6" ${W}/><rect x="30" y="20" width="40" height="14" rx="2" fill="#000" fill-opacity=".14"/><g fill="#000" fill-opacity=".14">${[0,1,2].map(r=>[0,1,2].map(c=>`<rect x="${30+c*14}" y="${42+r*14}" width="10" height="10" rx="2"/>`).join("")).join("")}</g>`)},
+ prod:{name:{sl:"Prodaja in komerciala",en:"Sales"},bg:"linear-gradient(160deg,#FFB36B,#E0592A)",svg:S(`<path d="M14 74 38 50l14 12 32-32" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M66 26h20v20z" ${W}/>`)},
+ mark:{name:{sl:"Marketing in mediji",en:"Marketing & media"},bg:"linear-gradient(160deg,#F78FB3,#B83280)",svg:S(`<path d="M16 42h14l38-20v56L30 58H16z" ${W}/><path d="M78 36c6 8 6 20 0 28" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>`)},
+ izob:{name:{sl:"Izobraževanje",en:"Education"},bg:"linear-gradient(160deg,#FFE08A,#C98A0A)",svg:S(`<path d="M50 20 8 40l42 20 42-20z" ${W}/><path d="M26 50v18c12 10 36 10 48 0V50" ${G}/>`)},
+ teh:{name:{sl:"Elektro in strojništvo",en:"Electrical & mechanical"},bg:"linear-gradient(160deg,#A5B4FC,#4338CA)",svg:S(`<circle cx="50" cy="50" r="22" fill="none" stroke="#fff" stroke-width="10"/><g ${W}>${[0,45,90,135,180,225,270,315].map(a=>`<rect x="45" y="14" width="10" height="14" rx="2" transform="rotate(${a} 50 50)"/>`).join("")}</g>`)},
+ avtos:{name:{sl:"Avtomehanika in vozila",en:"Automotive"},bg:"linear-gradient(160deg,#FF9A9A,#A61E1E)",svg:S(`<path d="M14 62l8-22h56l8 22v14H14z" ${W}/><circle cx="30" cy="78" r="9" ${G}/><circle cx="70" cy="78" r="9" ${G}/>`)},
+ kmet:{name:{sl:"Kmetijstvo, vrt in gozd",en:"Farming, garden & forestry"},bg:"linear-gradient(160deg,#A8E063,#3C8D2F)",svg:S(`<path d="M50 88V40" stroke="#fff" stroke-width="6"/><path d="M50 46c-20 0-28-14-28-28 16 0 28 10 28 28zM50 40c0-16 10-28 28-28 0 14-10 28-28 28z" ${W}/>`)},
+ varn:{name:{sl:"Varovanje",en:"Security"},bg:"linear-gradient(160deg,#94A3B8,#1E293B)",svg:S(`<path d="M50 10 18 22v24c0 20 14 34 32 42 18-8 32-22 32-42V22z" ${W}/><path d="M36 50l10 10 18-20" stroke="#1E293B" stroke-opacity=".5" stroke-width="6" fill="none"/>`)},
+ lep:{name:{sl:"Lepota, frizerstvo in wellness",en:"Beauty, hair & wellness"},bg:"linear-gradient(160deg,#FBC2EB,#A855F7)",svg:S(`<circle cx="30" cy="70" r="12" fill="none" stroke="#fff" stroke-width="6"/><circle cx="62" cy="70" r="12" fill="none" stroke="#fff" stroke-width="6"/><path d="M38 60 72 16M54 60 28 16" stroke="#fff" stroke-width="6" stroke-linecap="round"/>`)},
+ /* student-only fields */
+ sport:{stud:1,name:{sl:"Šport, bazen in animacija",en:"Sport, pool & activities"},bg:"linear-gradient(160deg,#5EEAD4,#0E7490)",svg:S(`<circle cx="50" cy="50" r="30" ${W}/><path d="M22 40c18 6 38 6 56 0M22 60c18-6 38-6 56 0" stroke="#0E7490" stroke-opacity=".4" stroke-width="5" fill="none"/>`)},
+ tur:{stud:1,name:{sl:"Turizem in planinske koče",en:"Tourism & mountain huts"},bg:"linear-gradient(160deg,#9AE6B4,#2F855A)",svg:S(`<path d="M6 84 38 30l18 30 10-14 28 38z" ${W}/><path d="M38 30l8 14-8-4-8 4z" fill="#2F855A" fill-opacity=".4"/>`)},
+ prev:{stud:1,name:{sl:"Prevajanje in podnapisi",en:"Translation & subtitles"},bg:"linear-gradient(160deg,#90CDF4,#2B6CB0)",svg:S(`<rect x="10" y="18" width="46" height="36" rx="6" ${W}/><rect x="44" y="46" width="46" height="36" rx="6" ${G}/><path d="M22 30h22M22 40h14M56 60h22M56 70h14" stroke="#2B6CB0" stroke-opacity=".5" stroke-width="4"/>`)},
+ klic:{stud:1,name:{sl:"Klicni center in pomoč strankam",en:"Call centre & support"},bg:"linear-gradient(160deg,#FBD38D,#C05621)",svg:S(`<path d="M20 56a30 30 0 0 1 60 0" stroke="#fff" stroke-width="7" fill="none"/><rect x="12" y="52" width="16" height="24" rx="6" ${W}/><rect x="72" y="52" width="16" height="24" rx="6" ${W}/>`)},
+ foto:{stud:1,name:{sl:"Foto, video in družbena omrežja",en:"Photo, video & social media"},bg:"linear-gradient(160deg,#F687B3,#97266D)",svg:S(`<rect x="12" y="28" width="76" height="52" rx="8" ${W}/><rect x="36" y="18" width="28" height="12" rx="3" ${W}/><circle cx="50" cy="54" r="15" fill="#97266D" fill-opacity=".35"/>`)}});
+}
+Object.assign(POS,{
+ it:[[["Programer / programerka","Software developer"],["Razvoj spletnih aplikacij v ekipi, delo z Gitom in testi.","Building web apps in a team, working with Git and tests."],"m",2400,3600,["full"],["flex"],["training","bonus","travel"]],
+     [["Sistemski administrator","System administrator"],["Skrb za strežnike, mrežo in uporabnike.","Looking after servers, the network and users."],"m",2100,2900,["full"],["morning","flex"],["training","travel"]],
+     [["Tehnik za podporo uporabnikom","IT support technician"],["Pomoč uporabnikom, namestitve, manjša popravila.","Helping users, installs, small repairs."],"m",1500,1900,["full","fixed"],["morning"],["travel","meal"]]],
+ fin:[[["Računovodja / računovodkinja","Accountant"],["Vodenje knjig za več podjetij, DDV obračuni.","Bookkeeping for several companies, VAT returns."],"m",1700,2400,["full"],["morning"],["travel","meal","training"]],
+      [["Referent v financah","Finance clerk"],["Izdaja računov, plačila, opomini.","Issuing invoices, payments, reminders."],"m",1450,1800,["full","fixed"],["morning"],["travel","meal"]]],
+ prod:[[["Komercialist na terenu","Field sales rep"],["Obiski strank, priprava ponudb, službeno vozilo.","Visiting customers, preparing quotes, company car."],"m",1700,2600,["full"],["flex"],["car","bonus","travel"]],
+       [["Prodajni svetovalec","Sales consultant"],["Svetovanje strankam v salonu.","Advising customers in the showroom."],"m",1400,1900,["full"],["shifts","weekend"],["bonus","travel"]]],
+ mark:[[["Skrbnik družbenih omrežij","Social media manager"],["Priprava objav, odgovori sledilcem, oglasi.","Creating posts, replying to followers, ads."],"m",1600,2200,["full","part"],["flex"],["training","travel"]],
+       [["Grafični oblikovalec","Graphic designer"],["Oblikovanje tiskovin in spletnih oglasov.","Designing print and online ads."],"m",1600,2300,["full"],["flex"],["training","travel"]]],
+ izob:[[["Učitelj / učiteljica angleščine","English teacher"],["Pouk v jezikovni šoli, popoldanske skupine.","Teaching groups at a language school in the afternoons."],"h",14,22,["part","fixed"],["flex"],["training"]],
+       [["Vzgojitelj v vrtcu","Kindergarten teacher"],["Delo z otroki v starosti 3–6 let.","Working with children aged 3–6."],"m",1500,1850,["full","fixed"],["morning"],["meal","travel"]]],
+ teh:[[["Elektrotehnik / električar","Electrician"],["Elektroinštalacije v novogradnjah.","Electrical installations in new buildings."],"m",1600,2300,["full"],["morning"],["travel","meal","car"]],
+      [["CNC operater","CNC operator"],["Upravljanje CNC strojev, kontrola kosov.","Running CNC machines, checking parts."],"m",1500,2000,["full"],["shifts","night"],["meal","travel","bonus"]]],
+ avtos:[[["Avtomehanik","Car mechanic"],["Servisi, menjava gum, diagnostika.","Services, tyre changes, diagnostics."],"m",1450,2000,["full"],["morning"],["meal","travel","training"]],
+        [["Avtokleparski pomočnik","Body shop assistant"],["Pomoč pri popravilih karoserije.","Helping with body repairs."],"m",1300,1600,["full","fixed"],["morning"],["meal","travel"]]],
+ kmet:[[["Delavec na kmetiji","Farm worker"],["Delo v sadovnjaku in z živino.","Work in the orchard and with livestock."],"m",1290,1550,["full","seasonal"],["morning","weekend"],["housing","meal"]],
+       [["Vrtnar / vrtnarka","Gardener"],["Urejanje zelenic in parkov.","Looking after lawns and parks."],"m",1350,1700,["full","seasonal"],["morning"],["meal","travel"]]],
+ varn:[[["Varnostnik","Security guard"],["Varovanje objektov, obhodi, izmensko.","Guarding premises, patrols, shifts."],"m",1350,1700,["full"],["shifts","night","weekend"],["meal","travel"]]],
+ lep:[[["Frizer / frizerka","Hairdresser"],["Delo v salonu, lastne stranke dobrodošle.","Salon work, own clients welcome."],"m",1350,1900,["full","part"],["shifts","weekend"],["bonus","training"]],
+      [["Kozmetičarka","Beautician"],["Nega obraza, manikura, depilacija.","Facials, manicures, waxing."],"m",1350,1800,["full","part"],["shifts"],["bonus","training"]]]});
+(function(){const R=rng(4242),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),pick=a=>a[Math.floor(R()*a.length)];let n=1;
+  const cos=[["cx1","Koda d.o.o.","it","Ljubljana",45],["cx2","Spletni Mojstri","it","Maribor",18],["cx3","Računovodstvo Bilanca","fin","Kranj",12],["cx4","Finančna hiša Zlatnik","fin","Ljubljana",60],
+    ["cx5","Prodaja Plus","prod","Celje",35],["cx6","Avtosalon Cesta","prod","Novo mesto",25],["cx7","Agencija Klik","mark","Ljubljana",14],["cx8","Studio Barva","mark","Koper",8],
+    ["cx9","Jezikovna šola Lingva","izob","Ljubljana",20],["cx10","Vrtec Sončnica","izob","Kranj",40],["cx11","Elektro Iskra","teh","Velenje",120],["cx12","Kovinarstvo Precizno","teh","Škofja Loka",70],
+    ["cx13","Avtoservis Kolo","avtos","Maribor",15],["cx14","Avtohiša Hitrost","avtos","Ljubljana",55],["cx15","Kmetija Pri Lipi","kmet","Ptuj",6],["cx16","Vrtnarija Zelenica","kmet","Kamnik",22],
+    ["cx17","Varnost Straža","varn","Ljubljana",150],["cx18","Varovanje Ščit","varn","Celje",80],["cx19","Salon Lasje","lep","Kranj",7],["cx20","Wellness Oaza","lep","Bled",30]]
+   .map(([id,name,sec,loc,size])=>({id,name,sec,loc:TOWNS[loc]?loc:st.home,size}));
+  cos.forEach(c=>{CO_MAP.set(c.id,c);const k=c.size>60?3:2,pool=[...POS[c.sec]];
+    for(let i=0;i<k&&pool.length;i++){const p=pool.splice(Math.floor(R()*pool.length),1)[0],[tt,dd,unit,mn,mx,types,shifts,bens]=p,f=.92+R()*.16;
+      const min=unit==="h"?Math.round(mn*f*10)/10:Math.max(1290,Math.round(mn*f/10)*10),max=unit==="h"?Math.max(min+.5,Math.round(mx*f*10)/10):Math.max(min+100,Math.round(mx*f/10)*10);
+      const ex=pick(AD_EXTRA),dt=new Date(2026,10,5-ri(0,25));
+      ADS.push({id:"adx"+n++,co:c.id,sec:c.sec,title:{sl:tt[0],en:tt[1]},desc:{sl:dd[0]+" "+ex[0],en:dd[1]+" "+ex[1]},unit,min,max,type:pick(types),shifts:shifts.slice(0,ri(1,shifts.length)),
+        bens:bens.slice(0,ri(1,bens.length)),open:R()<.3?ri(2,3):1,loc:c.loc,posted:dt.toISOString().slice(0,10),urgent:R()<.12})}})})();
+/* --- student work: more fields --- */
+Object.assign(STUD_POS,{
+ sport:[[["Učitelj plavanja","Swimming instructor"],["Tečaji plavanja za otroke ob vikendih.","Kids' swimming lessons at weekends."],9,12,["long","summer"],"4–8",0],[["Reševalec iz vode","Lifeguard"],["Nadzor na kopališču čez poletje.","Watching over the pool in summer."],8.5,10.5,["summer"],"8–20",0],[["Animator na poletnem taboru","Summer camp leader"],["Igre, delavnice in izleti z otroki.","Games, workshops and trips with children."],8,10,["summer","days"],"8–16",1]],
+ tur:[[["Pomoč v planinski koči","Mountain hut helper"],["Strežba, pospravljanje, nastanitev v koči.","Serving, tidying, accommodation in the hut."],8,9.5,["summer"],"po dogovoru",0],[["Turistični vodnik po jami","Cave guide"],["Vodenje skupin, tudi v angleščini.","Guiding groups, English too."],9.5,12,["summer","long"],"9–17",0],[["Receptor v kampu","Campsite receptionist"],["Prijava gostov, informacije.","Checking guests in, giving info."],8.5,10,["summer"],"izmensko",0]],
+ prev:[[["Pisanje podnapisov za dogodke","Live subtitling for events"],["Hitro tipkanje, natančnost.","Fast typing, accuracy."],10,14,["once","days"],"po dogovoru",0],[["Prevajalec angleščina–slovenščina","English–Slovene translator"],["Prevajanje spletnih besedil od doma.","Translating web texts from home."],10,15,["long"],"od doma",0]],
+ klic:[[["Operater v klicnem centru","Call centre agent"],["Sprejem klicev strank, delo v izmenah.","Taking customer calls, shift work."],8.5,10,["long"],"izmensko",0],[["Podpora strankam v klepetu","Live chat support"],["Odgovori strankam spletne trgovine.","Answering web shop customers."],8.5,10.5,["long"],"od doma",0]],
+ foto:[[["Snemanje vsebin za TikTok","Making TikTok content"],["Kratki videi za lokalno podjetje.","Short videos for a local business."],10,15,["long","days"],"po dogovoru",0],[["Fotomodel za spletno trgovino","Model for a web shop"],["Fotografiranje oblačil v studiu.","Clothing photo shoots in a studio."],12,18,["once","days"],"10–14",0]],
+ kmet:[[["Pomoč na kmetiji","Farm helper"],["Obiranje sadja in pomoč pri živini.","Picking fruit and helping with animals."],7.6,9,["summer","days"],"7–15",1],[["Vrtnarska dela","Gardening work"],["Košnja, plevenje, zalivanje.","Mowing, weeding, watering."],8,9.5,["summer","long"],"8–14",1]],
+ cisc:[[["Čiščenje po dogodkih","Cleaning after events"],["Pospravljanje dvorane po koncertu.","Tidying the hall after a concert."],8.5,10,["once","days"],"22–2",0],[["Visokotlačno pranje betona","Pressure washing concrete"],["Dvorišča in terase.","Yards and terraces."],9,11,["days"],"8–16",0]],
+ proiz:[[["Pakiranje in etiketiranje","Packing and labelling"],["Pakiranje izdelkov v skladišču.","Packing products in a warehouse."],7.8,9,["long","days"],"6–14",1],[["Pomoč v proizvodnji","Production helper"],["Enostavna dela ob tekočem traku.","Simple work on the line."],8,9.5,["long"],"izmensko",0]]});
+(function(){const R=rng(7171),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),pick=a=>a[Math.floor(R()*a.length)];let n=1;
+  const cos=[["scx1","Bazen Val","sport","Kranj"],["scx2","Tabor Veveriča","sport","Bohinj"],["scx3","Koča pod Vrhom","tur","Jesenice"],["scx4","Kamp Ob Reki","tur","Bovec"],
+    ["scx5","Prevajalska agencija Beseda","prev","Ljubljana"],["scx6","Klicni center Halo","klic","Maribor"],["scx7","Spletna trgovina Klik","klic","Ljubljana"],["scx8","Studio Kader","foto","Ljubljana"],
+    ["scx9","Kmetija Sončni Breg","kmet","Ptuj"],["scx10","Čistilni servis Blesk","cisc","Celje"],["scx11","Skladišče Paket","proiz","Kranj"]]
+   .map(([id,name,sec,loc])=>({id,name,sec,loc:TOWNS[loc]?loc:st.home,size:0,stud:1}));
+  cos.forEach(c=>CO_MAP.set(c.id,c));
+  ["sport","tur","prev","klic","foto","kmet","cisc","proiz"].forEach(sec=>{const cs=cos.filter(c=>c.sec===sec);
+    for(let i=0;i<6;i++){const c=pick(cs),[tt,dd,mn,mx,durs,hrs,both]=pick(STUD_POS[sec]),f=.95+R()*.12,min=Math.max(7.6,Math.round(mn*f*10)/10),max=Math.max(min+.5,Math.round(mx*f*10)/10);
+      const loc=R()<.6?c.loc:pick(TOWN_W),dt=new Date(2026,10,5-ri(0,20));
+      STUD.push({id:"stx"+n++,co:c.id,sec,title:{sl:tt[0],en:tt[1]},desc:{sl:dd[0],en:dd[1]},unit:"h",min,max,type:"student",dur:pick(durs),hrs,both:!!both,
+        shifts:[pick(["flex","weekend","morning"])],bens:R()<.4?["meal"]:[],open:ri(1,5),loc,posted:dt.toISOString().slice(0,10),urgent:R()<.12})}
+    if(!studSecs.includes(sec))studSecs.push(sec)})})();
+STUD_POS.drugo=[];
+/* keep "Other" last in every list */
+for(const o of [CATS,SECTORS,MEASURE]){if(o.drugo){const d=o.drugo;delete o.drugo;o.drugo=d}}
+applyStatic();
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
