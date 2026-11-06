@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="26";
+const APP_VER="27";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3414,6 +3414,30 @@ STUD_POS.drugo=[];
 /* keep "Other" last in every list */
 for(const o of [CATS,SECTORS,MEASURE]){if(o.drugo){const d=o.drugo;delete o.drugo;o.drugo=d}}
 applyStatic();
+/* ================= APPLICATIONS: AFTER AN INTERVIEW INVITE, OPEN THE CHAT WITH ALL AD DETAILS ================= */
+Object.assign(LANGS.sl,{adDetails:"Podatki o oglasu",iPos:"Delovno mesto",iCo:"Podjetje",iPay:"Plačilo",iType:"Vrsta dela",iWhere:"Kraj",iHrs:"Ur na teden",iShift:"Urnik",iBen:"Ugodnosti",iDesc:"Opis",iApplied:"Prijava poslana",openTalk:"💬 Odpri pogovor",iPerH:"na uro",iPerM:"na mesec"});
+Object.assign(LANGS.en,{adDetails:"Job ad details",iPos:"Position",iCo:"Company",iPay:"Pay",iType:"Type",iWhere:"Location",iHrs:"Hours per week",iShift:"Schedule",iBen:"Benefits",iDesc:"Description",iApplied:"Applied",openTalk:"💬 Open chat",iPerH:"per hour",iPerM:"per month"});
+{const css=document.createElement("style");css.textContent=`.adinfo{background:var(--bg);border-radius:16px;padding:10px 14px;margin:10px 0}.adinfo summary{font-weight:700;cursor:pointer;padding:4px 0}
+.adinfo .kv{padding:6px 0}.adinfo p{margin:6px 0 2px;font-size:14px;line-height:1.45}.row.ivrow{cursor:pointer;outline:2px solid #16B07A;outline-offset:-2px}.ivbtn{margin-top:8px;width:100%}`;document.head.appendChild(css)}
+const ivDeal=adId=>st.deals.find(d=>d.kind==="app"&&d.item===adId&&d.role!=="company"&&["interview","ivok"].includes(d.status));
+function adInfoHtml(a,applied){const c=coOf(a)||{name:"—"},kv=(k,v)=>v?`<div class="kv"><span>${t(k)}</span><b>${esc(v)}</b></div>`:"";
+  return `<details class="adinfo" open><summary>${t("adDetails")}</summary>
+   ${kv("iPos",L(a.title))}${kv("iCo",c.name)}<div class="kv"><span>${t("iPay")}</span><b>${payRange(a)} ${a.unit==="h"?t("iPerH"):t("iPerM")}</b></div>
+   ${kv("iType",a.kind==="stud"||a.type==="student"?(STUD_DUR[a.dur]?L(STUD_DUR[a.dur]):L(ETYPES.student)):ETYPES[a.type]?L(ETYPES[a.type]):"")}
+   ${kv("iWhere",a.loc)}${kv("iHrs",a.hrs)}${kv("iShift",(a.shifts||[]).filter(k=>SHIFTS[k]).map(k=>L(SHIFTS[k])).join(", "))}
+   ${kv("iBen",(a.bens||[]).filter(k=>BENEFITS[k]).map(k=>L(BENEFITS[k])).join(", "))}${applied?kv("iApplied",ago(applied)):""}
+   ${a.desc&&L(a.desc)?`<p><b>${t("iDesc")}:</b> ${esc(L(a.desc))}</p>`:""}</details>`}
+/* chat about a job ad shows what it is about */
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const a=adById(d.item);if(!a)return;
+  const sh=$("sheet"),wasOpen=sh.dataset.adinfo!=="closed",x=st.applied.find(z=>z.id===a.id),anchor=sh.querySelector(".dealcard")||sh.querySelector("#chatBox");if(!anchor)return;
+  anchor.insertAdjacentHTML(anchor.id==="chatBox"?"beforebegin":"afterend",adInfoHtml(a,x&&x.date));
+  const det=sh.querySelector(".adinfo");if(!wasOpen)det.open=false;det.addEventListener("toggle",()=>{sh.dataset.adinfo=det.open?"open":"closed"})}}
+{const _oc=openChat;openChat=function(id){const d=st.deals.find(x=>x.id===id);if(d&&d.kind==="app")$("sheet").dataset.adinfo=d.msgs.filter(m=>m.from!=="sys").length>2?"closed":"open";_oc(id)}}
+/* my applications: once invited, the row opens the chat */
+{const _ra=renderApps;renderApps=function(){_ra();const A=$("apps");if(!A)return;
+  A.querySelectorAll("[data-ad]").forEach(b=>{const d=ivDeal(b.dataset.ad);if(!d)return;const row=b.closest(".row");if(!row||row.classList.contains("selectable"))return;
+    row.classList.add("ivrow");const info=row.children[1];if(info&&!info.querySelector(".ivbtn"))info.insertAdjacentHTML("beforeend",`<button class="primary sm ivbtn" data-iv="${d.id}">${t("openTalk")}${d.unread?` (${d.unread})`:""}</button>`);
+    row.onclick=e=>{if(e.target.closest("[data-ad],[data-wd]"))return;openChat(d.id)}})}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
