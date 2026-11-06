@@ -2654,7 +2654,7 @@ function renderCoAds(){const box=$("coads");if(!box)return;
     <fieldset class="bens"><legend>${t("aShift")}</legend>${chips("shifts",Object.keys(SHIFTS).map(k=>[k,L(SHIFTS[k])]),f.shifts)}</fieldset>
     ${f.kind==="stud"?"":`<fieldset class="bens"><legend>${t("aBen")}</legend>${chips("bens",Object.keys(BENEFITS).map(k=>[k,L(BENEFITS[k])]),f.bens)}</fieldset>`}
     <label><span>${t("aDesc")}</span><textarea id="ca-desc" maxlength="600" placeholder="${esc(t("aDescPh"))}">${esc(f.desc)}</textarea></label>
-    ${f.kind==="stud"?`<label class="tog"><span><b>${t("studPupils")}</b></span><input type="checkbox" role="switch" id="ca-both"${f.both?" checked":""}><i aria-hidden="true"></i></label>`:""}
+    ${f.kind==="stud"?`<label class="tog"><span><b>${t("caMinors")}</b><small style="display:block;color:var(--muted);font-weight:500">${t("caMinorsHint")}</small></span><input type="checkbox" role="switch" id="ca-both"${f.both?" checked":""}><i aria-hidden="true"></i></label>`:""}
     <label class="tog"><span><b>${f.kind==="stud"?t("urgentStud"):t("urgentZap")}</b></span><input type="checkbox" role="switch" id="ca-urg"${f.urgent?" checked":""}><i aria-hidden="true"></i></label>
     <div class="two"><button type="button" class="ghost" id="caCancel">${t("cancel")}</button><button type="submit" class="primary">${t("aPost")}</button></div>
    </form>`:""}
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="42";
+const APP_VER="44";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3804,7 +3804,7 @@ function napSteps(stt){const i=NAP_STEPS.indexOf(stt);return `<div class="napste
 function napLine(n){return `${esc(n.servis)} · ${napDay(n.from)}–${napDay(n.to)} · ${n.hours} h · ${String(n.rate).replace(".",",")} €/h`}
 /* made-up candidates move through the steps by themselves, so the whole flow can be shown */
 function napTickDemo(){let ch=false;st.naps.forEach(n=>{if(n.live)return;const age=Date.now()-n.ts;
-  if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;napPatch(n.id,{status:"confirmed",st_status:"stud",st_school:"Univerza v Ljubljani",st_tax:"(demo)"});notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
+  if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;napPatch(n.id,{status:"confirmed",st_status:"stud",st_school:"Univerza v Ljubljani",st_tax:"(demo)",st_addr:"Demo ulica 1, 4000 Kranj"});notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
   if(n.status==="confirmed"&&age>11000&&!n.waitServis){n.status="issued";ch=true;napPatch(n.id,{status:"issued"});notify("nNapIssuedCo",{x:n.cand,s:n.servis},{view:"coads"})}});
   if(ch){save();if(!$("v-coads").hidden)renderCoAds();if(sheetOpts.cand){const n=st.naps.find(z=>z.k===sheetOpts.cand);if(n)cdOpen(n.adId,n.k)}}}
 setInterval(napTickDemo,1500);
@@ -3848,7 +3848,7 @@ function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;cons
   return _tm(d,text)}}
 /* student: confirm in the chat (and see the status) */
 function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(String(p.napTax||""))){toast(t("napNeedProfile"));show("profile");closeSheet();return}
-  const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();napPatch(o.id,{status:"confirmed",st_tax:String(p.napTax),st_status:p.napStatus||"stud",st_school:p.napSchool||"",cand_servis:p.napServis||""});d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
+  const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();napPatch(o.id,{status:"confirmed",st_tax:String(p.napTax),st_status:p.napStatus||"stud",st_school:p.napSchool||"",cand_servis:p.napServis||"",st_addr:napAddr(p)||null,cand_name:liveName()});d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
   sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPOK⟧"}}).catch(e=>console.warn(e));drawChat(d.id)}
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const sh=$("sheet");
   let n=null,mine=false;if(d.role==="company"){n=st.naps.find(z=>z.live&&z.k==="L"+d.rid)}else{n=st.napIn[d.rid];mine=true}
@@ -3869,7 +3869,9 @@ function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(Strin
     setK(el.dataset.k,v);$("e-napTax").textContent=el.id==="p-napTax"&&v&&v.length!==8?t("napTaxBad"):"";markDirty()}))}}
 
 /* ---- shared record of every order, so the "student service" view (#mnenja) can see and issue them ---- */
-function napDb(n,x){sb("napotnice",{method:"POST",body:{id:n.id,co_id:st.liveId,co_name:myCo().name||meName()||"Podjetje",cand_id:x&&x.uid||null,cand_name:n.cand,servis:n.servis,title:n.title,loc:n.loc,
+const napAddr=o=>{o=o||{};const a=[[o.street,o.houseNo].filter(Boolean).join(" "),[o.postCode,o.postCity].filter(Boolean).join(" ")].filter(Boolean).join(", ");return a||o.addr||""};
+function napDb(n,x){const p=st.profile||{},c=p.co||{},a=st.myAds.find(z=>z.id===n.adId)||{};sb("napotnice",{method:"POST",body:{id:n.id,co_id:st.liveId,co_name:[c.name,c.form].filter(Boolean).join(" ")||myCo().name||meName()||"Podjetje",
+  co_tax:c.tax||null,co_addr:napAddr(c)||null,co_contact:meName()||null,co_phone:p.phone||null,work_hrs:a.hrs||null,cand_id:x&&x.uid||null,cand_name:n.cand,servis:n.servis,title:n.title,loc:n.loc,
   from_d:n.from,to_d:n.to,hours:n.hours,rate:n.rate,status:"sent",live:!!n.live}}).catch(e=>console.warn("napotnice",e))}
 function napPatch(id,body){if(!id)return;sb(`napotnice?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",body}).catch(e=>console.warn("napotnice",e))}
 /* company: a live order becomes "issued" when the student service issues it */
@@ -3893,7 +3895,7 @@ setInterval(async()=>{const open=st.naps.filter(n=>n.live&&n.status!=="issued");
 @media (max-width:520px){#napAdmin .nagrid{grid-template-columns:1fr}#napAdmin .nastats{grid-template-columns:repeat(2,1fr)}}`;document.head.appendChild(css)}
 let NA={rows:null,tab:"confirmed",sv:"all",q:""};
 const NAST={sent:"Čaka na študenta",confirmed:"Za izdajo",issued:"Izdana",rejected:"Zavrnjena"};
-const naNo=r=>{const all=(NA.rows||[]).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));return "NAP-2026-"+String(all.findIndex(z=>z.id===r.id)+1).padStart(4,"0")};
+const naNo=r=>{if(!NA.rows||!NA.rows.some(z=>z.id===r.id))return "NAP-"+String(r.id).replace(/\D/g,"").slice(-6).padStart(6,"0");const all=(NA.rows||[]).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));return "NAP-2026-"+String(all.findIndex(z=>z.id===r.id)+1).padStart(4,"0")};
 const naEur=v=>(Math.round(v*100)/100).toLocaleString("sl-SI",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 const naDate=iso=>{if(!iso)return "—";const [y,m,d]=String(iso).slice(0,10).split("-");return `${+d}. ${+m}. ${y}`};
 async function naLoad(){NA.rows=null;naDraw();try{NA.rows=await sb("napotnice?select=*&order=created_at.desc&limit=500")}catch(e){NA.rows=[];NA.err=1}naDraw()}
@@ -3910,9 +3912,9 @@ function naDraw(){let w=$("napAdmin");if(!w){w=document.createElement("div");w.i
    ${list.length?list.map(r=>`<details class="nacard"${list.length===1?" open":""}><summary><span class="t">${esc(r.cand_name||"—")} · ${esc(r.title||"")}</span><span class="nst ${esc(r.status)}">${NAST[r.status]||esc(r.status)}</span>
      <span class="m">${naNo(r)} · ${esc(r.co_name||"")} · ${esc(r.servis||"")} · ${napDay(String(r.from_d).slice(0,10))}–${napDay(String(r.to_d).slice(0,10))}${r.live?" · ● V živo":" · demo"}</span></summary>
      <div class="nabody"><div class="nagrid">
-      <div><h4>Študent</h4><b>${esc(r.cand_name||"—")}</b><br>Davčna: ${esc(r.st_tax||"— (še ni potrdil)")}<br>${r.st_status?(r.st_status==="dijak"?"Dijak":"Študent"):""}${r.st_school?" · "+esc(r.st_school):""}</div>
-      <div><h4>Delodajalec</h4><b>${esc(r.co_name||"—")}</b><br>Kraj dela: ${esc(r.loc||"—")}</div>
-      <div><h4>Delo</h4>${esc(r.title||"")}<br>${naDate(r.from_d)} – ${naDate(r.to_d)}</div>
+      <div><h4>Študent</h4><b>${esc(r.cand_name||"—")}</b><br>${r.st_addr?esc(r.st_addr)+"<br>":""}Davčna: ${esc(r.st_tax||"— (še ni potrdil)")}<br>${r.st_status?(r.st_status==="dijak"?"Dijak":"Študent"):""}${r.st_school?" · "+esc(r.st_school):""}</div>
+      <div><h4>Delodajalec</h4><b>${esc(r.co_name||"—")}</b><br>${r.co_addr?esc(r.co_addr)+"<br>":""}${r.co_tax?"Davčna: "+esc(r.co_tax)+"<br>":""}${r.co_contact?esc(r.co_contact):""}${r.co_phone?", "+esc(r.co_phone):""}</div>
+      <div><h4>Delo</h4>${esc(r.title||"")} · ${esc(r.loc||"")}<br>${naDate(r.from_d)} – ${naDate(r.to_d)}${r.work_hrs?"<br>Delovni čas: "+esc(r.work_hrs):""}</div>
       <div><h4>Obseg in plačilo</h4>${r.hours} ur × ${naEur(+r.rate)} bruto<br><b>Predvideno: ${naEur(r.hours*r.rate)}</b></div></div>
       <div class="naacts">${r.status==="confirmed"?`<button class="primary sm" data-naiss="${esc(r.id)}">✓ Izdaj napotnico</button><button class="ghost sm" data-narej="${esc(r.id)}">Zavrni</button>`:""}
        <button class="ghost sm" data-napdf="${esc(r.id)}">📄 ${r.status==="issued"?"Prenesi napotnico (PDF)":"Predogled PDF"}</button></div></div></details>`).join("")
@@ -3931,9 +3933,9 @@ function naPdf(r){const W=1240,H=1754,c=document.createElement("canvas");c.width
   g.textAlign="right";tx(r.status==="issued"?"IZDANA":"PREDOGLED – ŠE NI IZDANA",W-90,200,26,800,r.status==="issued"?"#16B07A":"#B42318");tx(`Datum: ${naDate(new Date().toISOString())}`,W-90,250,24,400,"#555");g.textAlign="left";
   g.fillStyle="#FFF4D6";g.fillRect(90,290,W-180,60);tx("DEMO DOKUMENT JobNod – ni veljavna napotnica",110,330,24,700,"#8A5A00");
   let y=420;const sec=(title,rows)=>{tx(title.toUpperCase(),90,y,22,800,"#FF5E3A");y+=14;g.fillStyle="#eee";g.fillRect(90,y,W-180,2);y+=44;rows.forEach(([k,v])=>{tx(k,90,y,26,400,"#666");tx(v,460,y,26,700);y+=46});y+=30};
-  sec("Študent",[["Ime in priimek",r.cand_name||"—"],["Davčna številka",r.st_tax||"—"],["Status",r.st_status==="dijak"?"dijak":"študent"],["Šola / fakulteta",r.st_school||"—"]]);
-  sec("Delodajalec (naročnik)",[["Naziv",r.co_name||"—"],["Kraj dela",r.loc||"—"]]);
-  sec("Delo",[["Opis dela",r.title||"—"],["Obdobje",`${naDate(r.from_d)} – ${naDate(r.to_d)}`],["Predvideno ur",String(r.hours)],["Urna postavka (bruto)",naEur(+r.rate)],["Predviden znesek (bruto)",naEur(r.hours*r.rate)]]);
+  sec("Študent",[["Ime in priimek",r.cand_name||"—"],["Naslov",r.st_addr||"—"],["Davčna številka",r.st_tax||"—"],["Status",r.st_status==="dijak"?"dijak":"študent"],["Šola / fakulteta",r.st_school||"—"]]);
+  sec("Delodajalec (naročnik)",[["Naziv",r.co_name||"—"],["Naslov",r.co_addr||"—"],["Davčna številka",r.co_tax||"—"],["Kontaktna oseba",[r.co_contact,r.co_phone].filter(Boolean).join(", ")||"—"]]);
+  sec("Delo",[["Opis dela",r.title||"—"],["Kraj dela",r.loc||"—"],["Obdobje",`${naDate(r.from_d)} – ${naDate(r.to_d)}`],["Delovni čas",r.work_hrs||"po dogovoru"],["Predvideno ur",String(r.hours)],["Urna postavka (bruto)",naEur(+r.rate)],["Predviden znesek (bruto)",naEur(r.hours*r.rate)]]);
   y+=40;g.fillStyle="#ddd";g.fillRect(90,y,440,2);g.fillRect(W-530,y,440,2);tx("Podpis delodajalca",90,y+40,22,400,"#777");tx(`Žig in podpis: ${r.servis||"servis"}`,W-530,y+40,22,400,"#777");
   tx("Naročeno prek aplikacije JobNod · jobnodapp.com",90,H-80,22,400,"#999");
   const jpg=atob(c.toDataURL("image/jpeg",.9).split(",")[1]),img=new Uint8Array(jpg.length);for(let i=0;i<jpg.length;i++)img[i]=jpg.charCodeAt(i);
@@ -3949,6 +3951,17 @@ function naPdf(r){const W=1240,H=1754,c=document.createElement("canvas");c.width
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);toast("Napotnica (PDF) je prenesena.")}
 function naCheck(){if(location.hash==="#napotnice")naLoad();else{const w=$("napAdmin");if(w)w.remove()}}
 addEventListener("hashchange",naCheck);setTimeout(naCheck,300);
+
+/* the PDF also in the app: company (candidate card) and student (chat), once issued */
+async function napPdfById(id){try{const rows=await sb(`napotnice?id=eq.${encodeURIComponent(id)}&select=*`);if(rows&&rows[0])naPdf(rows[0]);else toast(t("cvFail"))}catch(e){toast(t("cvFail"))}}
+{const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const n=st.naps.find(z=>z.k===k),box=$("sheet").querySelector(".napbox");if(!n||!box||n.status!=="issued"||box.querySelector(".nappdf"))return;
+  box.insertAdjacentHTML("beforeend",`<button class="ghost sm nappdf" type="button" style="margin:0">📄 Napotnica PDF</button>`);box.querySelector(".nappdf").onclick=()=>napPdfById(n.id)}}
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const n=d.role==="company"?st.naps.find(z=>z.live&&z.k==="L"+d.rid):st.napIn[d.rid];
+  const box=$("sheet").querySelector(".napbox");if(!n||!box||n.status!=="issued"||box.querySelector(".nappdf"))return;
+  box.insertAdjacentHTML("beforeend",`<button class="ghost sm nappdf" type="button" style="margin:0">📄 Napotnica PDF</button>`);box.querySelector(".nappdf").onclick=()=>napPdfById(n.id)}}
+/* ================= LABEL: "SUITABLE FOR UNDER-18 PUPILS" ================= */
+Object.assign(LANGS.sl,{caMinors:"Primerno za mladoletne dijake",caMinorsHint:"Delo lahko opravljajo tudi dijaki, mlajši od 18 let (ne ponoči in ne na nevarnih delih).",pupilsToo:"Primerno za mladoletne",studPupils:"Študenti in mladoletni dijaki"});
+Object.assign(LANGS.en,{caMinors:"Suitable for under-18 pupils",caMinorsHint:"Pupils under 18 can do this job too (no night work or hazardous work).",pupilsToo:"OK for under-18s",studPupils:"Students and under-18 pupils"});
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
