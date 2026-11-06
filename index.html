@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="41";
+const APP_VER="42";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3879,27 +3879,76 @@ setInterval(async()=>{const open=st.naps.filter(n=>n.live&&n.status!=="issued");
       const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===n.k.slice(1));
       if(d){const txt=t("mNapIssued",{s:n.servis});d.msgs.push({from:"me",text:txt,ts:now()});save();sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPIS⟧"}}).catch(()=>{});if(sheetOpts.chat===d.id)drawChat(d.id)}
       notify("nNapIssuedCo",{x:n.cand,s:n.servis},d?{chat:d.id}:{view:"coads"});if(!$("v-coads").hidden)renderCoAds()})}catch(e){}},8000);
-/* the hidden page: a section that works like the student service's inbox */
-{const css=document.createElement("style");css.textContent=`#fbAdmin .napadm{background:var(--card,#fff);border-radius:18px;padding:14px;margin-bottom:14px}#fbAdmin .napadm h2{margin:0 0 4px;font-size:18px}
-#fbAdmin .napc{border-top:1px solid rgba(0,0,0,.07);padding:10px 0;display:flex;flex-direction:column;gap:4px;font-size:14px}#fbAdmin .napc .row1{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-#fbAdmin .napst{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}#fbAdmin .napst.sent{background:#FFF4D6;color:#8A5A00}#fbAdmin .napst.confirmed{background:#DBEAFE;color:#1E40AF}#fbAdmin .napst.issued{background:#D1FAE5;color:#065F46}#fbAdmin .napst.rejected{background:#FDE2E2;color:#B42318}
-#fbAdmin .napc .acts{display:flex;gap:8px;margin-top:4px}#fbAdmin .napc .acts button{margin:0}`;document.head.appendChild(css)}
-let faNaps=null,faNapSv="all";
-const NAPST_ADM={sent:"Čaka na študenta",confirmed:"Novo naročilo – za izdajo",issued:"Izdana",rejected:"Zavrnjena"};
-{const _fl=faLoad;faLoad=async function(){faNaps=null;sb("napotnice?select=*&order=created_at.desc&limit=300").then(r=>{faNaps=r;faDraw()}).catch(()=>{faNaps=[];faDraw()});return _fl()}}
-{const _fd=faDraw;faDraw=function(err){_fd(err);const w=$("fbAdmin");if(!w||err)return;const anchor=w.querySelector(".tsbox")||w.querySelector(".fahead");if(!anchor||w.querySelector(".napadm"))return;
-  const N=faNaps,list=N?(faNapSv==="all"?N:N.filter(r=>r.servis===faNapSv)):[],sv=N?[...new Set(N.map(r=>r.servis))]:[],todo=N?N.filter(r=>r.status==="confirmed").length:0;
-  anchor.insertAdjacentHTML("afterend",`<div class="napadm"><h2>📄 Napotnice · pogled študentskega servisa</h2><p class="hint" style="margin:0 0 8px">Demo: tako bi naročila iz JobNoda videl študentski servis. »Izdaj« pošlje status podjetju in študentu.</p>
-   ${N===null?`<p class="hint">Nalagam …</p>`:`<div class="fastats" style="margin-bottom:8px"><div><b>${N.length}</b><span>vseh</span></div><div><b>${todo}</b><span>za izdajo</span></div><div><b>${N.filter(r=>r.status==="issued").length}</b><span>izdanih</span></div><div><b>${sv.length}</b><span>servisov</span></div></div>
-   ${sv.length>1?`<div class="fatabs">${[["all","Vsi"],...sv.map(s=>[s,s])].map(([k,l])=>`<button class="${faNapSv===k?"primary":"ghost"}" data-napsv="${esc(k)}">${esc(l)}</button>`).join("")}</div>`:""}
-   ${list.length?list.map(r=>`<div class="napc"><div class="row1"><b>${esc(r.title||"")} · ${esc(r.co_name||"")}</b><span class="napst ${esc(r.status)}">${esc(NAPST_ADM[r.status]||r.status)}</span></div>
-     <span>👤 ${esc(r.cand_name||"")}${r.st_tax?` · davčna ${esc(r.st_tax)}`:""}${r.st_school?` · ${esc(r.st_school)}`:""}${r.st_status?` · ${r.st_status==="dijak"?"dijak":"študent"}`:""}</span>
-     <span class="meta">${esc(r.servis)} · ${esc(r.loc||"")} · ${napDay(r.from_d)}–${napDay(r.to_d)} · ${r.hours} h · ${String(r.rate).replace(".",",")} €/h${r.live?" · ● V živo":" · demo"}</span>
-     ${r.status==="confirmed"?`<div class="acts"><button class="primary sm" data-napiss="${esc(r.id)}">✓ Izdaj napotnico</button><button class="ghost sm" data-naprej="${esc(r.id)}">Zavrni</button></div>`:""}</div>`).join("")
-     :`<p class="hint">Še ni naročil napotnic.</p>`}`}</div>`);
-  w.querySelectorAll("[data-napsv]").forEach(b=>b.onclick=()=>{faNapSv=b.dataset.napsv;faDraw()});
-  w.querySelectorAll("[data-napiss],[data-naprej]").forEach(b=>b.onclick=async()=>{const id=b.dataset.napiss||b.dataset.naprej,stt=b.dataset.napiss?"issued":"rejected";b.disabled=true;
-    try{await sb(`napotnice?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",body:{status:stt}});const r=faNaps.find(z=>z.id===id);if(r)r.status=stt;faDraw()}catch(e){b.disabled=false;toast("Ni uspelo, poskusi znova.")}})}}
+/* ================= SEPARATE PAGE FOR THE STUDENT SERVICE: jobnodapp.com/#napotnice ================= */
+{const css=document.createElement("style");css.textContent=`#napAdmin{position:fixed;inset:0;z-index:900;background:var(--bg);overflow:auto;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+#napAdmin .nahead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}#napAdmin h1{margin:0;font-size:24px;letter-spacing:-.03em}#napAdmin .sub{color:var(--muted);font-size:13.5px;margin:2px 0 14px}
+#napAdmin .nastats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}#napAdmin .nastats div{background:var(--card,#fff);border-radius:14px;padding:10px;text-align:center}#napAdmin .nastats b{display:block;font-size:22px}#napAdmin .nastats span{font-size:12px;color:var(--muted)}
+#napAdmin .nastats .hot{outline:2px solid #2563EB}#napAdmin .natabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}#napAdmin .natabs button{margin:0;padding:7px 12px;border-radius:999px;font-size:13px}
+#napAdmin .natools{display:flex;gap:8px;margin-bottom:12px}#napAdmin .natools select,#napAdmin .natools input{flex:1;min-width:0}
+#napAdmin .nacard{background:var(--card,#fff);border-radius:16px;margin-bottom:8px;overflow:hidden}#napAdmin .nacard summary{list-style:none;cursor:pointer;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+#napAdmin .nacard summary::-webkit-details-marker{display:none}#napAdmin .nacard .t{font-weight:700;font-size:15px;min-width:0}#napAdmin .nacard .m{grid-column:1/-1;color:var(--muted);font-size:13px}
+#napAdmin .nst{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}#napAdmin .nst.sent{background:#FFF4D6;color:#8A5A00}#napAdmin .nst.confirmed{background:#DBEAFE;color:#1E40AF}#napAdmin .nst.issued{background:#D1FAE5;color:#065F46}#napAdmin .nst.rejected{background:#FDE2E2;color:#B42318}
+#napAdmin .nabody{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}#napAdmin .nagrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}#napAdmin .nagrid div{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+#napAdmin .nagrid h4{margin:0 0 4px;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}#napAdmin .naacts{display:flex;gap:8px;flex-wrap:wrap}#napAdmin .naacts button{margin:0}
+@media (max-width:520px){#napAdmin .nagrid{grid-template-columns:1fr}#napAdmin .nastats{grid-template-columns:repeat(2,1fr)}}`;document.head.appendChild(css)}
+let NA={rows:null,tab:"confirmed",sv:"all",q:""};
+const NAST={sent:"Čaka na študenta",confirmed:"Za izdajo",issued:"Izdana",rejected:"Zavrnjena"};
+const naNo=r=>{const all=(NA.rows||[]).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));return "NAP-2026-"+String(all.findIndex(z=>z.id===r.id)+1).padStart(4,"0")};
+const naEur=v=>(Math.round(v*100)/100).toLocaleString("sl-SI",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const naDate=iso=>{if(!iso)return "—";const [y,m,d]=String(iso).slice(0,10).split("-");return `${+d}. ${+m}. ${y}`};
+async function naLoad(){NA.rows=null;naDraw();try{NA.rows=await sb("napotnice?select=*&order=created_at.desc&limit=500")}catch(e){NA.rows=[];NA.err=1}naDraw()}
+function naDraw(){let w=$("napAdmin");if(!w){w=document.createElement("div");w.id="napAdmin";document.body.appendChild(w)}const R=NA.rows||[];
+  const cnt=k=>R.filter(r=>r.status===k).length,sv=[...new Set(R.map(r=>r.servis).filter(Boolean))].sort();
+  let list=R.filter(r=>(NA.tab==="all"||r.status===NA.tab)&&(NA.sv==="all"||r.servis===NA.sv));
+  if(NA.q){const q=NA.q.toLowerCase();list=list.filter(r=>[r.cand_name,r.co_name,r.title,r.loc].join(" ").toLowerCase().includes(q))}
+  w.innerHTML=`<div class="nahead"><div><h1>📄 Napotnice</h1></div><div style="display:flex;gap:8px"><button class="ghost sm" id="naR" style="margin:0">Osveži</button><button class="ghost sm" id="naX" style="margin:0">Zapri</button></div></div>
+   <p class="sub">Pogled študentskega servisa · naročila iz JobNoda · <b>demo</b></p>
+   ${NA.rows===null?`<p class="hint">Nalagam …</p>`:NA.err?`<p class="ferr">Naročil ni bilo mogoče naložiti. Preveri internet in klikni Osveži.</p>`:`
+   <div class="nastats"><div class="${cnt("confirmed")?"hot":""}"><b>${cnt("confirmed")}</b><span>za izdajo</span></div><div><b>${cnt("sent")}</b><span>čaka na študenta</span></div><div><b>${cnt("issued")}</b><span>izdanih</span></div><div><b>${R.length}</b><span>vseh</span></div></div>
+   <div class="natabs">${[["confirmed","Za izdajo"],["sent","Čaka na študenta"],["issued","Izdane"],["rejected","Zavrnjene"],["all","Vse"]].map(([k,l])=>`<button class="${NA.tab===k?"primary":"ghost"}" data-natab="${k}">${l} (${k==="all"?R.length:cnt(k)})</button>`).join("")}</div>
+   <div class="natools"><select id="naSv"><option value="all">Vsi servisi</option>${sv.map(s=>`<option${NA.sv===s?" selected":""}>${esc(s)}</option>`).join("")}</select><input id="naQ" placeholder="Išči: študent, podjetje, delo" value="${esc(NA.q)}"></div>
+   ${list.length?list.map(r=>`<details class="nacard"${list.length===1?" open":""}><summary><span class="t">${esc(r.cand_name||"—")} · ${esc(r.title||"")}</span><span class="nst ${esc(r.status)}">${NAST[r.status]||esc(r.status)}</span>
+     <span class="m">${naNo(r)} · ${esc(r.co_name||"")} · ${esc(r.servis||"")} · ${napDay(String(r.from_d).slice(0,10))}–${napDay(String(r.to_d).slice(0,10))}${r.live?" · ● V živo":" · demo"}</span></summary>
+     <div class="nabody"><div class="nagrid">
+      <div><h4>Študent</h4><b>${esc(r.cand_name||"—")}</b><br>Davčna: ${esc(r.st_tax||"— (še ni potrdil)")}<br>${r.st_status?(r.st_status==="dijak"?"Dijak":"Študent"):""}${r.st_school?" · "+esc(r.st_school):""}</div>
+      <div><h4>Delodajalec</h4><b>${esc(r.co_name||"—")}</b><br>Kraj dela: ${esc(r.loc||"—")}</div>
+      <div><h4>Delo</h4>${esc(r.title||"")}<br>${naDate(r.from_d)} – ${naDate(r.to_d)}</div>
+      <div><h4>Obseg in plačilo</h4>${r.hours} ur × ${naEur(+r.rate)} bruto<br><b>Predvideno: ${naEur(r.hours*r.rate)}</b></div></div>
+      <div class="naacts">${r.status==="confirmed"?`<button class="primary sm" data-naiss="${esc(r.id)}">✓ Izdaj napotnico</button><button class="ghost sm" data-narej="${esc(r.id)}">Zavrni</button>`:""}
+       <button class="ghost sm" data-napdf="${esc(r.id)}">📄 ${r.status==="issued"?"Prenesi napotnico (PDF)":"Predogled PDF"}</button></div></div></details>`).join("")
+     :`<p class="hint">Ni naročil v tem pogledu.</p>`}`}`;
+  $("naX").onclick=()=>{history.replaceState(null,"",location.pathname+location.search);w.remove()};$("naR").onclick=naLoad;
+  w.querySelectorAll("[data-natab]").forEach(b=>b.onclick=()=>{NA.tab=b.dataset.natab;naDraw()});
+  if($("naSv"))$("naSv").onchange=e=>{NA.sv=e.target.value;naDraw()};
+  if($("naQ"))$("naQ").oninput=e=>{NA.q=e.target.value;clearTimeout(NA.qt);NA.qt=setTimeout(()=>{naDraw();const q=$("naQ");if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}},350)};
+  w.querySelectorAll("[data-naiss],[data-narej]").forEach(b=>b.onclick=async()=>{const id=b.dataset.naiss||b.dataset.narej,stt=b.dataset.naiss?"issued":"rejected";b.disabled=true;
+    try{await sb(`napotnice?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",body:{status:stt}});const r=NA.rows.find(z=>z.id===id);if(r)r.status=stt;if(stt==="issued")NA.tab="issued";naDraw();toast(stt==="issued"?"Napotnica izdana ✓":"Naročilo zavrnjeno")}catch(e){b.disabled=false;toast("Ni uspelo, poskusi znova.")}});
+  w.querySelectorAll("[data-napdf]").forEach(b=>b.onclick=()=>{const r=NA.rows.find(z=>z.id===b.dataset.napdf);if(r)naPdf(r)})}
+/* the referral document: drawn on a canvas (keeps č, š, ž) and wrapped in a one-page PDF */
+function naPdf(r){const W=1240,H=1754,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d"),F="Helvetica, Arial, sans-serif";
+  g.fillStyle="#fff";g.fillRect(0,0,W,H);const tx=(s,x,y,sz,w,col)=>{g.font=`${w||400} ${sz}px ${F}`;g.fillStyle=col||"#1d1b22";g.fillText(String(s),x,y)};
+  g.fillStyle="#FF5E3A";g.fillRect(0,0,W,16);tx(r.servis||"Študentski servis",90,120,30,700,"#FF5E3A");tx("NAPOTNICA",90,200,64,800);tx(`št. ${naNo(r)}`,90,250,28,500,"#555");
+  g.textAlign="right";tx(r.status==="issued"?"IZDANA":"PREDOGLED – ŠE NI IZDANA",W-90,200,26,800,r.status==="issued"?"#16B07A":"#B42318");tx(`Datum: ${naDate(new Date().toISOString())}`,W-90,250,24,400,"#555");g.textAlign="left";
+  g.fillStyle="#FFF4D6";g.fillRect(90,290,W-180,60);tx("DEMO DOKUMENT JobNod – ni veljavna napotnica",110,330,24,700,"#8A5A00");
+  let y=420;const sec=(title,rows)=>{tx(title.toUpperCase(),90,y,22,800,"#FF5E3A");y+=14;g.fillStyle="#eee";g.fillRect(90,y,W-180,2);y+=44;rows.forEach(([k,v])=>{tx(k,90,y,26,400,"#666");tx(v,460,y,26,700);y+=46});y+=30};
+  sec("Študent",[["Ime in priimek",r.cand_name||"—"],["Davčna številka",r.st_tax||"—"],["Status",r.st_status==="dijak"?"dijak":"študent"],["Šola / fakulteta",r.st_school||"—"]]);
+  sec("Delodajalec (naročnik)",[["Naziv",r.co_name||"—"],["Kraj dela",r.loc||"—"]]);
+  sec("Delo",[["Opis dela",r.title||"—"],["Obdobje",`${naDate(r.from_d)} – ${naDate(r.to_d)}`],["Predvideno ur",String(r.hours)],["Urna postavka (bruto)",naEur(+r.rate)],["Predviden znesek (bruto)",naEur(r.hours*r.rate)]]);
+  y+=40;g.fillStyle="#ddd";g.fillRect(90,y,440,2);g.fillRect(W-530,y,440,2);tx("Podpis delodajalca",90,y+40,22,400,"#777");tx(`Žig in podpis: ${r.servis||"servis"}`,W-530,y+40,22,400,"#777");
+  tx("Naročeno prek aplikacije JobNod · jobnodapp.com",90,H-80,22,400,"#999");
+  const jpg=atob(c.toDataURL("image/jpeg",.9).split(",")[1]),img=new Uint8Array(jpg.length);for(let i=0;i<jpg.length;i++)img[i]=jpg.charCodeAt(i);
+  const enc=s=>new TextEncoder().encode(s),parts=[],offs=[];let len=0;const put=b=>{parts.push(b);len+=b.length};
+  put(enc("%PDF-1.4\n"));const obj=(n,head,stream)=>{offs[n]=len;put(enc(`${n} 0 obj\n${head}\n`));if(stream){put(enc("stream\n"));put(stream);put(enc("\nendstream\n"))}put(enc("endobj\n"))};
+  const cs=enc("q 595 0 0 842 0 0 cm /Im0 Do Q");
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>");obj(2,"<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>");
+  obj(4,`<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.length} >>`,img);
+  obj(5,`<< /Length ${cs.length} >>`,cs);
+  const xref=len;put(enc(`xref\n0 6\n0000000000 65535 f \n${[1,2,3,4,5].map(n=>String(offs[n]).padStart(10,"0")+" 00000 n \n").join("")}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`));
+  const url=URL.createObjectURL(new Blob(parts,{type:"application/pdf"})),a=document.createElement("a");a.href=url;a.download=`Napotnica-${naNo(r)}-${String(r.cand_name||"").replace(/\s+/g,"-")}.pdf`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);toast("Napotnica (PDF) je prenesena.")}
+function naCheck(){if(location.hash==="#napotnice")naLoad();else{const w=$("napAdmin");if(w)w.remove()}}
+addEventListener("hashchange",naCheck);setTimeout(naCheck,300);
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
