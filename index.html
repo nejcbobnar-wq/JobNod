@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="36";
+const APP_VER="37";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3707,6 +3707,23 @@ const CH_KEYS=new Set(["nLiveOffer","nNewOffer","nApplicant","nLiveAcc","nMatch"
 {const _nt=notify;notify=function(k,p,link){const r=_nt(k,p,link);
   if(CH_KEYS.has(k)){const txt=t(k,p||{});if(st.matchSound!==false)maChime();toast("🔔 "+txt);maShow("JobNod",txt,k+"-"+((link&&(link.chat||link.job||link.ad))||Date.now()))}
   return r}}
+/* ================= A DIFFERENT, SHORT SOUND FOR NEW CHAT MESSAGES ================= */
+Object.assign(LANGS.sl,{msSound:"Zvok sporočil",msDesc:"Kratek »blop«, ko v pogovoru dobiš sporočilo",msTest:"Preizkusi zvok sporočila",maSound:"Zvok obvestil",maTest:"Preizkusi zvok obvestila"});
+Object.assign(LANGS.en,{msSound:"Message sound",msDesc:"A short “blop” when you get a chat message",msTest:"Test the message sound",maSound:"Alert sound",maTest:"Test the alert sound"});
+if(st.msgSound===undefined)st.msgSound=true;
+function msBlop(){try{maUnlock();if(!maCtx)return;const t0=maCtx.currentTime+.02,o=maCtx.createOscillator(),g=maCtx.createGain();o.type="triangle";
+  o.frequency.setValueAtTime(420,t0);o.frequency.exponentialRampToValueAtTime(760,t0+.07);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.2,t0+.01);g.gain.exponentialRampToValueAtTime(.0005,t0+.13);
+  o.connect(g).connect(maCtx.destination);o.start(t0);o.stop(t0+.15)}catch(_){}try{navigator.vibrate&&navigator.vibrate(35)}catch(_){}}
+{const _tm=theirMsg;theirMsg=function(d,text){const r=_tm(d,text);if(st.msgSound!==false)msBlop();return r}}
+/* the message itself plays the "blop"; its notification no longer plays the alert chime too */
+CH_KEYS.delete("nLiveMsg");
+{const _nt=notify;notify=function(k,p,link){const r=_nt(k,p,link);if(k==="nLiveMsg"){const txt=t(k,p||{});toast("💬 "+txt);maShow("JobNod",txt,"msg-"+((link&&link.chat)||""))}return r}}
+/* profile: separate switch + test button for message sound */
+{const _rp=renderProfile;renderProfile=function(){_rp();const c=$("profile")&&$("profile").querySelector(".macard");if(!c||c.querySelector("#msSnd"))return;
+  const tog=c.querySelector("#maSnd")&&c.querySelector("#maSnd").closest("label");if(!tog)return;
+  tog.insertAdjacentHTML("afterend",`<label class="tog"><span><b>${t("msSound")}</b><small style="display:block;color:var(--muted);font-weight:500">${t("msDesc")}</small></span><input type="checkbox" role="switch" id="msSnd"${st.msgSound!==false?" checked":""}><i aria-hidden="true"></i></label>`);
+  $("msSnd").onchange=e=>{st.msgSound=e.target.checked;save()};
+  const tb=c.querySelector("#maTest");if(tb)tb.insertAdjacentHTML("afterend",`<button class="ghost sm" type="button" id="msTest">${t("msTest")}</button>`);$("msTest").onclick=()=>msBlop()}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
