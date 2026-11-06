@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="40";
+const APP_VER="41";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3804,8 +3804,8 @@ function napSteps(stt){const i=NAP_STEPS.indexOf(stt);return `<div class="napste
 function napLine(n){return `${esc(n.servis)} · ${napDay(n.from)}–${napDay(n.to)} · ${n.hours} h · ${String(n.rate).replace(".",",")} €/h`}
 /* made-up candidates move through the steps by themselves, so the whole flow can be shown */
 function napTickDemo(){let ch=false;st.naps.forEach(n=>{if(n.live)return;const age=Date.now()-n.ts;
-  if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
-  if(n.status==="confirmed"&&age>11000){n.status="issued";ch=true;notify("nNapIssuedCo",{x:n.cand,s:n.servis},{view:"coads"})}});
+  if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;napPatch(n.id,{status:"confirmed",st_status:"stud",st_school:"Univerza v Ljubljani",st_tax:"(demo)"});notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
+  if(n.status==="confirmed"&&age>11000&&!n.waitServis){n.status="issued";ch=true;napPatch(n.id,{status:"issued"});notify("nNapIssuedCo",{x:n.cand,s:n.servis},{view:"coads"})}});
   if(ch){save();if(!$("v-coads").hidden)renderCoAds();if(sheetOpts.cand){const n=st.naps.find(z=>z.k===sheetOpts.cand);if(n)cdOpen(n.adId,n.k)}}}
 setInterval(napTickDemo,1500);
 /* the order form (company) */
@@ -3824,7 +3824,7 @@ function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;cons
     <button class="primary" id="nGo">${t("napSend")}</button></form>`;
   $("cls").onclick=closeSheet;
   $("napF").onsubmit=e=>{e.preventDefault();const n={id:"np"+Date.now(),adId,k,cand:x.name,live:!!x.live,servis:$("nS").value,from:$("nF").value,to:$("nT").value,hours:+$("nH").value||40,rate:+$("nR").value||8.5,loc:$("nP").value,title:L(a.title),ts:Date.now(),status:"sent"};
-    st.naps=st.naps.filter(z=>z.k!==k);st.naps.push(n);save();
+    st.naps=st.naps.filter(z=>z.k!==k);st.naps.push(n);save();napDb(n,x);
     if(n.live){const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===k.slice(1));
       if(d){const txt=t("mNapReq",{s:n.servis,f:napDay(n.from),t:napDay(n.to),h:n.hours,r:String(n.rate).replace(".",",")});d.msgs.push({from:"me",text:txt,ts:now()});save();
         sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAP⟧"+JSON.stringify({id:n.id,co:myCo().name,servis:n.servis,from:n.from,to:n.to,hours:n.hours,rate:n.rate,loc:n.loc,title:n.title})}}).catch(e=>console.warn("nap",e))}}
@@ -3843,14 +3843,12 @@ function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;cons
 {const _tm=theirMsg;theirMsg=function(d,text){const s=String(text||"");
   if(s.startsWith("⟦NAP⟧")){let o=null;try{o=JSON.parse(s.slice(5))}catch(_){}if(o){st.napIn[d.rid]=Object.assign(o,{status:"sent",deal:d.id});save();
       _tm(d,t("mNapReq",{s:o.servis,f:napDay(o.from),t:napDay(o.to),h:o.hours,r:String(o.rate).replace(".",",")}));notify("nNapReq",{x:o.co,y:o.title},{chat:d.id})}return}
-  if(s.startsWith("⟦NAPOK⟧")){const n=st.naps.find(z=>z.live&&z.k==="L"+d.rid);_tm(d,t("mNapOk"));if(n&&n.status==="sent"){n.status="confirmed";save();notify("nNapOk",{x:n.cand,s:n.servis},{chat:d.id});
-      setTimeout(()=>{n.status="issued";save();const txt=t("mNapIssued",{s:n.servis});d.msgs.push({from:"me",text:txt,ts:now()});save();
-        sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPIS⟧"}}).catch(()=>{});notify("nNapIssuedCo",{x:n.cand,s:n.servis},{chat:d.id});if(sheetOpts.chat===d.id)drawChat(d.id)},6000)}return}
+  if(s.startsWith("⟦NAPOK⟧")){const n=st.naps.find(z=>z.live&&z.k==="L"+d.rid);_tm(d,t("mNapOk"));if(n&&n.status==="sent"){n.status="confirmed";save();notify("nNapOk",{x:n.cand,s:n.servis},{chat:d.id})}return}
   if(s.startsWith("⟦NAPIS⟧")){const o=st.napIn[d.rid];if(o){o.status="issued";save();_tm(d,t("mNapIssued",{s:o.servis}));notify("nNapIssued",{y:o.title,s:o.servis},{chat:d.id})}return}
   return _tm(d,text)}}
 /* student: confirm in the chat (and see the status) */
 function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(String(p.napTax||""))){toast(t("napNeedProfile"));show("profile");closeSheet();return}
-  const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
+  const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();napPatch(o.id,{status:"confirmed",st_tax:String(p.napTax),st_status:p.napStatus||"stud",st_school:p.napSchool||"",cand_servis:p.napServis||""});d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
   sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPOK⟧"}}).catch(e=>console.warn(e));drawChat(d.id)}
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const sh=$("sheet");
   let n=null,mine=false;if(d.role==="company"){n=st.naps.find(z=>z.live&&z.k==="L"+d.rid)}else{n=st.napIn[d.rid];mine=true}
@@ -3869,6 +3867,39 @@ function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(Strin
    <label class="tog"><span>${t("napOk")}</span><input type="checkbox" role="switch" data-k="napOk" id="p-napOk"${p.napOk?" checked":""}><i aria-hidden="true"></i></label><div class="ferr" id="e-napTax"></div></div>`);
   sec.querySelectorAll("#napSec [data-k]").forEach(el=>el.addEventListener(el.type==="checkbox"?"change":"input",()=>{let v=el.type==="checkbox"?el.checked:el.value;if(el.id==="p-napTax"){v=v.replace(/\D/g,"").slice(0,8);el.value=v}
     setK(el.dataset.k,v);$("e-napTax").textContent=el.id==="p-napTax"&&v&&v.length!==8?t("napTaxBad"):"";markDirty()}))}}
+
+/* ---- shared record of every order, so the "student service" view (#mnenja) can see and issue them ---- */
+function napDb(n,x){sb("napotnice",{method:"POST",body:{id:n.id,co_id:st.liveId,co_name:myCo().name||meName()||"Podjetje",cand_id:x&&x.uid||null,cand_name:n.cand,servis:n.servis,title:n.title,loc:n.loc,
+  from_d:n.from,to_d:n.to,hours:n.hours,rate:n.rate,status:"sent",live:!!n.live}}).catch(e=>console.warn("napotnice",e))}
+function napPatch(id,body){if(!id)return;sb(`napotnice?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",body}).catch(e=>console.warn("napotnice",e))}
+/* company: a live order becomes "issued" when the student service issues it */
+setInterval(async()=>{const open=st.naps.filter(n=>n.live&&n.status!=="issued");if(!open.length||document.hidden)return;
+  try{const rows=await sb(`napotnice?id=in.(${open.map(n=>`"${n.id}"`).join(",")})&select=id,status`);
+    rows.forEach(r=>{const n=open.find(z=>z.id===r.id);if(!n||r.status!=="issued")return;n.status="issued";save();
+      const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===n.k.slice(1));
+      if(d){const txt=t("mNapIssued",{s:n.servis});d.msgs.push({from:"me",text:txt,ts:now()});save();sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPIS⟧"}}).catch(()=>{});if(sheetOpts.chat===d.id)drawChat(d.id)}
+      notify("nNapIssuedCo",{x:n.cand,s:n.servis},d?{chat:d.id}:{view:"coads"});if(!$("v-coads").hidden)renderCoAds()})}catch(e){}},8000);
+/* the hidden page: a section that works like the student service's inbox */
+{const css=document.createElement("style");css.textContent=`#fbAdmin .napadm{background:var(--card,#fff);border-radius:18px;padding:14px;margin-bottom:14px}#fbAdmin .napadm h2{margin:0 0 4px;font-size:18px}
+#fbAdmin .napc{border-top:1px solid rgba(0,0,0,.07);padding:10px 0;display:flex;flex-direction:column;gap:4px;font-size:14px}#fbAdmin .napc .row1{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#fbAdmin .napst{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}#fbAdmin .napst.sent{background:#FFF4D6;color:#8A5A00}#fbAdmin .napst.confirmed{background:#DBEAFE;color:#1E40AF}#fbAdmin .napst.issued{background:#D1FAE5;color:#065F46}#fbAdmin .napst.rejected{background:#FDE2E2;color:#B42318}
+#fbAdmin .napc .acts{display:flex;gap:8px;margin-top:4px}#fbAdmin .napc .acts button{margin:0}`;document.head.appendChild(css)}
+let faNaps=null,faNapSv="all";
+const NAPST_ADM={sent:"Čaka na študenta",confirmed:"Novo naročilo – za izdajo",issued:"Izdana",rejected:"Zavrnjena"};
+{const _fl=faLoad;faLoad=async function(){faNaps=null;sb("napotnice?select=*&order=created_at.desc&limit=300").then(r=>{faNaps=r;faDraw()}).catch(()=>{faNaps=[];faDraw()});return _fl()}}
+{const _fd=faDraw;faDraw=function(err){_fd(err);const w=$("fbAdmin");if(!w||err)return;const anchor=w.querySelector(".tsbox")||w.querySelector(".fahead");if(!anchor||w.querySelector(".napadm"))return;
+  const N=faNaps,list=N?(faNapSv==="all"?N:N.filter(r=>r.servis===faNapSv)):[],sv=N?[...new Set(N.map(r=>r.servis))]:[],todo=N?N.filter(r=>r.status==="confirmed").length:0;
+  anchor.insertAdjacentHTML("afterend",`<div class="napadm"><h2>📄 Napotnice · pogled študentskega servisa</h2><p class="hint" style="margin:0 0 8px">Demo: tako bi naročila iz JobNoda videl študentski servis. »Izdaj« pošlje status podjetju in študentu.</p>
+   ${N===null?`<p class="hint">Nalagam …</p>`:`<div class="fastats" style="margin-bottom:8px"><div><b>${N.length}</b><span>vseh</span></div><div><b>${todo}</b><span>za izdajo</span></div><div><b>${N.filter(r=>r.status==="issued").length}</b><span>izdanih</span></div><div><b>${sv.length}</b><span>servisov</span></div></div>
+   ${sv.length>1?`<div class="fatabs">${[["all","Vsi"],...sv.map(s=>[s,s])].map(([k,l])=>`<button class="${faNapSv===k?"primary":"ghost"}" data-napsv="${esc(k)}">${esc(l)}</button>`).join("")}</div>`:""}
+   ${list.length?list.map(r=>`<div class="napc"><div class="row1"><b>${esc(r.title||"")} · ${esc(r.co_name||"")}</b><span class="napst ${esc(r.status)}">${esc(NAPST_ADM[r.status]||r.status)}</span></div>
+     <span>👤 ${esc(r.cand_name||"")}${r.st_tax?` · davčna ${esc(r.st_tax)}`:""}${r.st_school?` · ${esc(r.st_school)}`:""}${r.st_status?` · ${r.st_status==="dijak"?"dijak":"študent"}`:""}</span>
+     <span class="meta">${esc(r.servis)} · ${esc(r.loc||"")} · ${napDay(r.from_d)}–${napDay(r.to_d)} · ${r.hours} h · ${String(r.rate).replace(".",",")} €/h${r.live?" · ● V živo":" · demo"}</span>
+     ${r.status==="confirmed"?`<div class="acts"><button class="primary sm" data-napiss="${esc(r.id)}">✓ Izdaj napotnico</button><button class="ghost sm" data-naprej="${esc(r.id)}">Zavrni</button></div>`:""}</div>`).join("")
+     :`<p class="hint">Še ni naročil napotnic.</p>`}`}</div>`);
+  w.querySelectorAll("[data-napsv]").forEach(b=>b.onclick=()=>{faNapSv=b.dataset.napsv;faDraw()});
+  w.querySelectorAll("[data-napiss],[data-naprej]").forEach(b=>b.onclick=async()=>{const id=b.dataset.napiss||b.dataset.naprej,stt=b.dataset.napiss?"issued":"rejected";b.disabled=true;
+    try{await sb(`napotnice?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",body:{status:stt}});const r=faNaps.find(z=>z.id===id);if(r)r.status=stt;faDraw()}catch(e){b.disabled=false;toast("Ni uspelo, poskusi znova.")}})}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
