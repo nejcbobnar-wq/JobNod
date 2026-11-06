@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="39";
+const APP_VER="40";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3775,6 +3775,100 @@ function cvDemo(a,x){const kv=(l,v)=>v?`<div class="kv"><span>${l}</span><b>${es
 /* my CV goes to the cloud as soon as I add it (and on start, for CVs added before), so companies can open it */
 {const _up=uploadCv;uploadCv=function(f,done){_up(f,()=>{done&&done();setTimeout(()=>cvEnsure().catch(e=>console.warn("cv upload",e)),800)})}}
 setTimeout(()=>{if(st.profile&&st.profile.cvName)cvEnsure().catch(()=>{})},4000);
+/* ================= STUDENT WORK: ORDER A REFERRAL ("NAPOTNICA") FROM A STUDENT SERVICE (DEMO) ================= */
+const NAP_SERVIS=["e-Študentski servis","Študentski servis","Mjob","Študentski servis Sezam","Drug študentski servis"];
+Object.assign(LANGS.sl,{napBtn:"📄 Naroči napotnico",napTitle:"Naročilo napotnice",napLead:"Naročilo pošljemo izbranemu študentskemu servisu. Napotnico izda servis, JobNod jo samo naroči.",
+ napServis:"Študentski servis",napFrom:"Od",napTo:"Do",napHours:"Predvideno ur",napRate:"Urna postavka (€ bruto)",napPlace:"Kraj dela",napContact:"Kontaktna oseba",napSend:"Pošlji naročilo",
+ napDemo:"Demo: naročilo se zares ne pošlje nobenemu servisu.",napSt_sent:"Čaka na potrditev študenta",napSt_confirmed:"Naročena pri servisu",napSt_issued:"Napotnica izdana",napSt_done:"Zaključeno",napDone_sent:"Študent potrdil",napDone_confirmed:"Naročena pri servisu",
+ napBox:"Napotnica",napSentT:"Naročilo poslano. Študent mora potrditi svoje podatke.",nNapReq:"{x} želi naročiti napotnico za »{y}«. Potrdi podatke.",nNapOk:"{x} je potrdil podatke – napotnica je naročena pri {s}.",nNapIssued:"Napotnica za »{y}« je izdana ({s}). Lahko začneš z delom.",nNapIssuedCo:"Napotnica za {x} je izdana ({s}).",
+ napConfirm:"Potrdi podatke za napotnico",napConfirmed:"Podatki potrjeni ✓",napNeedProfile:"Najprej v Profilu izpolni podatke za napotnico.",
+ napSec:"Podatki za napotnico",napSecLead:"Potrebni, ko podjetje za tvoje delo naroči napotnico pri študentskem servisu.",napTax:"Davčna številka",napTaxHint:"Vidi jo samo študentski servis, podjetje ne.",napStatus:"Status",napStud:"Študent",napDijak:"Dijak",napSchool:"Šola ali fakulteta",napOk:"Dovolim, da se moji podatki posredujejo študentskemu servisu za izdajo napotnice.",
+ mNapReq:"📄 Naročilo napotnice: {s}, {f}–{t}, {h} ur, {r} €/h. Prosim, potrdi podatke.",mNapOk:"📄 Potrjujem podatke za napotnico.",mNapIssued:"📄 Napotnica je izdana ({s}). Vidimo se!",napTaxBad:"Davčna številka ima 8 številk."});
+Object.assign(LANGS.en,{napBtn:"📄 Order a referral",napTitle:"Referral order",napLead:"We send the order to the chosen student service. The service issues the referral; JobNod only orders it.",
+ napServis:"Student service",napFrom:"From",napTo:"To",napHours:"Estimated hours",napRate:"Hourly rate (€ gross)",napPlace:"Place of work",napContact:"Contact person",napSend:"Send order",
+ napDemo:"Demo: the order isn't really sent to any service.",napSt_sent:"Waiting for the student to confirm",napSt_confirmed:"Ordered from the service",napSt_issued:"Referral issued",napSt_done:"Completed",napDone_sent:"Student confirmed",napDone_confirmed:"Ordered from the service",
+ napBox:"Referral",napSentT:"Order sent. The student needs to confirm their details.",nNapReq:"{x} wants to order a referral for “{y}”. Confirm your details.",nNapOk:"{x} confirmed – the referral is ordered from {s}.",nNapIssued:"Your referral for “{y}” is issued ({s}). You can start working.",nNapIssuedCo:"Referral for {x} issued ({s}).",
+ napConfirm:"Confirm referral details",napConfirmed:"Details confirmed ✓",napNeedProfile:"First fill in your referral details in Profile.",
+ napSec:"Referral details",napSecLead:"Needed when a company orders a referral for your job from a student service.",napTax:"Tax number",napTaxHint:"Only the student service sees it, not the company.",napStatus:"Status",napStud:"Student",napDijak:"Secondary school pupil",napSchool:"School or faculty",napOk:"I allow my details to be passed to the student service to issue the referral.",
+ mNapReq:"📄 Referral order: {s}, {f}–{t}, {h} hours, {r} €/h. Please confirm your details.",mNapOk:"📄 I confirm my referral details.",mNapIssued:"📄 The referral is issued ({s}). See you!",napTaxBad:"The tax number has 8 digits."});
+Object.assign(PR_EMPTY,{napServis:"",napTax:"",napStatus:"stud",napSchool:"",napOk:false});
+if(!Array.isArray(st.naps))st.naps=[];if(!st.napIn||typeof st.napIn!=="object")st.napIn={};
+CH_KEYS.add("nNapReq");CH_KEYS.add("nNapOk");CH_KEYS.add("nNapIssued");CH_KEYS.add("nNapIssuedCo");
+{const css=document.createElement("style");css.textContent=`.napbox{background:var(--bg);border-radius:16px;padding:12px 14px;margin:10px 0;display:flex;flex-direction:column;gap:8px}
+.napbox b{font-size:14.5px}.napsteps{display:flex;gap:4px;flex-wrap:wrap}.napsteps span{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--surface);color:var(--muted)}
+.napsteps span.on{background:#D1FAE5;color:#065F46}.napsteps span.now{background:#FFF4D6;color:#8A5A00}.napbox button{margin:0}.napdemo{font-size:12px;color:#8A5A00;background:#FFF4D6;border-radius:10px;padding:6px 10px;margin:0}`;document.head.appendChild(css)}
+const napIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,napNext=()=>{const d=new Date(DEMO_TODAY);d.setDate(d.getDate()+((8-d.getDay())%7||7));return d};
+const napDay=iso=>{const [,m,d]=iso.split("-");return `${+d}. ${+m}.`};
+const NAP_STEPS=["sent","confirmed","issued"];
+function napSteps(stt){const i=NAP_STEPS.indexOf(stt);return `<div class="napsteps">${NAP_STEPS.map((k,j)=>`<span class="${j<i||stt==="issued"&&j===i?"on":j===i?"now":""}">${j<i||stt==="issued"&&j===i?"✓ ":""}${j<i?t("napDone_"+k):t("napSt_"+k)}</span>`).join("")}</div>`}
+function napLine(n){return `${esc(n.servis)} · ${napDay(n.from)}–${napDay(n.to)} · ${n.hours} h · ${String(n.rate).replace(".",",")} €/h`}
+/* made-up candidates move through the steps by themselves, so the whole flow can be shown */
+function napTickDemo(){let ch=false;st.naps.forEach(n=>{if(n.live)return;const age=Date.now()-n.ts;
+  if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
+  if(n.status==="confirmed"&&age>11000){n.status="issued";ch=true;notify("nNapIssuedCo",{x:n.cand,s:n.servis},{view:"coads"})}});
+  if(ch){save();if(!$("v-coads").hidden)renderCoAds();if(sheetOpts.cand){const n=st.naps.find(z=>z.k===sheetOpts.cand);if(n)cdOpen(n.adId,n.k)}}}
+setInterval(napTickDemo,1500);
+/* the order form (company) */
+function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;const x=coApplicants(a).find(z=>z.k===k);if(!x)return;
+  const f0=napNext(),t0=new Date(f0);t0.setDate(t0.getDate()+13);const sv=x.servis||NAP_SERVIS[Math.abs(hashN(String(k)))%4];sheetOpts={napForm:k};
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+   <h2 class="section-title" style="margin-top:4px">${t("napTitle")}</h2><p class="hint" style="margin:-4px 0 10px">${t("napLead")}</p>
+   <div class="napbox" style="margin-top:0"><b>${esc(x.name)} · ${esc(L(a.title))}</b><span class="hint" style="margin:0">${esc(x.town||"")}</span></div>
+   <form id="napF" class="fbform" novalidate>
+    <label><span>${t("napServis")}</span><select id="nS">${NAP_SERVIS.map(s=>`<option${s===sv?" selected":""}>${esc(s)}</option>`).join("")}</select></label>
+    <div class="two"><label><span>${t("napFrom")}</span><input type="date" id="nF" value="${napIso(f0)}"></label><label><span>${t("napTo")}</span><input type="date" id="nT" value="${napIso(t0)}"></label></div>
+    <div class="two"><label><span>${t("napHours")}</span><input type="number" id="nH" min="1" max="500" value="40" inputmode="numeric"></label><label><span>${t("napRate")}</span><input type="number" id="nR" min="1" step="0.1" value="${a.unit==="h"?a.min:8.5}" inputmode="decimal"></label></div>
+    <label><span>${t("napPlace")}</span><input id="nP" value="${esc(a.loc||"")}"></label>
+    <label><span>${t("napContact")}</span><input id="nC" value="${esc(meName()||myCo().name||"")}"></label>
+    <p class="napdemo">${t("napDemo")}</p>
+    <button class="primary" id="nGo">${t("napSend")}</button></form>`;
+  $("cls").onclick=closeSheet;
+  $("napF").onsubmit=e=>{e.preventDefault();const n={id:"np"+Date.now(),adId,k,cand:x.name,live:!!x.live,servis:$("nS").value,from:$("nF").value,to:$("nT").value,hours:+$("nH").value||40,rate:+$("nR").value||8.5,loc:$("nP").value,title:L(a.title),ts:Date.now(),status:"sent"};
+    st.naps=st.naps.filter(z=>z.k!==k);st.naps.push(n);save();
+    if(n.live){const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===k.slice(1));
+      if(d){const txt=t("mNapReq",{s:n.servis,f:napDay(n.from),t:napDay(n.to),h:n.hours,r:String(n.rate).replace(".",",")});d.msgs.push({from:"me",text:txt,ts:now()});save();
+        sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAP⟧"+JSON.stringify({id:n.id,co:myCo().name,servis:n.servis,from:n.from,to:n.to,hours:n.hours,rate:n.rate,loc:n.loc,title:n.title})}}).catch(e=>console.warn("nap",e))}}
+    toast(t("napSentT"));cdOpen(adId,k)};
+  openSheet(t("napTitle"))}
+/* company: the button + status in the candidate card (student ads only, after the invite) */
+{const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const a=st.myAds.find(z=>z.id===adId);if(!a||a.kind!=="stud")return;
+  const stt=(a.apSt||{})[k],n=st.naps.find(z=>z.k===k),btns=$("sheet").querySelector(".jdbtns");if(!btns)return;
+  if(n)btns.insertAdjacentHTML("beforebegin",`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint" style="margin:0">${napLine(n)}</span>${napSteps(n.status)}</div>`);
+  else if(stt==="inv"){btns.insertAdjacentHTML("beforebegin",`<div class="napbox"><button class="primary" type="button" id="napGo">${t("napBtn")}</button></div>`);$("napGo").onclick=()=>napForm(adId,k)}}}
+/* the row in the company's list shows the referral status */
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const box=$("coads");if(!box)return;
+  box.querySelectorAll(".aprow[data-cd]").forEach(r=>{const [,k]=r.dataset.cd.split("|"),n=st.naps.find(z=>z.k===k);if(!n||r.querySelector(".napmini"))return;
+    const w=r.querySelector(".why");(w||r).insertAdjacentHTML(w?"afterend":"beforeend",`<p class="why napmini" style="grid-column:1/-1">📄 ${t("napSt_"+n.status)} · ${esc(n.servis)}</p>`)})}}
+/* live testers: the order and the replies travel as chat messages with a hidden marker */
+{const _tm=theirMsg;theirMsg=function(d,text){const s=String(text||"");
+  if(s.startsWith("⟦NAP⟧")){let o=null;try{o=JSON.parse(s.slice(5))}catch(_){}if(o){st.napIn[d.rid]=Object.assign(o,{status:"sent",deal:d.id});save();
+      _tm(d,t("mNapReq",{s:o.servis,f:napDay(o.from),t:napDay(o.to),h:o.hours,r:String(o.rate).replace(".",",")}));notify("nNapReq",{x:o.co,y:o.title},{chat:d.id})}return}
+  if(s.startsWith("⟦NAPOK⟧")){const n=st.naps.find(z=>z.live&&z.k==="L"+d.rid);_tm(d,t("mNapOk"));if(n&&n.status==="sent"){n.status="confirmed";save();notify("nNapOk",{x:n.cand,s:n.servis},{chat:d.id});
+      setTimeout(()=>{n.status="issued";save();const txt=t("mNapIssued",{s:n.servis});d.msgs.push({from:"me",text:txt,ts:now()});save();
+        sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPIS⟧"}}).catch(()=>{});notify("nNapIssuedCo",{x:n.cand,s:n.servis},{chat:d.id});if(sheetOpts.chat===d.id)drawChat(d.id)},6000)}return}
+  if(s.startsWith("⟦NAPIS⟧")){const o=st.napIn[d.rid];if(o){o.status="issued";save();_tm(d,t("mNapIssued",{s:o.servis}));notify("nNapIssued",{y:o.title,s:o.servis},{chat:d.id})}return}
+  return _tm(d,text)}}
+/* student: confirm in the chat (and see the status) */
+function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(String(p.napTax||""))){toast(t("napNeedProfile"));show("profile");closeSheet();return}
+  const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
+  sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPOK⟧"}}).catch(e=>console.warn(e));drawChat(d.id)}
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const sh=$("sheet");
+  let n=null,mine=false;if(d.role==="company"){n=st.naps.find(z=>z.live&&z.k==="L"+d.rid)}else{n=st.napIn[d.rid];mine=true}
+  if(!n)return;const anchor=sh.querySelector(".adinfo")||sh.querySelector(".dealcard");if(!anchor)return;
+  anchor.insertAdjacentHTML("afterend",`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint" style="margin:0">${napLine(n)}</span>${napSteps(n.status)}${mine&&n.status==="sent"?`<button class="primary" type="button" id="napOk">${t("napConfirm")}</button>`:""}</div>`);
+  if($("napOk"))$("napOk").onclick=()=>napConfirm(d)}}
+/* hide the markers if they ever show as plain text in a preview */
+{const _rm=renderMsgs;renderMsgs=function(){_rm();const v=$("v-msgs");if(v)v.querySelectorAll("*").forEach(el=>{if(el.children.length===0&&/⟦NAP(OK|IS)?⟧/.test(el.textContent))el.textContent="📄 "+t("napBox")})}}
+/* profile: the student's details for the referral */
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||P.querySelector("#napSec"))return;const sec=P.querySelector('section[data-show="seeker"]');if(!sec)return;const p=pd;
+  sec.insertAdjacentHTML("beforeend",`<div id="napSec" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div class="h3" style="margin-top:0">📄 ${t("napSec")}</div><p class="hint" style="margin:0 0 8px">${t("napSecLead")}</p>
+   <label><span>${t("napServis")}</span><select data-k="napServis" id="p-napServis"><option value="">—</option>${NAP_SERVIS.map(s=>`<option${s===p.napServis?" selected":""}>${esc(s)}</option>`).join("")}</select></label>
+   <div class="two"><label><span>${t("napTax")}</span><input data-k="napTax" id="p-napTax" inputmode="numeric" maxlength="8" value="${esc(p.napTax||"")}" placeholder="12345678"><small class="hint">${t("napTaxHint")}</small></label>
+    <label><span>${t("napStatus")}</span><select data-k="napStatus" id="p-napStatus"><option value="stud"${p.napStatus!=="dijak"?" selected":""}>${t("napStud")}</option><option value="dijak"${p.napStatus==="dijak"?" selected":""}>${t("napDijak")}</option></select></label></div>
+   <label><span>${t("napSchool")}</span><input data-k="napSchool" id="p-napSchool" maxlength="80" value="${esc(p.napSchool||"")}"></label>
+   <label class="tog"><span>${t("napOk")}</span><input type="checkbox" role="switch" data-k="napOk" id="p-napOk"${p.napOk?" checked":""}><i aria-hidden="true"></i></label><div class="ferr" id="e-napTax"></div></div>`);
+  sec.querySelectorAll("#napSec [data-k]").forEach(el=>el.addEventListener(el.type==="checkbox"?"change":"input",()=>{let v=el.type==="checkbox"?el.checked:el.value;if(el.id==="p-napTax"){v=v.replace(/\D/g,"").slice(0,8);el.value=v}
+    setK(el.dataset.k,v);$("e-napTax").textContent=el.id==="p-napTax"&&v&&v.length!==8?t("napTaxBad"):"";markDirty()}))}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
