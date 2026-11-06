@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="29";
+const APP_VER="30";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3487,6 +3487,39 @@ function openFeedback(){const from=VIEWS.find(k=>!$("v-"+k).hidden)||"";sheetOpt
   const _as=applyStatic;applyStatic=function(){_as();upd()};upd()})();
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||P.querySelector(".fbcard"))return;
   P.insertAdjacentHTML("afterbegin",`<div class="pcard fbcard"><p>${t("fbProfile")}</p><button class="primary sm" type="button" id="fbProf">${t("fbBtn")}</button></div>`);$("fbProf").onclick=openFeedback}}
+/* ================= HIDDEN PAGE: READ TESTER FEEDBACK (open with #mnenja) ================= */
+{const css=document.createElement("style");css.textContent=`#fbAdmin{position:fixed;inset:0;z-index:900;background:var(--bg);overflow:auto;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+#fbAdmin .fahead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}#fbAdmin h1{margin:0;font-size:24px;letter-spacing:-.03em}
+#fbAdmin .fastats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}#fbAdmin .fastats div{background:var(--card,#fff);border-radius:14px;padding:10px;text-align:center}
+#fbAdmin .fastats b{display:block;font-size:22px}#fbAdmin .fastats span{font-size:12px;color:var(--muted)}
+#fbAdmin .fatabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}#fbAdmin .fatabs button{margin:0;padding:8px 12px;border-radius:999px;font-size:13.5px}
+#fbAdmin .facard{background:var(--card,#fff);border-radius:18px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+#fbAdmin .fatop{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}#fbAdmin .kb{font-weight:700;font-size:13px;padding:4px 10px;border-radius:999px;background:var(--bg)}
+#fbAdmin .kb.bug{background:#FDE2E2;color:#B42318}#fbAdmin .kb.idea{background:#FEF3C7;color:#92400E}#fbAdmin .kb.praise{background:#D1FAE5;color:#065F46}
+#fbAdmin .facard p{margin:0;font-size:15px;line-height:1.45;white-space:pre-wrap}#fbAdmin .meta{font-size:12.5px;color:var(--muted)}#fbAdmin .stars{color:#FFB020;letter-spacing:1px}
+#fbAdmin .facard img{width:120px;max-width:120px;align-self:flex-start;border-radius:10px;cursor:zoom-in;border:1px solid rgba(0,0,0,.08)}#fbAdmin .big{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:2;cursor:zoom-out}
+#fbAdmin .big img{max-width:96vw;max-height:92vh;border-radius:8px;cursor:zoom-out}`;document.head.appendChild(css)}
+let faRows=null,faTab="all";
+const faPhone=ua=>{ua=String(ua||"");return /iPhone/.test(ua)?"iPhone":/iPad/.test(ua)?"iPad":/Android/.test(ua)?(ua.match(/Android [\d.]+; ([^;)]+)/)||[,"Android"])[1]:/Mac/.test(ua)?"Mac":/Windows/.test(ua)?"Windows":"—"};
+const faWhen=s=>{const d=new Date(s);return isNaN(d)?"":d.toLocaleString(lang==="sl"?"sl-SI":"en-GB",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})};
+const FA_K={bug:["🐞","Napaka","Napake"],idea:["💡","Predlog","Predlogi"],praise:["👍","Pohvala","Pohvale"]};
+function faDraw(err){let w=$("fbAdmin");if(!w){w=document.createElement("div");w.id="fbAdmin";document.body.appendChild(w)}
+  const rows=faRows||[],n=k=>rows.filter(r=>r.kind===k).length,rated=rows.filter(r=>r.rating),avg=rated.length?(rated.reduce((s,r)=>s+r.rating,0)/rated.length):0,list=faTab==="all"?rows:rows.filter(r=>r.kind===faTab);
+  w.innerHTML=`<div class="fahead"><h1>Mnenja testerjev</h1><div style="display:flex;gap:8px"><button class="ghost sm" id="faR" style="margin:0">Osveži</button><button class="ghost sm" id="faX" style="margin:0">Zapri</button></div></div>
+   ${err?`<p class="ferr">${esc(err)}</p>`:faRows===null?`<p class="hint">Nalagam …</p>`:`
+   <div class="fastats"><div><b>${rows.length}</b><span>vseh</span></div><div><b>${n("bug")}</b><span>napak</span></div><div><b>${n("idea")}</b><span>predlogov</span></div><div><b>${avg?f1(avg):"—"}</b><span>ocena ★</span></div></div>
+   <div class="fatabs">${[["all","Vse",rows.length],...Object.keys(FA_K).map(k=>[k,FA_K[k][0]+" "+FA_K[k][2],n(k)])].map(([k,l,c])=>`<button class="${faTab===k?"primary":"ghost"}" data-fa="${k}">${esc(l)} (${c})</button>`).join("")}</div>
+   ${list.length?list.map(r=>{const c=r.ctx||{},k=FA_K[r.kind]||["","?"];return `<div class="facard"><div class="fatop"><span class="kb ${esc(r.kind)}">${k[0]} ${k[1]}</span>${r.rating?`<span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span>`:""}</div>
+     <p>${esc(r.body)}</p>${r.shot&&/^data:image\//.test(r.shot)?`<img src="${r.shot}" alt="Posnetek zaslona" data-big="1">`:""}
+     <div class="meta"><b>${esc(r.user_name||"Tester")}</b> · ${esc(faWhen(r.created_at))} · različica ${esc(c.ver||"?")} · zaslon: ${esc(c.view||"?")} · ${esc(faPhone(c.ua))}</div></div>`}).join("")
+     :`<p class="hint">Še ni mnenj${faTab==="all"?"":" te vrste"}.</p>`}`}`;
+  $("faX").onclick=()=>{history.replaceState(null,"",location.pathname+location.search);w.remove()};
+  $("faR").onclick=faLoad;
+  w.querySelectorAll("[data-fa]").forEach(b=>b.onclick=()=>{faTab=b.dataset.fa;faDraw()});
+  w.querySelectorAll("[data-big]").forEach(im=>im.onclick=()=>{const o=document.createElement("div");o.className="big";o.innerHTML=`<img src="${im.src}" alt="">`;o.onclick=()=>o.remove();w.appendChild(o)})}
+async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&order=created_at.desc&limit=300");faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
+function faCheck(){if(location.hash==="#mnenja")faLoad();else{const w=$("fbAdmin");if(w)w.remove()}}
+addEventListener("hashchange",faCheck);setTimeout(faCheck,300);
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
