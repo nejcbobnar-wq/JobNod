@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="46";
+const APP_VER="47";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4150,6 +4150,32 @@ const lsOn=()=>!!(st.geo&&st.geo.auto);
     if(sheetOpts.map)openMap(cur)};
   /* picking a town by hand turns the current location off */
   const sel=$("m-home");if(sel)sel.addEventListener("change",()=>{if(lsOn()){st.geo.auto=false;st.homeManual=sel.value;save();const s=$("lsSw");if(s)s.checked=false;const tx=$("lsTxt");if(tx)tx.textContent=t("lsOff")}})}}
+
+/* ================= CHAT: NO QUICK REPLIES; REFERRAL ("NAPOTNICA") ONLY AFTER THE INTERVIEW, FROM THE CHAT ================= */
+Object.assign(LANGS.sl,{naIvDone:"Razgovor je opravljen. Če kandidata sprejmete, naročite napotnico pri študentskem servisu.",naIvWait:"Napotnico boste lahko naročili, ko bo razgovor opravljen ({x}).",naIvNone:"Napotnico boste lahko naročili po razgovoru."});
+Object.assign(LANGS.en,{naIvDone:"The interview is over. If you hire the candidate, order the referral from the student service.",naIvWait:"You can order the referral once the interview is over ({x}).",naIvNone:"You can order the referral after the interview."});
+{const css=document.createElement("style");css.textContent=`#sheet .quick.qr{display:none!important}.napbox .hint{margin:0}`;document.head.appendChild(css)}
+/* the interview chat that belongs to a candidate of my ad */
+const naDealFor=(adId,k)=>st.deals.find(d=>d.kind==="app"&&d.role==="company"&&d.item===adId&&(k.startsWith("L")?d.rid===k.slice(1):d.fk&&d.fk.id==="fk_"+k));
+const naKey=d=>d.rid?"L"+d.rid:d.fk?d.fk.id.slice(3):null;
+const naIvDone=d=>!!(d&&d.iv&&d.iv.state==="ok"&&d.iv.date&&ivAt(d.iv)<=Date.now());
+const naWaitTxt=d=>d&&d.iv&&d.iv.state==="ok"&&d.iv.date?t("naIvWait",{x:ivWhen(d.iv)}):t("naIvNone");
+let NA_BACK=null;
+/* candidate card: no order button before the interview is over */
+{const _co=cdOpen;cdOpen=function(adId,k){if(NA_BACK){const id=NA_BACK;NA_BACK=null;openChat(id);return}_co(adId,k);
+  const b=$("napGo");if(!b)return;const d=naDealFor(adId,k);if(naIvDone(d))return;const box=b.closest(".napbox");box.innerHTML=`<b>📄 ${t("napBox")}</b><span class="hint">${esc(naWaitTxt(d))}</span>`}}
+/* employer's chat: the order button appears once the interview time has passed */
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app"||d.role!=="company")return;
+  const a=st.myAds.find(z=>z.id===d.item);if(!a||a.kind!=="stud")return;const k=naKey(d);if(!k)return;const sh=$("sheet");if(sh.querySelector(".napbox"))return;
+  const n=st.naps.find(z=>z.k===k),box=sh.querySelector("#chatBox");if(!box)return;
+  const html=n?`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${napLine(n)}</span>${napSteps(n.status)}</div>`
+    :naIvDone(d)?`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${t("naIvDone")}</span><button class="primary" type="button" id="naGo">${t("napBtn")}</button></div>`
+    :`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${esc(naWaitTxt(d))}</span></div>`;
+  box.insertAdjacentHTML("afterend",html);
+  if($("naGo"))$("naGo").onclick=()=>{NA_BACK=d.id;napForm(a.id,k);const c=$("cls");if(c)c.onclick=()=>{NA_BACK=null;openChat(d.id)}}}}
+/* when the interview time passes while the chat is open, show the button */
+setInterval(()=>{const id=sheetOpts&&sheetOpts.chat;if(!id||document.hidden)return;const d=st.deals.find(x=>x.id===id);
+  if(d&&d.role==="company"&&naIvDone(d)&&!$("naGo")&&!st.naps.some(z=>z.k===naKey(d))&&!($("sheet").querySelector(".napbox .napsteps")))drawChat(id)},30000);
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
