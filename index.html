@@ -1617,7 +1617,7 @@ const distT=loc=>TOWNS[loc]?km(TOWNS[st.home],TOWNS[loc]):null;
 function secChips(el,key){el.innerHTML=[["all",t("all")],...Object.keys(SECTORS).filter(k=>!SECTORS[k].stud).map(k=>[k,secName(k)])].map(([k,n])=>`<button data-c="${k}" aria-pressed="${st[key]===k}">${esc(n)}</button>`).join("")}
 
 /* ================= WORKER: OPENINGS ================= */
-const deckA=()=>allAds().filter(a=>(st.hireSec==="all"||a.sec===st.hireSec)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
+const deckA=()=>allAds().filter(a=>(st.hireSec==="all"||a.sec===st.hireSec||a.live)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
   .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>(!!y.a.live-!!x.a.live)||(st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0)))).map(x=>x.a);
 const adsPending=deckA;
 function adCard(a){const s=SECTORS[a.sec],c=coOf(a),d=distT(a.loc),ap=st.applied.some(x=>x.id===a.id);return `
@@ -1793,7 +1793,7 @@ const STUD=[];
 })();
 if(!st.studCat)st.studCat="all";
 const studSecs=["all",...new Set(STUD.map(a=>a.sec))];
-const deckS=()=>STUD.filter(a=>(st.studCat==="all"||a.sec===st.studCat)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
+const deckS=()=>STUD.filter(a=>(st.studCat==="all"||a.sec===st.studCat||a.live)&&passAd(a)).map(a=>({a,d:a.live?-1:distT(a.loc),m:matchPct(a)}))
   .filter(x=>(x.d??0)<=st.radius).sort((x,y)=>(!!y.a.live-!!x.a.live)||(st.fa.sort==="match"?(y.m-x.m)||((x.d??0)-(y.d??0)):((x.d??0)-(y.d??0)))).map(x=>x.a);
 function studCard(a){const s=SECTORS[a.sec],c=coOf(a),d=distT(a.loc),ap=st.applied.some(x=>x.id===a.id);return `
  <div class="photo adph" style="background:${s.bg}">${s.svg}</div><div class="shade"></div>
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="24";
+const APP_VER="25";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3131,9 +3131,9 @@ function restoreCache(){Object.values(st.liveCache||{}).forEach(j=>{if(DEMO_JOBS
 restoreCache();
 async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created_at.desc&limit=200&select=*");const fresh=[];
   for(let i=DEMO_JOBS.length-1;i>=0;i--)if(DEMO_JOBS[i].live)DEMO_JOBS.splice(i,1);
-  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const j=liveJobFromRow(r);DEMO_JOBS.unshift(j);if(!LIVE.first&&!LIVE.seen.has("j"+r.id))fresh.push(j);LIVE.seen.add("j"+r.id)});
+  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const j=liveJobFromRow(r);DEMO_JOBS.unshift(j);if(!Array.isArray(st.liveSeen))st.liveSeen=[];if(!st.liveSeen.includes(j.id)){fresh.push(j);st.liveSeen.push(j.id)}});
   restoreCache();cacheLive();
-  if(fresh.length){st.pos=0;st.last=null}fresh.forEach(j=>notify("nLiveJob",{y:L(j.title)}));return rows.map(r=>r.id).join(",")}
+  if(fresh.length){st.pos=0;st.last=null}fresh.forEach(j=>notify("nLiveJob",{y:L(j.title)},{job:j.id}));return rows.map(r=>r.id).join(",")}
 {const _jc=jobCard;jobCard=function(j){const h=_jc(j);return j.live?h.replace('<div class="top">',`<div class="top"><span class="glass live">${t("liveBadge")}</span>`):h}}
 /* --- offers: a pro answering a live job sends a real offer --- */
 {const _nd=newDeal;newDeal=function(o){const d=_nd(o);const j=o.kind==="job"&&o.role==="pro"?jobById(o.item):null;
@@ -3186,6 +3186,7 @@ setTimeout(liveTick,800);setInterval(liveTick,6000);document.addEventListener("v
 /* ================= LIVE: JOB ADS & STUDENT JOBS BETWEEN TESTERS ================= */
 Object.assign(LANGS.sl,{stRejected:"Zavrnjeno",nLiveRej:"{x} je zavrnil/a vašo prijavo »{y}«.",nLiveAd:"Nov oglas v živo: {x} – {y}",liveApplicants:"Prijave so od pravih testerjev.",mIvOk:"Potrjujem razgovor {d} ob {h}."});
 Object.assign(LANGS.en,{stRejected:"Declined",nLiveRej:"{x} declined your application “{y}”.",nLiveAd:"New live ad: {x} – {y}",liveApplicants:"Applications come from real testers.",mIvOk:"I confirm the interview on {d} at {h}."});
+if(!Array.isArray(st.liveSeen))st.liveSeen=[];
 const LA={first:true,busy:false,apps:{},sig:"",seen:new Set(),pushing:new Set()};
 function liveCo(id,name,sec,loc){const cid="lv_co_"+id;let c=CO_MAP.get(cid);
   if(!c){c={id:cid,name:name||"Podjetje",sec:SECTORS[sec]?sec:"pis",loc:TOWNS[loc]?loc:st.home,size:0,live:true};CO_MAP.set(cid,c)}else if(name)c.name=name;return cid}
@@ -3236,9 +3237,9 @@ async function pullAds(){const keep=st.applied.filter(x=>String(x.id).startsWith
   const q=keep.length?`ads?or=(status.eq.open,id.in.(${keep.join(",")}))`:"ads?status=eq.open";
   const rows=await sb(q+"&order=created_at.desc&limit=200&select=*"),fresh=[];
   for(const arr of [ADS,STUD])for(let i=arr.length-1;i>=0;i--)if(arr[i].live)arr.splice(i,1);
-  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const a=adFromRow(r);(a.kind==="stud"?STUD:ADS).unshift(a);if(!LA.first&&!a.closed&&!LA.seen.has(a.id))fresh.push(a);LA.seen.add(a.id)});
+  rows.filter(r=>r.author_id!==st.liveId).forEach(r=>{const a=adFromRow(r);(a.kind==="stud"?STUD:ADS).unshift(a);if(!a.closed&&!st.liveSeen.includes(a.id)){fresh.push(a);st.liveSeen.push(a.id)}});
   if(fresh.some(a=>a.kind!=="stud")){st.posA=0;st.lastA=null}if(fresh.some(a=>a.kind==="stud")){st.posS=0;st.lastS=null}
-  fresh.forEach(a=>notify("nLiveAd",{x:coOf(a).name,y:L(a.title)}));
+  st.liveSeen=st.liveSeen.slice(-400);fresh.forEach(a=>notify("nLiveAd",{x:coOf(a).name,y:L(a.title)},{ad:a.id}));
   return rows.map(r=>r.id+r.status).join(",")}
 async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let changed=false;
   try{const sig=await pullAds();if(sig!==LA.sig){LA.sig=sig;changed=true}
@@ -3276,6 +3277,16 @@ async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let chan
   catch(e){console.warn("live ads",e)}finally{LA.busy=false}}
 setTimeout(adTick,2500);setInterval(adTick,6000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(adTick,800)});
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#a-yes,#s-yes,#adApply,#caF button[type=submit]"))setTimeout(adTick,1200)},true);
+/* ================= NOTIFICATIONS TAKE YOU STRAIGHT TO WHAT THEY ARE ABOUT ================= */
+function goNote(n){const ln=n.link||{},mode=m=>{if(st.mode!==m)setMode(m)};closeSheet();
+  if(ln.chat){const d=st.deals.find(x=>x.id===ln.chat);if(d){if(d.kind==="job")mode("mojster");else{const a=adById(d.item);mode(a&&a.kind==="stud"?"stud":"zap")}show("msgs");openChat(d.id);return}}
+  if(ln.job){const j=jobById(ln.job);mode("mojster");if(j&&j.client==="me"){show("mine");return}show("swipe");if(j)openJobDetail(j.id);return}
+  if(ln.ad){const a=adById(ln.ad);if(a){mode(a.kind==="stud"?"stud":"zap");openAd(a.id);return}}
+  const v=ln.view||({nLiveOffer:"mine",nNewOffer:"mine",nApplicant:"coads",nLiveJob:"swipe",nLiveAd:null,nSeen:"apps",nLiveRej:"apps"})[n.k];
+  if(v){if(v==="mine"||v==="swipe")mode("mojster");if(v==="coads"&&!["zap","stud"].includes(st.mode))mode("zap");show(v);return}
+  openNotes()}
+{const _on=openNotes;openNotes=function(){_on();$("sheet").querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const n=st.notes.find(x=>x.id===b.dataset.n);if(!n)return;
+  n.read=true;save();updBell();goNote(n)})}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
