@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="34";
+const APP_VER="35";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3662,6 +3662,44 @@ function cdOpen(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;const
   if(p.cvName)ok.push(t("whyCv"));else no.push(t("whyNoCv"));
   const btn=$("adApply");if(!btn||(!ok.length&&!no.length))return;
   btn.insertAdjacentHTML("beforebegin",`<div class="whybox"><b>${t("whyYou")} · ${matchPct(a)} %</b><ul class="cdlist ok">${ok.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>${no.length?`<ul class="cdlist no">${no.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}</div>`)}}
+/* ================= SOUND + ALERT WHEN A NEW POST MATCHES MY PROFILE ================= */
+Object.assign(LANGS.sl,{nMatchJob:"🔔 Novo delo za tvoj profil: {y}",nMatchAd:"🔔 Nov oglas za tvoj profil: {x} – {y}",maTitle:"Obvestila o ujemajočih objavah",
+ maLead:"Ko pride nova objava, ki se ujema s tvojimi področji, telefon kratko zazvoni in pokaže obvestilo.",maSound:"Zvok in vibracija",maPush:"Obvestila na zaslonu telefona",maAllow:"Dovoli obvestila",maOn:"Vklopljeno ✓",maDenied:"Obvestila so blokirana v nastavitvah brskalnika.",maTest:"Preizkusi zvok",maNote:"Deluje, ko je aplikacija odprta ali v ozadju. Ko je telefon dalj časa zaklenjen, obvestilo pride, ko aplikacijo spet odpreš."});
+Object.assign(LANGS.en,{nMatchJob:"🔔 New job for your profile: {y}",nMatchAd:"🔔 New ad for your profile: {x} – {y}",maTitle:"Alerts for matching posts",
+ maLead:"When a new post matches your fields, your phone plays a short sound and shows an alert.",maSound:"Sound and vibration",maPush:"Alerts on the phone screen",maAllow:"Allow alerts",maOn:"On ✓",maDenied:"Alerts are blocked in the browser settings.",maTest:"Test the sound",maNote:"Works while the app is open or in the background. If the phone has been locked for a while, the alert arrives when you open the app again."});
+if(st.matchSound===undefined)st.matchSound=true;
+/* a short, simple two-note chime made in the browser (no sound file) */
+let maCtx=null;const maUnlock=()=>{try{if(!maCtx)maCtx=new (window.AudioContext||window.webkitAudioContext)();if(maCtx.state==="suspended")maCtx.resume()}catch(_){}};
+addEventListener("pointerdown",maUnlock,{passive:true});addEventListener("keydown",maUnlock);
+function maChime(){try{maUnlock();if(!maCtx)return;const t0=maCtx.currentTime+.02;
+  [[880,0,.09],[1320,.11,.14]].forEach(([f,d,len])=>{const o=maCtx.createOscillator(),g=maCtx.createGain();o.type="sine";o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.18,t0+d+.012);g.gain.exponentialRampToValueAtTime(.0005,t0+d+len);o.connect(g).connect(maCtx.destination);o.start(t0+d);o.stop(t0+d+len+.02)})}catch(_){}
+  try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(_){}}
+async function maShow(title,body,tag){try{if(!("Notification" in window)||Notification.permission!=="granted"||!document.hidden)return;
+  const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();const opt={body,icon:"icon-192.png",badge:"icon-192.png",tag,renotify:true};
+  if(reg&&reg.showNotification)reg.showNotification(title,opt);else new Notification(title,opt)}catch(_){}}
+const maJob=j=>{const p=st.profile||{};if(!j||j.client==="me")return false;if((p.cats||[]).includes(j.cat))return true;
+  if(j.catCustom&&p.catsOther){const w=String(p.catsOther).toLowerCase().split(/[,;]/).map(s=>s.trim()).filter(s=>s.length>2);return w.some(s=>j.catCustom.toLowerCase().includes(s))}return false};
+const maAd=a=>{const p=st.profile||{};return !!a&&!a.mine&&(p.sectors||[]).includes(a.sec)};
+{const _nt=notify;notify=function(k,p,link){
+  if(k==="nLiveJob"&&link&&link.job){const j=jobById(link.job);if(maJob(j)){_nt("nMatchJob",p,link);maAlert(t("nMatchJob",p),L(j.title)+" · "+(j.loc||""),"job-"+j.id);return}}
+  if(k==="nLiveAd"&&link&&link.ad){const a=adById(link.ad);if(maAd(a)){_nt("nMatchAd",p,link);maAlert(t("nMatchAd",p),(a.loc||""),"ad-"+a.id);return}}
+  return _nt(k,p,link)}}
+function maAlert(text,sub,tag){if(st.matchSound!==false)maChime();toast(text);maShow("JobNod",text.replace(/^🔔\s*/,"")+(sub?" · "+sub:""),tag)}
+/* keep checking (slower) while the app is in the background, so the alert can come */
+setInterval(()=>{if(!document.hidden)return;try{LIVE.busy||liveTickBg()}catch(_){}},60000);
+async function liveTickBg(){const h=Object.getOwnPropertyDescriptor(Document.prototype,"hidden");try{Object.defineProperty(document,"hidden",{get:()=>false,configurable:true});await Promise.all([liveTick(),adTick()])}
+  catch(_){}finally{delete document.hidden}}
+/* profile: switch it on or off, allow phone alerts, test the sound */
+{const css=document.createElement("style");css.textContent=`.macard .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.macard .row2 button{margin:0}.macard h3{margin:0 0 4px}`;document.head.appendChild(css)}
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||P.querySelector(".macard"))return;const perm="Notification" in window?Notification.permission:"unsupported";
+  const anchor=P.querySelector(".acct,.fbcard");const html=`<div class="pcard macard"><h3>🔔 ${t("maTitle")}</h3><p class="hint" style="margin:0">${t("maLead")}</p>
+   <label class="tog"><span><b>${t("maSound")}</b></span><input type="checkbox" role="switch" id="maSnd"${st.matchSound!==false?" checked":""}><i aria-hidden="true"></i></label>
+   <div class="row2">${perm==="granted"?`<button class="ghost sm" type="button" disabled>${t("maPush")}: ${t("maOn")}</button>`:perm==="denied"?`<span class="hint">${t("maDenied")}</span>`:perm==="unsupported"?"":`<button class="primary sm" type="button" id="maAllow">${t("maAllow")}</button>`}
+   <button class="ghost sm" type="button" id="maTest">${t("maTest")}</button></div><p class="hint" style="margin:8px 0 0;font-size:12.5px">${t("maNote")}</p></div>`;
+  if(anchor)anchor.insertAdjacentHTML("afterend",html);else P.insertAdjacentHTML("afterbegin",html);
+  $("maSnd").onchange=e=>{st.matchSound=e.target.checked;save()};$("maTest").onclick=()=>{maChime()};
+  if($("maAllow"))$("maAllow").onclick=async()=>{try{await Notification.requestPermission()}catch(_){}const P2=$("profile").querySelector(".macard");if(P2)P2.remove();renderProfile()}}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
