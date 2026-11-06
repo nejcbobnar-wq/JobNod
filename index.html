@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="31";
+const APP_VER="32";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3541,6 +3541,29 @@ function geoLocate(silent){return new Promise(done=>{if(!navigator.geolocation){
   $("geoB").onclick=async()=>{const b=$("geoB");b.disabled=true;b.textContent=t("geoFinding");const ok=await geoLocate(false);if(sheetOpts.map)openMap("local");else{b.disabled=false;b.textContent=t("geoBtn")}}}}
 /* if the person already allowed location, keep it current when the app opens */
 setTimeout(()=>{if(!st.geo||!st.geo.auto)return;try{if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:"geolocation"}).then(r=>{if(r.state==="granted")geoLocate(true)}).catch(()=>{})}catch(_){}},1500);
+/* ================= COUNT TESTERS: EACH PHONE CHECKS IN WHEN THE APP IS OPEN ================= */
+st.opens=(st.opens||0)+1;save();
+async function tsBeat(){if(document.hidden)return;let last=0;try{last=+localStorage.getItem("jn-beat")||0}catch(_){}if(Date.now()-last<10*60*1000)return;
+  try{await sb("testers?on_conflict=id",{method:"POST",prefer:"resolution=merge-duplicates",body:{id:st.liveId,name:liveName(),last_seen:new Date().toISOString(),ver:APP_VER,
+      device:faPhone(navigator.userAgent),mode:st.mode||null,opens:st.opens||1,place:st.home||null}});try{localStorage.setItem("jn-beat",String(Date.now()))}catch(_){}}
+  catch(e){console.warn("tester beat",e)}}
+setTimeout(tsBeat,3000);setInterval(tsBeat,5*60*1000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(tsBeat,1500)});
+/* the hidden feedback page also shows who is testing */
+{const css=document.createElement("style");css.textContent=`#fbAdmin .tsbox{background:var(--card,#fff);border-radius:18px;padding:14px;margin-bottom:14px}#fbAdmin .tsbox h2{margin:0 0 10px;font-size:18px}
+#fbAdmin .tsrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid rgba(0,0,0,.06);font-size:14px}#fbAdmin .tsrow small{color:var(--muted);font-size:12.5px}
+#fbAdmin .tsdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#C9C3D3;margin-right:6px}#fbAdmin .tsdot.on{background:#16B07A}#fbAdmin .tsmore{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:13px;padding:6px 0;cursor:pointer}`;document.head.appendChild(css)}
+let faTesters=null,faTsAll=false;
+const tsAgo=s=>{const m=Math.round((Date.now()-new Date(s))/60000);return m<2?"zdaj":m<60?`pred ${m} min`:m<1440?`pred ${Math.round(m/60)} h`:`pred ${Math.round(m/1440)} d`};
+{const _fl=faLoad;faLoad=async function(){faTesters=null;sb("testers?select=*&order=last_seen.desc&limit=500").then(r=>{faTesters=r;faDraw()}).catch(()=>{faTesters=[];faDraw()});return _fl()}}
+{const _fd=faDraw;faDraw=function(err){_fd(err);const w=$("fbAdmin");if(!w||err)return;const head=w.querySelector(".fahead");if(!head)return;
+  const T=faTesters,now=Date.now(),day=T?T.filter(x=>now-new Date(x.last_seen)<864e5).length:0,week=T?T.filter(x=>now-new Date(x.last_seen)<7*864e5).length:0,live=T?T.filter(x=>now-new Date(x.last_seen)<15*60000).length:0;
+  const list=T?(faTsAll?T:T.slice(0,8)):[];
+  head.insertAdjacentHTML("afterend",`<div class="tsbox"><h2>👥 Testerji</h2>${T===null?`<p class="hint">Nalagam …</p>`:`
+   <div class="fastats" style="margin-bottom:6px"><div><b>${T.length}</b><span>vseh</span></div><div><b>${live}</b><span>zdaj v aplikaciji</span></div><div><b>${day}</b><span>danes</span></div><div><b>${week}</b><span>ta teden</span></div></div>
+   ${list.map(x=>`<div class="tsrow"><span><i class="tsdot${now-new Date(x.last_seen)<15*60000?" on":""}"></i><b>${esc(x.name||"Tester")}</b></span><small>${esc(tsAgo(x.last_seen))}</small>
+     <small>${esc(x.device||"—")} · različica ${esc(x.ver||"?")}${x.place?" · "+esc(x.place):""}</small><small>${x.opens||1}× odprl</small></div>`).join("")}
+   ${T.length>8?`<button class="tsmore" id="tsMore">${faTsAll?"Pokaži manj":`Pokaži vse (${T.length})`}</button>`:""}`}</div>`);
+  if($("tsMore"))$("tsMore").onclick=()=>{faTsAll=!faTsAll;faDraw()}}}
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
 {const b=document.querySelector(".brand");b.setAttribute("role","button");b.tabIndex=0;b.onclick=goHome;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goHome()}}}
