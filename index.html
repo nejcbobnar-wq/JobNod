@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="33";
+const APP_VER="34";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3184,8 +3184,8 @@ async function liveTick(){if(LIVE.busy||document.hidden||LIVE.ok===false&&!LIVE.
 setTimeout(liveTick,800);setInterval(liveTick,6000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)liveTick()});
 
 /* ================= LIVE: JOB ADS & STUDENT JOBS BETWEEN TESTERS ================= */
-Object.assign(LANGS.sl,{stRejected:"Zavrnjeno",nLiveRej:"{x} je zavrnil/a vašo prijavo »{y}«.",nLiveAd:"Nov oglas v živo: {x} – {y}",liveApplicants:"Prijave so od pravih testerjev.",mIvOk:"Potrjujem razgovor {d} ob {h}."});
-Object.assign(LANGS.en,{stRejected:"Declined",nLiveRej:"{x} declined your application “{y}”.",nLiveAd:"New live ad: {x} – {y}",liveApplicants:"Applications come from real testers.",mIvOk:"I confirm the interview on {d} at {h}."});
+Object.assign(LANGS.sl,{stRejected:"Zavrnjeno",nLiveRej:"{x} je zavrnil/a vašo prijavo »{y}«.",nLiveAd:"Nov oglas v živo: {x} – {y}",liveApplicants:"Demo: kandidati brez oznake so izmišljeni, prijave z oznako »V živo« so od pravih testerjev.",mIvOk:"Potrjujem razgovor {d} ob {h}."});
+Object.assign(LANGS.en,{stRejected:"Declined",nLiveRej:"{x} declined your application “{y}”.",nLiveAd:"New live ad: {x} – {y}",liveApplicants:"Demo: unmarked candidates are fictional, the ones marked “Live” are real testers.",mIvOk:"I confirm the interview on {d} at {h}."});
 if(!Array.isArray(st.liveSeen))st.liveSeen=[];
 const LA={first:true,busy:false,apps:{},sig:"",seen:new Set(),pushing:new Set()};
 function liveCo(id,name,sec,loc){const cid="lv_co_"+id;let c=CO_MAP.get(cid);
@@ -3209,7 +3209,8 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
   if(a&&a.rid)sb(`ads?id=eq.${a.rid}`,{method:"PATCH",body:{status:"removed"}}).catch(()=>{})},true);
 /* real applicants replace the made-up ones */
 {const _ca=coApplicants;coApplicants=function(a){if(!a.rid)return _ca(a);
-  return (LA.apps[a.rid]||[]).map(r=>{const d=r.data||{};return {k:"L"+r.id,name:r.user_name||"Tester",town:d.town||"—",m:+d.m||70,cv:!!d.cv,age:0,live:true}}).sort((x,y)=>y.m-x.m)}}
+  const real=(LA.apps[a.rid]||[]).map(r=>{const d=r.data||{};return {k:"L"+r.id,name:r.user_name||"Tester",town:d.town||"—",m:+d.m||70,cv:!!d.cv,age:0,live:true}});
+  return [...real,..._ca(a)].sort((x,y)=>y.m-x.m)}}
 /* invite or decline a real applicant */
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cainv],[data-carej]");if(!b)return;const inv=!!b.dataset.cainv,[id,k]=(b.dataset.cainv||b.dataset.carej).split("|");
   if(!k||!k.startsWith("L"))return;const rid=k.slice(1),a=st.myAds.find(x=>x.id===id),r=a&&(LA.apps[a.rid]||[]).find(x=>x.id===rid);if(!r)return;
@@ -3248,8 +3249,8 @@ async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let chan
       const rids=st.myAds.filter(a=>a.rid).map(a=>a.rid);
       if(rids.length){const rows=await sb(`applications?ad_id=in.(${rids.join(",")})&order=created_at.asc&select=*`),by={};
         rows.forEach(r=>{(by[r.ad_id]=by[r.ad_id]||[]).push(r);if(!LA.seen.has("ap"+r.id)){const a=st.myAds.find(x=>x.rid===r.ad_id);
-          if(!LA.first)notify("nApplicant",{x:r.user_name||"Tester",y:a?L(a.title):""},{view:"coads"});LA.seen.add("ap"+r.id)}});
-        st.myAds.forEach(a=>{if(!a.rid)return;const list=by[a.rid]||[];a.seenN=list.length;a.apSt=a.apSt||{};
+          if(!LA.first){notify("nApplicant",{x:r.user_name||"Tester",y:a?L(a.title):""},{view:"coads"});if(a)a.seenN=(a.seenN||0)+1}LA.seen.add("ap"+r.id)}});
+        st.myAds.forEach(a=>{if(!a.rid)return;const list=by[a.rid]||[];a.apSt=a.apSt||{};
           list.forEach(r=>{if(r.status==="interview")a.apSt["L"+r.id]="inv";else if(r.status==="rejected")a.apSt["L"+r.id]="rej"})});
         const s=JSON.stringify(rows.map(r=>r.id+r.status));if(s!==LA.asig){LA.asig=s;changed=true}LA.apps=by}}
     /* seeker side: send my applications, then follow their status */
@@ -3626,7 +3627,7 @@ const cdFil={};
     const f=cdFil[a.id]||"all",top=new Set(all.slice(0,3).map(x=>x.k));
     rows.forEach((row,i)=>{const x=all[i];if(!x)return;row.classList.add("cd");row.dataset.cd=a.id+"|"+x.k;
       const show=f==="all"||(f==="cv"&&x.cv)||(f==="near"&&x.d!==null&&x.d<=15)||(f==="top"&&top.has(x.k));row.hidden=!show;
-      const h=row.querySelector("h4");if(h&&top.has(x.k)&&all.length>3&&!h.querySelector(".topb"))h.insertAdjacentHTML("beforeend",`<span class="topb">${t("cdTop")}</span>`);
+      const h=row.querySelector("h4");if(h&&x.live&&!h.querySelector(".livb"))h.insertAdjacentHTML("beforeend",`<span class="topb livb" style="background:#D1FAE5;color:#065F46">${t("liveBadge")}</span>`);if(h&&top.has(x.k)&&all.length>3&&!h.querySelector(".topb:not(.livb)"))h.insertAdjacentHTML("beforeend",`<span class="topb">${t("cdTop")}</span>`);
       const rs=cdReasons(a,x),line=[...rs.ok.slice(0,2).map(s=>`<b>✓</b> ${esc(s)}`),...rs.no.slice(0,1).map(s=>`<i>✗</i> ${esc(s)}`)].join(" · ");
       if(!row.querySelector(".why")){const nx=row.querySelector(".apbtns,.apst");if(nx)nx.insertAdjacentHTML("beforebegin",`<p class="why">${line}</p>`);else row.insertAdjacentHTML("beforeend",`<p class="why">${line}</p>`)}
       row.onclick=e=>{if(e.target.closest("button"))return;cdOpen(a.id,x.k)}});
