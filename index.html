@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="71";
+const APP_VER="74";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4744,7 +4744,7 @@ Object.assign(LANGS.en,{bgVer:"✓ Verified",bgTop:"⭐ Top rated",bg50:"🏆 50
  cnMine:"Your badges",cnNone:"No badges yet.",cnNext:"Next badges",cnNeedR:"{n} more reviews averaging 4.8 for ⭐ Top rated",cnNeedJ:"{n} more jobs for 🏆 50+ jobs",cnNeedV:"add your business for ✓ Verified",
  cnIns:"🛡️ I have liability insurance",cnUsed:"This month: {n} of 15 offers",cnLimit:"You've used the 15 offers in Basic this month. In the demo you can keep going – PRO would be unlimited."});
 {const css=document.createElement("style");css.textContent=`.bdgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.bdg{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--soft,#F1EEF5);color:var(--ink);white-space:nowrap;line-height:1.3}
-.bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF);color:#fff}.bdg.top{background:#FFF4D6;color:#8A5A00}.bdg.ver{background:#D1FAE5;color:#065F46}
+.bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF);color:#fff}.bdg.btop{background:#FFF4D6;color:#8A5A00}.bdg.ver{background:#D1FAE5;color:#065F46}
 .phead .bdgs{justify-content:center;margin-top:8px}.qrow .bdgs{margin-top:3px}.qrow.isPro{box-shadow:inset 0 0 0 2px #9B5CFF;border-radius:16px}
 .cntbl{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 10px}.cntbl th,.cntbl td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}.cntbl th{font-size:12px;color:var(--muted)}
 .cntbl td:nth-child(3),.cntbl th:nth-child(3){background:rgba(155,92,255,.08)}.cnbtn{width:100%;margin-top:4px}.cnlist{display:flex;flex-direction:column;gap:6px;margin:6px 0}.cnlist div{font-size:14px}.cnlist small{color:var(--muted)}`;document.head.appendChild(css)}
@@ -4754,7 +4754,7 @@ function proBadgeKeys(id){const p=person(id);if(!p)return[];const out=[];
     if(st.deals.filter(d=>d.kind==="job"&&d.role==="pro"&&["done","rated"].includes(d.status)).length>=50)out.push("50");if(pr.insured)out.push("ins");return out}
   if(p.live||p.role!=="mojster")return out;const h=hashN(id),r=rating(id);
   if(h%5===0)out.push("pro");if(h%4!==3)out.push("ver");if(r.n>=10&&r.avg>=4.8||(r.avg>=4.5&&h%2===0)||h%7===3)out.push("top");if(h%3===1)out.push("50");if(h%4===1)out.push("fast");if(h%2===0)out.push("ins");return out}
-const bgHtml=id=>{const k=proBadgeKeys(id);return k.length?`<div class="bdgs">${k.map(x=>`<span class="bdg ${x==="pro"?"pro":x==="top"?"top":x==="ver"?"ver":""}" title="${esc(t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x]+"D"))}">${t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x])}</span>`).join("")}</div>`:""};
+const bgHtml=id=>{const k=proBadgeKeys(id);return k.length?`<div class="bdgs">${k.map(x=>`<span class="bdg ${x==="pro"?"pro":x==="top"?"btop":x==="ver"?"ver":""}" title="${esc(t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x]+"D"))}">${t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x])}</span>`).join("")}</div>`:""};
 /* offers on my posts: badges, PRO first */
 {const _rp=renderPosts;renderPosts=function(){_rp();const P=$("posts");if(!P)return;
   P.querySelectorAll(".qlist").forEach(ql=>{const rows=[...ql.querySelectorAll(":scope>.qrow")];rows.forEach(r=>{const nm=r.querySelector(".nm[data-person]");if(!nm||r.querySelector(".bdgs"))return;const id=nm.dataset.person;
@@ -4797,7 +4797,7 @@ Object.assign(LANGS.en,{cbVer:"✓ Verified company",cbGood:"⭐ Good employer",
  ccBoost:"Featured ad",ccBoostP:"+ €5 (7 days on top)",ccStud:"Student work",ccStudP:"free – JobNod gets a share from the student service, not from you",ccUsed:"First free ad: {x}",ccUsedY:"used",ccUsedN:"still available",
  ccNow:"Your plan: {x}",ccBasic:"Pay per ad",ccTry:"Try PRO company (demo, no payment)",ccStop:"Turn PRO off",ccOnT:"PRO company is on (demo).",ccOffT:"Back to pay per ad.",ccMine:"Your company's badges",ccNone:"No badges yet.",
  ccNeedV:"add your tax number for ✓ Verified company",ccNeedS:"{n} more referrals for 🎓 Student friendly",ccNeedR:"{n} more ads for 🔁 Hires regularly",ccCmp:"For comparison: one ad on big job portals costs about €150 or more."});
-const CB={pro:["cbPro","pro"],ver:["cbVer","ver"],good:["cbGood","top"],fast:["cbFast",""],stud:["cbStud",""],reg:["cbReg",""]};
+const CB={pro:["cbPro","pro"],ver:["cbVer","ver"],good:["cbGood","btop"],fast:["cbFast",""],stud:["cbStud",""],reg:["cbReg",""]};
 function coBadgeKeys(c){if(!c)return[];const out=[];
   if(c.id==="me"||c.mine){const co=(st.profile&&st.profile.co)||{};if(st.coPro)out.push("pro");if(co.tax)out.push("ver");if((st.naps||[]).filter(n=>n.status==="issued").length>=5)out.push("stud");if((st.myAds||[]).length>=10)out.push("reg");return out}
   if(c.live)return out;const h=hashN(String(c.id||c.name));if(h%6===0)out.push("pro");if(h%4!==2)out.push("ver");if(h%3===0)out.push("good");if(h%4===1)out.push("fast");if(h%5===2)out.push("stud");if(h%3===2)out.push("reg");return out}
@@ -4820,10 +4820,68 @@ const coBgHtml=c=>{const k=coBadgeKeys(c);return k.length?`<div class="bdgs">${k
 
 /* ================= BADGES ON THE SWIPE CARDS (companies on ads, pros on the client's pro cards) ================= */
 {const css=document.createElement("style");css.textContent=`.card .info .bdgs{margin:6px 0 2px}.card .info .bdg{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.card .info .bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF)}.card .info .bdg.ver{background:rgba(16,185,129,.85)}.card .info .bdg.top{background:rgba(255,176,32,.9);color:#3D2A00}`;document.head.appendChild(css)}
+.card .info .bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF)}.card .info .bdg.ver{background:rgba(16,185,129,.85)}.card .info .bdg.btop{background:rgba(255,176,32,.9);color:#3D2A00}`;document.head.appendChild(css)}
 const cap3=h=>{if(!h)return "";const d=document.createElement("div");d.innerHTML=h;const bs=[...d.querySelectorAll(".bdg")];bs.slice(3).forEach(b=>b.remove());return d.innerHTML};
 {const _ac=adCard;adCard=function(a,...r){const h=_ac(a,...r);if(!a||typeof h!=="string")return h;const b=cap3(coBgHtml(coOf(a)));return b?h.replace(/(<button class="coline"[\s\S]*?<\/button>)/,"$1"+b):h}}
 {const _pc=proCard;proCard=function(p,...r){const h=_pc(p,...r);if(!p||typeof h!=="string")return h;const b=cap3(bgHtml(p.id));return b?h.replace(/(<div class="rate">[\s\S]*?<\/div>)/,"$1"+b):h}}
+
+/* ================= DELA: "MOJSTRI" TAB – ALL PROS (search, type of work, sort, badges, invite to my job) ================= */
+Object.assign(LANGS.sl,{plNav:"Mojstri",plTitle:"Mojstri",plSearch:"Išči po imenu, delu ali kraju …",plAllCats:"Vse vrste del",plSortPro:"Najprej PRO",plSortRate:"Najbolje ocenjeni",plSortNear:"Najbližji",plSortCheap:"Najcenejši",
+ plN:"{n} mojstrov",plNone:"Ni mojstrov za ta iskalni pogoj.",plFrom:"od {x}/h",plInvite:"📨 Povabi na moje delo",plInvited:"✓ Povabljen",plNoJob:"Najprej objavi delo, potem lahko povabiš mojstra.",plPostNow:"Objavi delo",
+ plPick:"Na katero delo ga povabiš?",plSent:"Povabilo poslano. {x} bo kmalu poslal ponudbo.",plNear:"· {d}"});
+Object.assign(LANGS.en,{plNav:"Pros",plTitle:"Pros",plSearch:"Search by name, work or town …",plAllCats:"All kinds of work",plSortPro:"PRO first",plSortRate:"Top rated",plSortNear:"Nearest",plSortCheap:"Cheapest",
+ plN:"{n} pros",plNone:"No pros match this search.",plFrom:"from {x}/h",plInvite:"📨 Invite to my job",plInvited:"✓ Invited",plNoJob:"Post a job first, then you can invite a pro.",plPostNow:"Post a job",
+ plPick:"Which job do you invite them to?",plSent:"Invite sent. {x} will send an offer soon.",plNear:"· {d}"});
+{const css=document.createElement("style");css.textContent=`#plCtl{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}#plCtl input{width:100%;font-size:16px}#plCtl .two{gap:8px}#plCtl select{width:100%;min-width:0}
+.plrow{background:var(--surface);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}.plrow.isPro{box-shadow:inset 0 0 0 2px #9B5CFF}
+.pltop{all:unset;box-sizing:border-box;display:flex;gap:12px;align-items:center;cursor:pointer;width:100%}.pltop>div{flex:1;min-width:0}.pltop h4{margin:0;font-size:16px}.pltop p{margin:2px 0 0;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pltop .plr{flex:none;text-align:right;font-weight:800;font-size:13.5px;white-space:nowrap;padding-right:4px}.pltop .plr small{display:block;font-weight:500;color:var(--muted);font-size:12px}.plrow .plinv{margin:0}.plcount{font-size:13px;color:var(--muted);margin:0 0 8px}
+.pljobs{display:flex;flex-direction:column;gap:8px;margin-top:8px}.pljobs button{margin:0;text-align:left}`;document.head.appendChild(css)}
+{const nb=document.querySelector('nav button[data-v="people"]');if(nb){nb.dataset.for="mojster";const sp=nb.querySelector("span");if(sp){sp.removeAttribute("data-i18n");sp.textContent=t("plNav")}
+  const post=document.querySelector('nav button[data-v="post"]');if(post)post.after(nb);nb.hidden=st.mode!=="mojster"}}
+if(!st.jinv||typeof st.jinv!=="object")st.jinv={};
+let PL={q:"",cat:"",sort:"pro"};
+const plMyJobs=()=>allJobs().filter(j=>j.client==="me"&&!st.chosen[j.id]&&j.status!=="removed"&&!j.removed);
+const plInvited=(pid)=>Object.values(st.jinv).some(a=>a.some(x=>x.pro===pid));
+function plInvite(pid){const jobs=plMyJobs(),p=person(pid);
+  if(!jobs.length){sheetOpts={plinv:1};$("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("plInvite")}</h2><p>${t("plNoJob")}</p><button class="primary" id="plPost" style="width:100%">${t("plPostNow")}</button>`;
+    $("cls").onclick=closeSheet;$("plPost").onclick=()=>{closeSheet();show("post")};openSheet(t("plInvite"));return}
+  const go=jid=>{(st.jinv[jid]=st.jinv[jid]||[]).push({pro:pid,ts:Date.now()});if(!st.invited.includes(pid))st.invited.push(pid);save();closeSheet();toast(t("plSent",{x:p.name}));renderPeople()};
+  if(jobs.length===1)return go(jobs[0].id);
+  sheetOpts={plinv:1};$("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("plPick")}</h2>
+   <p class="hint" style="margin:0">${esc(p.name)}</p><div class="pljobs">${jobs.map(j=>`<button class="ghost" data-pj="${esc(j.id)}">${esc(L(j.title))} · ${esc(j.loc||"")}</button>`).join("")}</div>`;
+  $("cls").onclick=closeSheet;$("sheet").querySelectorAll("[data-pj]").forEach(b=>b.onclick=()=>go(b.dataset.pj));openSheet(t("plPick"))}
+/* an invited demo pro sends an offer about 8 s later */
+{const _q=quotesFor;quotesFor=function(j){const list=_q(j);const inv=(st.jinv&&st.jinv[j&&j.id])||[];if(!inv.length)return list;const est=catRange(j.cat)||[j.min||40,j.max||90],mid=(est[0]+est[1])/2,dates=dateOpts(),ll=coords(j)||TOWNS[st.home];
+  inv.forEach(x=>{if(Date.now()-x.ts<8000||list.some(q=>q.pro===x.pro))return;const p=person(x.pro);if(!p||p.live)return;const R=rng(hashN(j.id+"|inv|"+p.id));
+    list.push({pro:p.id,d:TOWNS[p.loc]?km(ll,TOWNS[p.loc]):0,ptype:"fixed",price:Math.max(15,Math.round(mid*(.8+R()*.45)/5)*5),rate:p.rate||25,hours:2,date:dates[1+Math.floor(R()*5)][0],time:["08:00","09:00","10:00","14:00"][Math.floor(R()*4)],note:{sl:"Hvala za povabilo! Z veseljem opravim to delo.",en:"Thanks for the invite! Happy to do this job."}})});return list}}
+renderPeople=function(){const el=$("people");if(!el)return;const V=$("v-people"),seg=V&&V.querySelector(".seg");if(seg)seg.hidden=true;const h=V&&V.querySelector(".section-title");if(h)h.textContent=t("plTitle");
+  if(!$("plCtl"))el.insertAdjacentHTML("beforebegin",`<div id="plCtl"><input type="search" id="plQ" placeholder="${esc(t("plSearch"))}" aria-label="${esc(t("plSearch"))}">
+   <div class="two"><select id="plCat" aria-label="${esc(t("plAllCats"))}"><option value="">${t("plAllCats")}</option>${[...(PK_RANK.cats||[]),...Object.keys(CATS)].filter((k,i,a)=>CATS[k]&&a.indexOf(k)===i&&k!=="drugo").map(k=>`<option value="${k}">${esc(catName(k))}</option>`).join("")}</select>
+    <select id="plSort"><option value="pro">${t("plSortPro")}</option><option value="rate">${t("plSortRate")}</option><option value="near">${t("plSortNear")}</option><option value="cheap">${t("plSortCheap")}</option></select></div><p class="plcount" id="plN"></p></div>`);
+  const q=$("plQ"),c=$("plCat"),s=$("plSort");q.value=PL.q;c.value=PL.cat;s.value=PL.sort;
+  q.oninput=()=>{PL.q=q.value;draw()};c.onchange=()=>{PL.cat=c.value;draw()};s.onchange=()=>{PL.sort=s.value;draw()};
+  function draw(){const nq=pkNorm(PL.q.trim());let list=PEOPLE.filter(p=>p.role==="mojster"&&p.id!=="me"&&!p.live&&!isBlocked(p.id)).map(p=>({p,rt:rating(p.id),d:distP(p),pro:proBadgeKeys(p.id).includes("pro")}));
+    if(PL.cat)list=list.filter(x=>x.p.cats.includes(PL.cat));
+    if(nq)list=list.filter(x=>pkNorm([x.p.name,x.p.loc,...x.p.cats.map(catName),...(x.p.skills||[]).map(k=>SKILLS[k]?L(SKILLS[k]):"")].join(" ")).includes(nq));
+    const byR=(a,b)=>b.rt.avg-a.rt.avg||b.rt.n-a.rt.n,byD=(a,b)=>(a.d??999)-(b.d??999),byC=(a,b)=>(a.p.rate||99)-(b.p.rate||99);
+    list.sort(PL.sort==="rate"?byR:PL.sort==="near"?byD:PL.sort==="cheap"?byC:(a,b)=>(b.pro?1:0)-(a.pro?1:0)||byD(a,b));
+    $("plN").textContent=t("plN",{n:list.length});
+    el.innerHTML=list.length?list.slice(0,80).map(({p,rt,d,pro})=>`<div class="plrow${pro?" isPro":""}"><button type="button" class="pltop" data-person="${p.id}">${av(p,"md")}<div><h4>${esc(p.name)}${vBadge(p.id)}</h4>
+       <p>${rt.n?stars(rt.avg)+" "+f1(rt.avg)+" ("+nRev(rt.n)+")":t("newPro")}</p><p>${esc(p.cats.map(catName).join(" · "))}</p><p>${esc(p.loc||"")} ${d!==null&&d!==undefined?t("plNear",{d:fkm(d)}):""}</p></div>
+       <span class="plr">${p.rate?t("plFrom",{x:money(p.rate)}):""}</span></button>${bgHtml(p.id)}
+       <button type="button" class="${plInvited(p.id)?"ghost":"primary"} sm plinv" data-inv="${p.id}">${plInvited(p.id)?t("plInvited"):t("plInvite")}</button></div>`).join("")
+      :`<p class="hint">${t("plNone")}</p>`;
+    el.querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));el.querySelectorAll("[data-inv]").forEach(b=>b.onclick=()=>plInvite(b.dataset.inv))}
+  draw()};
+{const _s=show;show=function(v,...r){const x=_s(v,...r);if(v==="people")renderPeople();return x}}
+
+/* ================= MY PROFILE: PRO BADGE NEXT TO MY NAME ================= */
+{const css=document.createElement("style");css.textContent=`.phero-txt strong .bdg{margin-left:8px;vertical-align:middle;font-size:12px}.phead h2 .bdg{margin-left:8px;vertical-align:middle;font-size:12px}`;document.head.appendChild(css)}
+const myProTag=()=>{const on=st.mode==="mojster"?st.pro:(st.mode==="zap"||st.mode==="stud")?st.coPro:false;return on?`<span class="bdg pro">${st.mode==="mojster"?t("bgPro"):t("cbPro")}</span>`:""};
+{const _rp=renderProfile;renderProfile=function(){_rp();const s=document.querySelector("#profile .phero-txt strong");if(s&&!s.querySelector(".bdg"))s.insertAdjacentHTML("beforeend",myProTag())}}
+{const _dp=drawProfile;drawProfile=function(){_dp();if(!(sheetOpts&&sheetOpts.id==="me"))return;const h=$("sheet").querySelector(".phead h2");if(h&&!h.querySelector(".bdg.pro"))h.insertAdjacentHTML("beforeend",myProTag())}}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();if(document.querySelector("#coads .summary .bdg.pro")||!st.coPro)return;const n=document.querySelector("#coads .summary span, #coads .summary small, #coads .summary b");if(n)n.insertAdjacentHTML("afterend",` <span class="bdg pro" style="display:inline-block;margin:4px 0">${t("cbPro")}</span>`)}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
