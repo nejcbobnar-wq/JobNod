@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="75";
+const APP_VER="76";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4882,6 +4882,13 @@ const myProTag=()=>(st.pro?`<span class="bdg pro">${t("bgPro")}</span>`:"")+(st.
 {const _rp=renderProfile;renderProfile=function(){_rp();const s=document.querySelector("#profile .phero-txt strong");if(s&&!s.querySelector(".bdg"))s.insertAdjacentHTML("beforeend",myProTag())}}
 {const _dp=drawProfile;drawProfile=function(){_dp();if(!(sheetOpts&&sheetOpts.id==="me"))return;const h=$("sheet").querySelector(".phead h2");if(h&&!h.querySelector(".bdg.pro"))h.insertAdjacentHTML("beforeend",myProTag())}}
 {const _rc=renderCoAds;renderCoAds=function(){_rc();if(document.querySelector("#coads .summary .bdg.pro")||!st.coPro)return;const n=document.querySelector("#coads .summary span, #coads .summary small, #coads .summary b");if(n)n.insertAdjacentHTML("afterend",` <span class="bdg pro" style="display:inline-block;margin:4px 0">${t("cbPro")}</span>`)}}
+
+/* ================= COMPANY LIST: ICON-ONLY BADGES NEXT TO THE NAME ================= */
+{const css=document.createElement("style");css.textContent=`.bico{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.bico span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;font-size:11px;line-height:1;background:var(--soft,#F1EEF5)}
+.bico span.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF);color:#fff}.bico span.ver{background:#D1FAE5;color:#065F46;font-weight:800}.bico span.btop{background:#FFF4D6}`;document.head.appendChild(css)}
+const CB_IC={pro:"💎",ver:"✓",good:"⭐",fast:"⚡",stud:"🎓",reg:"🔁"};
+const coIcons=c=>{const k=coBadgeKeys(c);return k.length?`<span class="bico">${k.map(x=>`<span class="${CB[x][1]}" title="${esc(t(CB[x][0]))}" aria-label="${esc(t(CB[x][0]))}">${CB_IC[x]}</span>`).join("")}</span>`:""};
+{const _rc=renderCos;renderCos=function(){_rc();const el=$("cos");if(!el)return;el.querySelectorAll(".prow[data-co]").forEach(b=>{const c=COMPANIES.find(x=>x.id===b.dataset.co),h=b.querySelector("h4");if(c&&h&&!h.querySelector(".bico"))h.insertAdjacentHTML("beforeend",coIcons(c))})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
