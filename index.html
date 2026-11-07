@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="89";
+const APP_VER="90";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -5028,10 +5028,21 @@ Object.assign(LANGS.en,{ppTitle:"💎 PRO is on – your benefits",ppCoTitle:"�
 const ppHtml=()=>{const co=st.coPro&&st.profile&&st.profile.hasCo;if(!st.pro&&!co)return "";
   const box=(h,list,id)=>`<div class="ppcard"><h3>${h}</h3><ul>${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><button type="button" class="ghost sm ppx" data-ppoff="${id}">${t("ppOff")}</button></div>`;
   return `<div id="ppWrap">${st.pro?box(t("ppTitle"),LANGS[lang==="sl"?"sl":"en"].ppPro,"pro"):""}${co?box(t("ppCoTitle"),LANGS[lang==="sl"?"sl":"en"].ppCo,"co"):""}</div>`};
-function ppDraw(){const old=$("ppWrap");if(old)old.remove();const P=$("profile");if(!P)return;const h=P.querySelector(".phero-top")||P.querySelector(".phero-txt");if(!h)return;
-  const anchor=h.closest(".phero")||h;anchor.insertAdjacentHTML("afterend",ppHtml());
-  P.querySelectorAll("[data-ppoff]").forEach(b=>b.onclick=()=>{if(b.dataset.ppoff==="pro"){st.pro=false;notify("nProOff")}else{st.coPro=false;notify("nCoProOff")}save();renderProfile();try{renderPosts()}catch(_){}try{renderCoAds()}catch(_){}})}
-{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{ppDraw()}catch(_){}return x}}
+/* benefits are behind an ⓘ button next to the PRO on/off button (Nastavitve and Moji oglasi) */
+Object.assign(LANGS.sl,{ppInfo:"Kaj dobim s PRO",ppHead:"💎 PRO ugodnosti",ppCoHead:"💎 PRO podjetje – ugodnosti"});Object.assign(LANGS.en,{ppInfo:"What PRO gives me",ppHead:"💎 PRO benefits",ppCoHead:"💎 PRO company – benefits"});
+{const css=document.createElement("style");css.textContent=`.pprow{display:flex;gap:8px;align-items:stretch;margin-top:4px}.pprow .cnbtn{flex:1;width:auto;margin:0}.pprow .ppi{flex:none;width:48px;min-width:48px;padding:0;margin:0;font-size:20px;line-height:1;border-radius:14px}
+.pprow+.ppcard{margin:10px 0 4px}`;document.head.appendChild(css)}
+const PPOPEN={};
+function ppInfo(){[["cnGo","pro"],["ccGo","co"]].forEach(([id,k])=>{const b=$(id);if(!b||b.parentElement.classList.contains("pprow"))return;
+  const row=document.createElement("div");row.className="pprow";b.before(row);row.appendChild(b);
+  row.insertAdjacentHTML("beforeend",`<button type="button" class="ghost ppi" aria-label="${esc(t("ppInfo"))}" aria-expanded="false" title="${esc(t("ppInfo"))}">ⓘ</button>`);
+  const list=LANGS[lang==="sl"?"sl":"en"][k==="pro"?"ppPro":"ppCo"];
+  row.insertAdjacentHTML("afterend",`<div class="ppcard" hidden><h3>${k==="pro"?t("ppHead"):t("ppCoHead")}</h3><ul>${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`);
+  const card=row.nextElementSibling,ib=row.querySelector(".ppi"),set=o=>{card.hidden=!o;ib.setAttribute("aria-expanded",String(o));PPOPEN[k]=o};
+  ib.onclick=()=>set(card.hidden);set(!!PPOPEN[k])})}
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{ppInfo()}catch(_){}return x}}
+{const _rc=renderCoAds;renderCoAds=function(...r){const x=_rc(...r);try{ppInfo()}catch(_){}return x}}
+new MutationObserver(()=>{if(($("cnGo")&&!$("cnGo").parentElement.classList.contains("pprow"))||($("ccGo")&&!$("ccGo").parentElement.classList.contains("pprow")))ppInfo()}).observe(document.body,{childList:true,subtree:true});
 /* bell notice + profile refresh whenever PRO is switched on or off */
 addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#cnGo,#ccGo");if(!b)return;const was=b.id==="cnGo"?!!st.pro:!!st.coPro,id=b.id;
   setTimeout(()=>{const now=id==="cnGo"?!!st.pro:!!st.coPro;if(now===was)return;notify(id==="cnGo"?(now?"nProOn":"nProOff"):(now?"nCoProOn":"nCoProOff"));try{renderProfile()}catch(_){}},0)},true);
