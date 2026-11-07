@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="57";
+const APP_VER="59";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3148,7 +3148,7 @@ async function pullJobs(){const rows=await sb("jobs?status=eq.open&order=created
   date:o.day||dateOpts()[1][0],time:o.at_time||"10:00",note:{sl:o.note||"",en:o.note||""},rid:o.id,live:true}))}}
 {const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
   if(j&&j.rid&&!dealFor("job",jobId,proId)){const q=quotesFor(j).find(x=>x.pro===proId);
-    if(q){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,uprice:q.uprice,qty:q.qty,unit:q.unit,date:q.date,time:q.time,note:L(q.note)}});
+    if(q&&q.live){const d=newDeal({kind:"job",item:jobId,other:proId,role:"client",status:"agreed",offer:{ptype:q.ptype,price:q.price,rate:q.rate,hours:q.hours,uprice:q.uprice,qty:q.qty,unit:q.unit,date:q.date,time:q.time,note:L(q.note)}});
       d.live=true;d.rid=q.rid;sysMsg(d,"mAgreed",{p:priceTxt(q),d:fmtDay(q.date),h:q.time});save();
       sb(`offers?id=eq.${q.rid}`,{method:"PATCH",body:{status:"accepted"}}).then(()=>sb(`offers?job_id=eq.${j.rid}&id=neq.${q.rid}&status=eq.sent`,{method:"PATCH",body:{status:"declined"}}))
         .then(()=>sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{status:"assigned"}})).catch(e=>console.warn("live choose",e))}}
@@ -3518,7 +3518,7 @@ function faDraw(err){let w=$("fbAdmin");if(!w){w=document.createElement("div");w
   $("faR").onclick=faLoad;
   w.querySelectorAll("[data-fa]").forEach(b=>b.onclick=()=>{faTab=b.dataset.fa;faDraw()});
   w.querySelectorAll("[data-big]").forEach(im=>im.onclick=()=>{const o=document.createElement("div");o.className="big";o.innerHTML=`<img src="${im.src}" alt="">`;o.onclick=()=>o.remove();w.appendChild(o)})}
-async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&kind=neq.diag&order=created_at.desc&limit=300");faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
+async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&order=created_at.desc&limit=300").then(r=>(r||[]).filter(x=>!(x.ctx&&x.ctx.view==="diag")));faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
 function faCheck(){if(location.hash==="#mnenja")faLoad();else{const w=$("fbAdmin");if(w)w.remove()}}
 addEventListener("hashchange",faCheck);setTimeout(faCheck,300);
 /* ================= USE MY CURRENT LOCATION ================= */
@@ -4500,7 +4500,7 @@ let ntSure=false;
 const DG={errs:[],clickAt:0,calledAt:0};
 addEventListener("error",e=>DG.errs.push(String(e.message||e).slice(0,200)));
 addEventListener("unhandledrejection",e=>DG.errs.push("rej "+String(e.reason&&e.reason.message||e.reason).slice(0,200)));
-const dgSend=rec=>{try{sb("feedback",{method:"POST",body:{user_id:st.liveId,user_name:liveName(),kind:"diag",body:JSON.stringify(rec).slice(0,2000),ctx:{ver:APP_VER,ua:navigator.userAgent,view:"diag"}}}).catch(()=>{})}catch(_){}};
+const dgSend=rec=>{try{sb("feedback",{method:"POST",body:{user_id:st.liveId,user_name:liveName(),kind:"bug",body:("[diag] "+JSON.stringify(rec)).slice(0,2000),ctx:{ver:APP_VER,ua:navigator.userAgent,view:"diag"}}}).catch(()=>{})}catch(_){}};
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#sheet [data-n]");if(!b)return;DG.clickAt=Date.now();DG.calledAt=0;const id=b.dataset.n,e0=DG.errs.length;
   setTimeout(()=>{if(DG.calledAt)return;const n=st.notes.find(x=>x.id===id);dgSend({what:"tap-no-goNote",k:n&&n.k,link:n&&n.link,errs:DG.errs.slice(e0)})},1500)},true);
 {const _g=goNote;goNote=function(n){DG.calledAt=Date.now();const ln=(n&&n.link)||{},rec={what:"goNote",k:n&&n.k,link:ln,mode:st.mode,found:ln.job?!!jobById(ln.job):ln.ad?!!adById(ln.ad):null,e0:DG.errs.length};let r;
@@ -4515,6 +4515,12 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
   if(k==="nLiveJob"&&!(l&&maJob(jobById(l.job))))return;
   if(k==="nLiveAd"&&!(l&&maAd(adById(l.ad))))return;
   return _nf(k,p,l)}}
+
+/* ================= REAL POSTS ALSO GET THE DEMO OFFERS (real offers from testers first) ================= */
+{const _q=quotesFor;quotesFor=function(j){const real=_q(j);if(!j||!j.rid)return real;const fake=_q(Object.assign({},j,{rid:null}));return [...real,...fake]}}
+{const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
+  if(j&&j.rid){const q=quotesFor(j).find(x=>x.pro===proId);if(q&&!q.live)sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{status:"assigned"}}).catch(e=>console.warn("assign",e))}
+  return _cp(jobId,proId)}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
