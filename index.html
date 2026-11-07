@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="54";
+const APP_VER="55";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4411,7 +4411,7 @@ const sdOpenSet=new Set();
   box.querySelectorAll(".studc").forEach(c=>{const k=c.querySelector("[data-snew]").dataset.snew,s=st.studs[k],last=napLastF(n=>n.k===k),open=sdOpenSet.has(k);
     const top=c.querySelector(".sdtop");top.remove();
     c.insertAdjacentHTML("afterbegin",`<button type="button" class="sdhead" data-sopen="${esc(k)}" aria-expanded="${open}"><b>${esc((s&&s.name)||"—")}</b><i aria-hidden="true">›</i></button>`);
-    if(open){c.classList.add("open");c.querySelector(".sdhead").insertAdjacentElement("afterend",top)}
+    if(open){c.classList.add("open");const nb=top.querySelector("b");if(nb)nb.remove();if(top.textContent.trim())c.querySelector(".sdhead").insertAdjacentElement("afterend",top)}
     else[...c.children].forEach(ch=>{if(!ch.classList.contains("sdhead"))ch.remove()})});
   return box.innerHTML}}
 {const _rc=renderCoAds;renderCoAds=function(){_rc();const S=$("studSec");if(!S)return;
