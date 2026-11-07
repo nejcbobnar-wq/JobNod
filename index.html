@@ -2685,7 +2685,7 @@ function renderCoAds(){const box=$("coads");if(!box)return;
       if(!(mn>0)||!(mx>0))coErr.pay=t("ePay");else if(mx<mn)coErr.pay=t("ePayRange");
       if(Object.keys(coErr).length){re();return}
       const now=Date.now(),a={id:"my"+now,mine:true,kind:f.kind,ts:now,co:"me-co",sec:f.sec,title:{sl:f.title,en:f.title},desc:{sl:f.desc||f.title,en:f.desc||f.title},
-        unit:f.kind==="stud"?"h":f.unit,min:mn,max:mx,type:f.kind==="stud"?"student":f.type,shifts:f.shifts.length?f.shifts:["flex"],bens:f.bens,open:f.kind==="stud"?1:f.open,
+        unit:f.kind==="stud"?"h":f.unit,min:mn,max:mx,type:f.kind==="stud"?"student":f.type,shifts:f.shifts.length?f.shifts:["flex"],bens:f.bens,open:f.open||1,
         loc:f.loc,posted:new Date().toISOString().slice(0,10),urgent:f.urgent,apSt:{}};
       if(f.kind==="stud"){a.dur=f.dur;a.hrs=f.hrs;a.both=f.both}
       st.myAds.unshift(a);coForm=null;save();syncMyAds();toast(t("tAdPosted"));renderHire();renderStud();re();box.scrollTop=0;
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="83";
+const APP_VER="85";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4822,7 +4822,7 @@ const coBgHtml=c=>{const k=coBadgeKeys(c);return k.length?`<div class="bdgs">${k
 {const css=document.createElement("style");css.textContent=`.card .info .bdgs{margin:6px 0 2px}.card .info .bdg{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .card .info .bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF)}.card .info .bdg.ver{background:rgba(16,185,129,.85)}.card .info .bdg.btop{background:rgba(255,176,32,.9);color:#3D2A00}`;document.head.appendChild(css)}
 const cap3=h=>{if(!h)return "";const d=document.createElement("div");d.innerHTML=h;const bs=[...d.querySelectorAll(".bdg")];bs.slice(3).forEach(b=>b.remove());return d.innerHTML};
-{const _ac=adCard;adCard=function(a,...r){const h=_ac(a,...r);if(!a||typeof h!=="string")return h;const b=cap3(coBgHtml(coOf(a)));return b?h.replace(/(<button class="coline"[\s\S]*?<\/button>)/,"$1"+b):h}}
+/* v85: job ad swipe cards look like student cards – company badges only in the ad details */
 {const _pc=proCard;proCard=function(p,...r){const h=_pc(p,...r);if(!p||typeof h!=="string")return h;const b=cap3(bgHtml(p.id));return b?h.replace(/(<div class="rate">[\s\S]*?<\/div>)/,"$1"+b):h}}
 
 /* ================= DELA: "MOJSTRI" TAB – ALL PROS (search, type of work, sort, badges, invite to my job) ================= */
@@ -4972,6 +4972,44 @@ addEventListener("resize",()=>{FITC.clear();document.querySelectorAll(".stack .c
  const up=()=>{tm=setTimeout(()=>document.querySelectorAll(".stack.fdrag").forEach(s=>s.classList.remove("fdrag")),700)};addEventListener("pointerup",up,{passive:true,capture:true});addEventListener("pointercancel",up,{passive:true,capture:true})}
 /* healthcare: medical bag instead of the heart */
 if(SECTORS.osk)SECTORS.osk.svg='<svg viewBox="0 0 100 100"><rect x="36" y="17" width="28" height="20" rx="7" fill="none" stroke="#fff" stroke-width="6"/><rect x="12" y="30" width="76" height="54" rx="11" fill="#fff"/><rect x="44" y="41" width="12" height="32" rx="2.5" fill="#E0559B"/><rect x="34" y="51" width="32" height="12" rx="2.5" fill="#E0559B"/></svg>';
+
+/* ================= STUDENT ADS: PRICE PER STUDENT (1 free per month, each further student 5 €), INVITES LIMITED TO PAID PLACES ================= */
+Object.assign(LANGS.sl,{ccStudP:"1 študent na mesec brezplačno, vsak naslednji 5 € – plačate za toliko študentov, kolikor jih iščete",
+ ssNeed:"Koliko študentov potrebujete",ssFree:"Brezplačno (1 brezplačen študent ta mesec)",ssPrice:"Cena: {f}{n} × 5 € = {x}",ssFreePart:"1 brezplačen + ",ssPro:"Vključeno v PRO podjetje",
+ ssDemo:"Demo – plačilo še ni vklopljeno.",ssLeft:"Brezplačni študent ta mesec: {x}",ssLeftY:"še na voljo",ssLeftN:"že porabljen",ssChip:"👥 {n} študentov",
+ ssFullT:"Vsa mesta so zasedena",ssFull:"Za ta oglas ste plačali {n} {w}, povabili ste že {k}. Za vsakega dodatnega študenta doplačate 5 €.",ssAdd:"Dodaj mesto za 5 €",ssAdded:"Dodano mesto. Oglas ima zdaj {n} mest.",
+ ssW:["mesto","mesti","mesta","mest"]});
+Object.assign(LANGS.en,{ccStudP:"1 student per month free, each further student €5 – you pay for as many students as you need",
+ ssNeed:"How many students do you need",ssFree:"Free (1 free student this month)",ssPrice:"Price: {f}{n} × €5 = {x}",ssFreePart:"1 free + ",ssPro:"Included in PRO company",
+ ssDemo:"Demo – payment is not switched on yet.",ssLeft:"Free student this month: {x}",ssLeftY:"still available",ssLeftN:"used",ssChip:"👥 {n} students",
+ ssFullT:"All places are filled",ssFull:"You paid for {n} {w} on this ad and already invited {k}. Each extra student costs €5.",ssAdd:"Add a place for €5",ssAdded:"Place added. The ad now has {n} places.",
+ ssW:["place","places","places","places"]});
+const ssMonth=ts=>{const d=new Date(ts);return d.getFullYear()*12+d.getMonth()};
+const ssUsed=()=>{const m=ssMonth(Date.now());return (st.myAds||[]).filter(a=>a.kind==="stud"&&ssMonth(a.ts||0)===m).reduce((s,a)=>s+(+a.open||1),0)};
+const ssFreeLeft=()=>Math.max(0,1-ssUsed());
+const ssPriceTxt=n=>{n=Math.max(1,+n||1);if(st.coPro)return t("ssPro");const fr=ssFreeLeft(),pay=Math.max(0,n-fr);
+  if(!pay)return t("ssFree");return t("ssPrice",{f:fr?t("ssFreePart"):"",n:pay,x:money(pay*5)})+" · "+t("ssDemo")};
+const ssInv=a=>Object.values(a.apSt||{}).filter(s=>s==="inv").length;
+{const _rc=renderCoAds;renderCoAds=function(...r){const x=_rc(...r);const f=coForm;
+  if(f&&f.kind==="stud"&&!$("ca-open")){const h=$("ca-hrs"),row=h&&h.closest(".two");if(row){
+    row.insertAdjacentHTML("afterend",`<label><span>${t("ssNeed")} <i class="req">*</i></span><input id="ca-open" type="number" min="1" max="50" inputmode="numeric" value="${esc(f.open||1)}"></label><p class="hint" id="ssPrice" style="margin:-4px 0 0;font-weight:600"></p>`);
+    const i=$("ca-open"),p=$("ssPrice"),up=()=>{p.textContent=ssPriceTxt(i.value)};i.oninput=up;up()}}
+  const cc=$("ccCard");if(cc&&!cc.querySelector("#ssLeft")){const u=cc.querySelector("p.hint");if(u)u.insertAdjacentHTML("afterend",`<p class="hint" id="ssLeft" style="margin:0 0 6px">${t("ssLeft",{x:ssFreeLeft()?t("ssLeftY"):t("ssLeftN")})}</p>`)}
+  return x}}
+/* invite limited to the places paid for */
+let SS_LAST="";addEventListener("pointerdown",e=>{const b=e.target.closest&&e.target.closest("[data-cainv]");SS_LAST=b?b.dataset.cainv:""},true);
+const ssFull=a=>a&&a.kind==="stud"&&!st.coPro&&ssInv(a)>=(+a.open||1);
+function ssAsk(a,go){const n=+a.open||1,k=ssInv(a);sheetOpts={ssfull:1};$("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("ssFullT")}</h2>
+   <p>${t("ssFull",{n,k,w:pl(n,LANGS.sl.ssW,LANGS.en.ssW)})}</p><p class="hint">${t("ssDemo")}</p><button class="primary" id="ssAddB" style="width:100%">${t("ssAdd")}</button>`;
+  $("cls").onclick=closeSheet;$("ssAddB").onclick=()=>{a.open=n+1;save();try{syncMyAds()}catch(_){}closeSheet();toast(t("ssAdded",{n:a.open}));setTimeout(go,250)};openSheet(t("ssFullT"))}
+{const _ip=ivPicker;ivPicker=function(o,...r){if(o&&o.title===t("ivTitle")&&!o.ssok){const id=(SS_LAST||"").split("|")[0];let a=(st.myAds||[]).find(z=>z.id===id);
+    if(!a)a=(st.myAds||[]).find(z=>z.kind==="stud"&&o.sub&&o.sub.endsWith(" · "+L(z.title)));
+    if(ssFull(a))return ssAsk(a,()=>_ip(Object.assign({},o,{ssok:1}),...r))}
+  return _ip(o,...r)}}
+addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cainv]");if(!b||b.dataset.ssok||(typeof IVP!=="undefined"&&IVP.pass))return;const [id]=b.dataset.cainv.split("|"),a=(st.myAds||[]).find(z=>z.id===id);
+  if(!ssFull(a))return;e.preventDefault();e.stopImmediatePropagation();ssAsk(a,()=>{b.dataset.ssok="1";b.click();delete b.dataset.ssok})},true);
+/* the card shows how many students are wanted */
+{const _sc=studCard;studCard=function(a,...r){const h=_sc(a,...r);return a&&+a.open>1&&typeof h==="string"?h.replace('<div class="chips">',`<div class="chips"><span class="chip">👥 ${num(a.open)} ${pl(+a.open,["študent","študenta","študenti","študentov"],["student","students","students","students"])}</span>`):h}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
