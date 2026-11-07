@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="49";
+const APP_VER="50";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4360,6 +4360,22 @@ function studNapForm(k){const s=st.studs[k];if(!s)return;const last=napLastF(n=>
 /* keep the list fresh while the company looks at it */
 setInterval(()=>{if(!isCo()||$("v-coads").hidden||coForm||document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#studSec"))return;
   const sig=JSON.stringify(st.naps.map(n=>n.id+n.status));if(sig!==studScan.sig||studScan()){studScan.sig=sig;renderCoAds()}},3000);
+
+/* ================= TAPPING A 🔔 ALERT (IN THE APP OR ON THE PHONE) OPENS WHAT IT IS ABOUT ================= */
+{const css=document.createElement("style");css.textContent=`.toast.tap{pointer-events:auto;cursor:pointer;z-index:1200}.toast.tap::after{content:" ›";opacity:.7}`;document.head.appendChild(css)}
+let NT_NOTE=null;
+const ntOpen=n=>{if(!n)return;n.read=true;save();updBell();goNote(n)};
+{const _t=toast;toast=function(m){const x=$("toast");x.classList.remove("tap");NT_NOTE=null;return _t(m)}}
+{const _nf=notify;notify=function(k,p,l){const before=st.notes[0]&&st.notes[0].id,r=_nf(k,p,l),n=st.notes[0];
+  if(l&&n&&n.id!==before&&n.k===k&&CH_KEYS.has(k)){NT_NOTE=n.id;const x=$("toast");x.classList.add("tap");clearTimeout(tt);tt=setTimeout(()=>{x.classList.remove("show","tap");NT_NOTE=null},5000)}return r}}
+$("toast").addEventListener("click",e=>{if(!NT_NOTE)return;e.stopPropagation();const n=st.notes.find(x=>x.id===NT_NOTE);NT_NOTE=null;const x=$("toast");x.classList.remove("show","tap");clearTimeout(tt);ntOpen(n)});
+/* phone notification: the tag says which alert it was */
+const ntByTag=tag=>{tag=String(tag||"");const m=tag.match(/^(job|ad|msg)-(.+)$/);if(m){const f=m[1]==="msg"?"chat":m[1];const n=st.notes.find(x=>x.link&&x.link[f]===m[2]);if(n)return n}
+  return st.notes.find(n=>n.k+"-"+((n.link&&(n.link.chat||n.link.job||n.link.ad))||"")===tag)||st.notes.find(n=>tag&&tag.startsWith(n.k+"-"))};
+/* new matching posts ("Nova objava …") use their own alert */
+{const _ma=maAlert;maAlert=function(text,sub,tag){const r=_ma(text,sub,tag),n=st.notes[0];if(n&&n.link){NT_NOTE=n.id;const x=$("toast");x.classList.add("tap");clearTimeout(tt);tt=setTimeout(()=>{x.classList.remove("show","tap");NT_NOTE=null},5000)}return r}}
+if(navigator.serviceWorker)navigator.serviceWorker.addEventListener("message",e=>{const m=e.data||{};if(m.type==="jn-note")setTimeout(()=>ntOpen(ntByTag(m.tag)),200)});
+{const q=new URLSearchParams(location.search).get("note");if(q){history.replaceState(null,"",location.pathname+location.hash);setTimeout(()=>ntOpen(ntByTag(q)),1500)}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
