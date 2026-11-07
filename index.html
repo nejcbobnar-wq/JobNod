@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="70";
+const APP_VER="71";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4817,6 +4817,13 @@ const coBgHtml=c=>{const k=coBadgeKeys(c);return k.length?`<div class="bdgs">${k
    ${need.length?`<div class="cnlist"><small>${t("cnNext")}:</small>${need.map(x=>`<div>• ${esc(x)}</div>`).join("")}</div>`:""}</details>`);
   $("ccCard").addEventListener("toggle",e=>{box.dataset.ccOpen=e.target.open?"1":""});
   $("ccGo").onclick=()=>{st.coPro=!st.coPro;save();box.dataset.ccOpen="1";renderCoAds();toast(st.coPro?t("ccOnT"):t("ccOffT"))}}}
+
+/* ================= BADGES ON THE SWIPE CARDS (companies on ads, pros on the client's pro cards) ================= */
+{const css=document.createElement("style");css.textContent=`.card .info .bdgs{margin:6px 0 2px}.card .info .bdg{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card .info .bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF)}.card .info .bdg.ver{background:rgba(16,185,129,.85)}.card .info .bdg.top{background:rgba(255,176,32,.9);color:#3D2A00}`;document.head.appendChild(css)}
+const cap3=h=>{if(!h)return "";const d=document.createElement("div");d.innerHTML=h;const bs=[...d.querySelectorAll(".bdg")];bs.slice(3).forEach(b=>b.remove());return d.innerHTML};
+{const _ac=adCard;adCard=function(a,...r){const h=_ac(a,...r);if(!a||typeof h!=="string")return h;const b=cap3(coBgHtml(coOf(a)));return b?h.replace(/(<button class="coline"[\s\S]*?<\/button>)/,"$1"+b):h}}
+{const _pc=proCard;proCard=function(p,...r){const h=_pc(p,...r);if(!p||typeof h!=="string")return h;const b=cap3(bgHtml(p.id));return b?h.replace(/(<div class="rate">[\s\S]*?<\/div>)/,"$1"+b):h}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
