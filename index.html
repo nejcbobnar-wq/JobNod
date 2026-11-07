@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="65";
+const APP_VER="66";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4584,7 +4584,7 @@ window.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("
 const PK_RANK={cats:["ciscenje","selitev","kosnja","pleskanje","vodovod","elektrika","montaza","hisnik","vrt","tlaki","drevje","gospodinja","varstvo","odvoz","ogrevanje","mizar","zidar","suhomont","fasada","okna","streha","racunalnik","avto","aparati","parket","starejsi","zivali","instrukcije","avtopranje","sneg","ograja","izkop","dimnik","solar","kuhinje","ciscenjeokna","varjenje","alarm","omrezje","tesar","kamnosek","izolacija","bazen","steklar","catering","foto","kolo","sivilja","drva","dezinsekcija","tapetnik","stopnice","pohistvo","prevod","racunovodstvo"],
  skills:["ciscenje","selitve","kosnja","pleskanje","vodovod","elektro","montaza","hisnik","kosnjazel","vrt","keramika","prevozi","kombi","gencisc","okna_c","glajenje","knauf","parket","laminat","klima","kopalnice","drevje","meje","odvoz","racunalniki","telefoni","aparati","avtomeh","vulkanizer","varstvootrok","psi","instrukcije","starejsi","ogrevanje","bojlerji","luci","toplpcrp","talno","solar","polnilnice","fasade","ometi","izolacija","hidroizol","zidanje","betoniranje","tlakovanje","strehe","zlebovi","varjenje","kovinarstvo","mizarstvo","tesarstvo","kuhinje","vrata","okna","senčila","kamere","alarm","pametna","omrezja","plin","preproge","poslovni","pranjeav","trata","namakanje","sajenje","podiranje","sneg","drva","rusenje","izkopi","klavir","dimnik","kamini","bazeni","kolesa","sivanje","foto","video","catering","kuhanje","prevajanje","racunovodstvo","dezinsekcija","tapeciranje","ključavničar","steklarstvo","tapete"],
  sectors:["trg","gost","proiz","log","skladisce","voz","cisc","prod","pis","grad","osk","zdrav","it","teh","avtos","fin","mark","izob","lep","lepota2","hrana","kovin","les","varn","kmet","soc","energ","zav","nepr","hr","telek","kem","obl","tisk","prav","znan","javna","kult"],
- langs:["SL","EN","DE","HR","SR","BS","IT","HU","MK","SQ","ES","FR","RU","UK","PL","SK","CZ","RO","NL","PT","TR","ZH","AR"]};
+ etypes:["full","fixed","part","sp","seasonal","student"],langs:["SL","EN","DE","HR","SR","BS","IT","HU","MK","SQ","ES","FR","RU","UK","PL","SK","CZ","RO","NL","PT","TR","ZH","AR"]};
 Object.assign(LANGS.sl,{pkPick:"Izberi",pkNone:"Nič izbranega – pritisni za izbiro",pkSearch:"Išči …",pkNo:"Ni zadetkov.",pkDone:"Končano",pkMore:"+{n}"});
 Object.assign(LANGS.en,{pkPick:"Choose",pkNone:"Nothing selected – tap to choose",pkSearch:"Search …",pkNo:"No matches.",pkDone:"Done",pkMore:"+{n}"});
 {const css=document.createElement("style");css.textContent=`fieldset.pk .pkhead{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);cursor:pointer}
@@ -4597,8 +4597,8 @@ fieldset.pk .pklist .benchip input:checked+span{background:rgba(255,94,58,.08);c
 fieldset.pk .pklist .benchip input:focus-visible+span{outline:2px solid var(--accent)}fieldset.pk .pkno{margin:4px 0;color:var(--muted);font-size:14px}fieldset.pk .pkdone{align-self:flex-end;margin:0}fieldset.pk .benchip[hidden]{display:none}`;document.head.appendChild(css)}
 const pkNorm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 const pkOpen=new Set();
-function pkEnhance(root){root.querySelectorAll("fieldset.bens").forEach(fs=>{if(fs.dataset.pk)return;const labs=[...fs.querySelectorAll(".benchip")];if(labs.length<8)return;
-  const inp0=labs[0].querySelector("input[data-arr]");if(!inp0)return;const key=inp0.dataset.arr;fs.dataset.pk="1";fs.classList.add("pk");
+function pkEnhance(root){root.querySelectorAll("fieldset.bens").forEach(fs=>{if(fs.dataset.pk)return;const labs=[...fs.querySelectorAll(".benchip")];if(!labs.length)return;
+  const inp0=labs[0].querySelector("input[data-arr]");if(!inp0)return;const key=inp0.dataset.arr;if(labs.length<8&&key!=="etypes")return;fs.dataset.pk="1";fs.classList.add("pk");
   const rank=PK_RANK[key]||[],ri=v=>{const i=rank.indexOf(v);return i<0?999:i};
   labs.sort((a,b)=>{const va=a.querySelector("input").value,vb=b.querySelector("input").value;return ri(va)-ri(vb)||a.textContent.localeCompare(b.textContent,"sl")});
   const row=fs.querySelector(".benrow");row.remove();
