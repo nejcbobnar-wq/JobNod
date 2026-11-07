@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="48";
+const APP_VER="49";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3806,7 +3806,7 @@ function napLine(n){return `${esc(n.servis)} · ${napDay(n.from)}–${napDay(n.t
 function napTickDemo(){let ch=false;st.naps.forEach(n=>{if(n.live)return;const age=Date.now()-n.ts;
   if(n.status==="sent"&&age>4000){n.status="confirmed";ch=true;napPatch(n.id,{status:"confirmed",st_status:"stud",st_school:"Univerza v Ljubljani",st_tax:"(demo)",st_addr:"Demo ulica 1, 4000 Kranj"});notify("nNapOk",{x:n.cand,s:n.servis},{view:"coads"})}
   if(n.status==="confirmed"&&age>11000&&!n.waitServis){n.status="issued";ch=true;napPatch(n.id,{status:"issued"});notify("nNapIssuedCo",{x:n.cand,s:n.servis},{view:"coads"})}});
-  if(ch){save();if(!$("v-coads").hidden)renderCoAds();if(sheetOpts.cand){const n=st.naps.find(z=>z.k===sheetOpts.cand);if(n)cdOpen(n.adId,n.k)}}}
+  if(ch){save();if(!$("v-coads").hidden)renderCoAds();if(sheetOpts.cand){const n=napLastF(z=>z.k===sheetOpts.cand);if(n)cdOpen(n.adId,n.k)}}}
 setInterval(napTickDemo,1500);
 /* the order form (company) */
 function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;const x=coApplicants(a).find(z=>z.k===k);if(!x)return;
@@ -3824,7 +3824,7 @@ function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;cons
     <button class="primary" id="nGo">${t("napSend")}</button></form>`;
   $("cls").onclick=closeSheet;
   $("napF").onsubmit=e=>{e.preventDefault();const n={id:"np"+Date.now(),adId,k,cand:x.name,live:!!x.live,servis:$("nS").value,from:$("nF").value,to:$("nT").value,hours:+$("nH").value||40,rate:+$("nR").value||8.5,loc:$("nP").value,title:L(a.title),ts:Date.now(),status:"sent"};
-    st.naps=st.naps.filter(z=>z.k!==k);st.naps.push(n);save();napDb(n,x);
+    st.naps.push(n);save();napDb(n,x);
     if(n.live){const d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===k.slice(1));
       if(d){const txt=t("mNapReq",{s:n.servis,f:napDay(n.from),t:napDay(n.to),h:n.hours,r:String(n.rate).replace(".",",")});d.msgs.push({from:"me",text:txt,ts:now()});save();
         sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAP⟧"+JSON.stringify({id:n.id,co:myCo().name,servis:n.servis,from:n.from,to:n.to,hours:n.hours,rate:n.rate,loc:n.loc,title:n.title})}}).catch(e=>console.warn("nap",e))}}
@@ -3832,18 +3832,18 @@ function napForm(adId,k){const a=st.myAds.find(z=>z.id===adId);if(!a)return;cons
   openSheet(t("napTitle"))}
 /* company: the button + status in the candidate card (student ads only, after the invite) */
 {const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const a=st.myAds.find(z=>z.id===adId);if(!a||a.kind!=="stud")return;
-  const stt=(a.apSt||{})[k],n=st.naps.find(z=>z.k===k),btns=$("sheet").querySelector(".jdbtns");if(!btns)return;
+  const stt=(a.apSt||{})[k],n=napLastF(z=>z.k===k),btns=$("sheet").querySelector(".jdbtns");if(!btns)return;
   if(n)btns.insertAdjacentHTML("beforebegin",`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint" style="margin:0">${napLine(n)}</span>${napSteps(n.status)}</div>`);
   else if(stt==="inv"){btns.insertAdjacentHTML("beforebegin",`<div class="napbox"><button class="primary" type="button" id="napGo">${t("napBtn")}</button></div>`);$("napGo").onclick=()=>napForm(adId,k)}}}
 /* the row in the company's list shows the referral status */
 {const _rc=renderCoAds;renderCoAds=function(){_rc();const box=$("coads");if(!box)return;
-  box.querySelectorAll(".aprow[data-cd]").forEach(r=>{const [,k]=r.dataset.cd.split("|"),n=st.naps.find(z=>z.k===k);if(!n||r.querySelector(".napmini"))return;
+  box.querySelectorAll(".aprow[data-cd]").forEach(r=>{const [,k]=r.dataset.cd.split("|"),n=napLastF(z=>z.k===k);if(!n||r.querySelector(".napmini"))return;
     const w=r.querySelector(".why");(w||r).insertAdjacentHTML(w?"afterend":"beforeend",`<p class="why napmini" style="grid-column:1/-1">📄 ${t("napSt_"+n.status)} · ${esc(n.servis)}</p>`)})}}
 /* live testers: the order and the replies travel as chat messages with a hidden marker */
 {const _tm=theirMsg;theirMsg=function(d,text){const s=String(text||"");
   if(s.startsWith("⟦NAP⟧")){let o=null;try{o=JSON.parse(s.slice(5))}catch(_){}if(o){st.napIn[d.rid]=Object.assign(o,{status:"sent",deal:d.id});save();
       _tm(d,t("mNapReq",{s:o.servis,f:napDay(o.from),t:napDay(o.to),h:o.hours,r:String(o.rate).replace(".",",")}));notify("nNapReq",{x:o.co,y:o.title},{chat:d.id})}return}
-  if(s.startsWith("⟦NAPOK⟧")){const n=st.naps.find(z=>z.live&&z.k==="L"+d.rid);_tm(d,t("mNapOk"));if(n&&n.status==="sent"){n.status="confirmed";save();notify("nNapOk",{x:n.cand,s:n.servis},{chat:d.id})}return}
+  if(s.startsWith("⟦NAPOK⟧")){const n=napLastF(z=>z.live&&z.k==="L"+d.rid);_tm(d,t("mNapOk"));if(n&&n.status==="sent"){n.status="confirmed";save();notify("nNapOk",{x:n.cand,s:n.servis},{chat:d.id})}return}
   if(s.startsWith("⟦NAPIS⟧")){const o=st.napIn[d.rid];if(o){o.status="issued";save();_tm(d,t("mNapIssued",{s:o.servis}));notify("nNapIssued",{y:o.title,s:o.servis},{chat:d.id})}return}
   return _tm(d,text)}}
 /* student: confirm in the chat (and see the status) */
@@ -3851,7 +3851,7 @@ function napConfirm(d){const p=st.profile||{};if(!p.napOk||!/^\d{8}$/.test(Strin
   const o=st.napIn[d.rid];if(!o)return;o.status="confirmed";save();napPatch(o.id,{status:"confirmed",st_tax:String(p.napTax),st_status:p.napStatus||"stud",st_school:p.napSchool||"",cand_servis:p.napServis||"",st_addr:napAddr(p)||null,cand_name:liveName()});d.msgs.push({from:"me",text:t("mNapOk"),ts:now()});save();
   sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAPOK⟧"}}).catch(e=>console.warn(e));drawChat(d.id)}
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const sh=$("sheet");
-  let n=null,mine=false;if(d.role==="company"){n=st.naps.find(z=>z.live&&z.k==="L"+d.rid)}else{n=st.napIn[d.rid];mine=true}
+  let n=null,mine=false;if(d.role==="company"){n=napLastF(z=>z.live&&z.k==="L"+d.rid)}else{n=st.napIn[d.rid];mine=true}
   if(!n)return;const anchor=sh.querySelector(".adinfo")||sh.querySelector(".dealcard");if(!anchor)return;
   anchor.insertAdjacentHTML("afterend",`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint" style="margin:0">${napLine(n)}</span>${napSteps(n.status)}${mine&&n.status==="sent"?`<button class="primary" type="button" id="napOk">${t("napConfirm")}</button>`:""}</div>`);
   if($("napOk"))$("napOk").onclick=()=>napConfirm(d)}}
@@ -3915,7 +3915,7 @@ function naDraw(){let w=$("napAdmin");if(!w){w=document.createElement("div");w.i
       <div><h4>Študent</h4><b>${esc(r.cand_name||"—")}</b><br>${r.st_addr?esc(r.st_addr)+"<br>":""}Davčna: ${esc(r.st_tax||"— (še ni potrdil)")}<br>${r.st_status?(r.st_status==="dijak"?"Dijak":"Študent"):""}${r.st_school?" · "+esc(r.st_school):""}</div>
       <div><h4>Delodajalec</h4><b>${esc(r.co_name||"—")}</b><br>${r.co_addr?esc(r.co_addr)+"<br>":""}${r.co_tax?"Davčna: "+esc(r.co_tax)+"<br>":""}${r.co_contact?esc(r.co_contact):""}${r.co_phone?", "+esc(r.co_phone):""}</div>
       <div><h4>Delo</h4>${esc(r.title||"")} · ${esc(r.loc||"")}<br>${naDate(r.from_d)} – ${naDate(r.to_d)}${r.work_hrs?"<br>Delovni čas: "+esc(r.work_hrs):""}</div>
-      <div><h4>Obseg in plačilo</h4>${r.hours} ur × ${naEur(+r.rate)} bruto<br><b>Predvideno: ${naEur(r.hours*r.rate)}</b></div></div>
+      <div><h4>Obseg in plačilo</h4>${r.hours} ur × ${naEur(+r.rate)} bruto<br><b>Predvideno: ${naEur(r.hours*r.rate)}</b>${r.hours_done!=null?`<br><b style="color:#0E9F6E">Opravljeno: ${String(r.hours_done).replace(".",",")} ur = ${naEur(r.hours_done*r.rate)}</b>`:""}</div></div>
       <div class="naacts">${r.status==="confirmed"?`<button class="primary sm" data-naiss="${esc(r.id)}">✓ Izdaj napotnico</button><button class="ghost sm" data-narej="${esc(r.id)}">Zavrni</button>`:""}
        <button class="ghost sm" data-napdf="${esc(r.id)}">📄 ${r.status==="issued"?"Prenesi napotnico (PDF)":"Predogled PDF"}</button></div></div></details>`).join("")
      :`<p class="hint">Ni naročil v tem pogledu.</p>`}`}`;
@@ -3935,7 +3935,7 @@ function naPdf(r){const W=1240,H=1754,c=document.createElement("canvas");c.width
   let y=420;const sec=(title,rows)=>{tx(title.toUpperCase(),90,y,22,800,"#FF5E3A");y+=14;g.fillStyle="#eee";g.fillRect(90,y,W-180,2);y+=44;rows.forEach(([k,v])=>{tx(k,90,y,26,400,"#666");tx(v,460,y,26,700);y+=46});y+=30};
   sec("Študent",[["Ime in priimek",r.cand_name||"—"],["Naslov",r.st_addr||"—"],["Davčna številka",r.st_tax||"—"],["Status",r.st_status==="dijak"?"dijak":"študent"],["Šola / fakulteta",r.st_school||"—"]]);
   sec("Delodajalec (naročnik)",[["Naziv",r.co_name||"—"],["Naslov",r.co_addr||"—"],["Davčna številka",r.co_tax||"—"],["Kontaktna oseba",[r.co_contact,r.co_phone].filter(Boolean).join(", ")||"—"]]);
-  sec("Delo",[["Opis dela",r.title||"—"],["Kraj dela",r.loc||"—"],["Obdobje",`${naDate(r.from_d)} – ${naDate(r.to_d)}`],["Delovni čas",r.work_hrs||"po dogovoru"],["Predvideno ur",String(r.hours)],["Urna postavka (bruto)",naEur(+r.rate)],["Predviden znesek (bruto)",naEur(r.hours*r.rate)]]);
+  sec("Delo",[["Opis dela",r.title||"—"],["Kraj dela",r.loc||"—"],["Obdobje",`${naDate(r.from_d)} – ${naDate(r.to_d)}`],["Delovni čas",r.work_hrs||"po dogovoru"],["Predvideno ur",String(r.hours)],["Urna postavka (bruto)",naEur(+r.rate)],["Predviden znesek (bruto)",naEur(r.hours*r.rate)],...(r.hours_done!=null?[["Opravljene ure",String(r.hours_done).replace(".",",")],["Znesek po opravljenih urah (bruto)",naEur(r.hours_done*r.rate)]]:[])]);
   y+=40;g.fillStyle="#ddd";g.fillRect(90,y,440,2);g.fillRect(W-530,y,440,2);tx("Podpis delodajalca",90,y+40,22,400,"#777");tx(`Žig in podpis: ${r.servis||"servis"}`,W-530,y+40,22,400,"#777");
   tx("Naročeno prek aplikacije JobNod · jobnodapp.com",90,H-80,22,400,"#999");
   const jpg=atob(c.toDataURL("image/jpeg",.9).split(",")[1]),img=new Uint8Array(jpg.length);for(let i=0;i<jpg.length;i++)img[i]=jpg.charCodeAt(i);
@@ -3954,9 +3954,9 @@ addEventListener("hashchange",naCheck);setTimeout(naCheck,300);
 
 /* the PDF also in the app: company (candidate card) and student (chat), once issued */
 async function napPdfById(id){try{const rows=await sb(`napotnice?id=eq.${encodeURIComponent(id)}&select=*`);if(rows&&rows[0])naPdf(rows[0]);else toast(t("cvFail"))}catch(e){toast(t("cvFail"))}}
-{const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const n=st.naps.find(z=>z.k===k),box=$("sheet").querySelector(".napbox");if(!n||!box||n.status!=="issued"||box.querySelector(".nappdf"))return;
+{const _co=cdOpen;cdOpen=function(adId,k){_co(adId,k);const n=napLastF(z=>z.k===k),box=$("sheet").querySelector(".napbox");if(!n||!box||n.status!=="issued"||box.querySelector(".nappdf"))return;
   box.insertAdjacentHTML("beforeend",`<button class="ghost sm nappdf" type="button" style="margin:0">📄 Napotnica PDF</button>`);box.querySelector(".nappdf").onclick=()=>napPdfById(n.id)}}
-{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const n=d.role==="company"?st.naps.find(z=>z.live&&z.k==="L"+d.rid):st.napIn[d.rid];
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app")return;const n=d.role==="company"?napLastF(z=>z.live&&z.k==="L"+d.rid):st.napIn[d.rid];
   const box=$("sheet").querySelector(".napbox");if(!n||!box||n.status!=="issued"||box.querySelector(".nappdf"))return;
   box.insertAdjacentHTML("beforeend",`<button class="ghost sm nappdf" type="button" style="margin:0">📄 Napotnica PDF</button>`);box.querySelector(".nappdf").onclick=()=>napPdfById(n.id)}}
 /* ================= LABEL: "SUITABLE FOR UNDER-18 PUPILS" ================= */
@@ -4167,7 +4167,7 @@ let NA_BACK=null;
 /* employer's chat: the order button appears once the interview time has passed */
 {const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="app"||d.role!=="company")return;
   const a=st.myAds.find(z=>z.id===d.item);if(!a||a.kind!=="stud")return;const k=naKey(d);if(!k)return;const sh=$("sheet");if(sh.querySelector(".napbox"))return;
-  const n=st.naps.find(z=>z.k===k),box=sh.querySelector("#chatBox");if(!box)return;
+  const n=napLastF(z=>z.k===k),box=sh.querySelector("#chatBox");if(!box)return;
   const html=n?`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${napLine(n)}</span>${napSteps(n.status)}</div>`
     :naIvDone(d)?`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${t("naIvDone")}</span><button class="primary" type="button" id="naGo">${t("napBtn")}</button></div>`
     :`<div class="napbox"><b>📄 ${t("napBox")}</b><span class="hint">${esc(naWaitTxt(d))}</span></div>`;
@@ -4287,6 +4287,79 @@ function twMake(id,val){const [h0,m0]=String(val||"10:00").split(":"),hi=Math.mi
 /* every time field in a sheet becomes the wheel */
 function twEnhance(root){root.querySelectorAll('input[type="time"],select#of-time').forEach(el=>{if(el.dataset.tw)return;el.dataset.tw="1";el.replaceWith(twMake(el.id,el.value))})}
 {const sh=$("sheet");if(sh)new MutationObserver(()=>twEnhance(sh)).observe(sh,{childList:true,subtree:true})}
+
+/* ================= COMPANY: "MY STUDENTS" – REFERRAL HISTORY, NEW REFERRAL FOR NEXT MONTH, HOURS WORKED, REMOVE ================= */
+Object.assign(LANGS.sl,{sdTitle:"👥 Moji študenti",sdLead:"Študenti po opravljenem razgovoru. Napotnico jim lahko pošlješ kadar koli, tudi ko je pogovor zaprt ali oglas odstranjen.",
+ sdNew:"📄 Nova napotnica",sdChat:"💬 Pogovor",sdDel:"🗑 Izbriši",sdDelQ:"Res izbriši?",sdDelT:"{x} je odstranjen/a iz Mojih študentov.",sdNone:"Še ni napotnic.",
+ sdHrs:"⏱ Opravljene ure",sdHrsEdit:"⏱ Uredi ure",sdHrsL:"Dejansko opravljene ure",sdHrsSave:"Shrani",sdHrsT:"Opravljene ure ({h} h) so poslane študentskemu servisu.",sdHrsBad:"Vpiši število ur.",
+ sdPlan:"predvideno {h} h",sdDone:"opravljeno {h} h",sdFormT:"Nova napotnica",sdFormLead:"Podatki so prepisani z zadnje napotnice, obdobje je naslednji mesec. Ure lahko spremeniš – privzeto so vpisane opravljene ure zadnjega meseca."});
+Object.assign(LANGS.en,{sdTitle:"👥 My students",sdLead:"Students after a finished interview. You can send them a referral any time, even when the chat is closed or the ad removed.",
+ sdNew:"📄 New referral",sdChat:"💬 Chat",sdDel:"🗑 Remove",sdDelQ:"Really remove?",sdDelT:"{x} was removed from My students.",sdNone:"No referrals yet.",
+ sdHrs:"⏱ Hours worked",sdHrsEdit:"⏱ Edit hours",sdHrsL:"Hours actually worked",sdHrsSave:"Save",sdHrsT:"Hours worked ({h} h) sent to the student service.",sdHrsBad:"Enter the number of hours.",
+ sdPlan:"planned {h} h",sdDone:"worked {h} h",sdFormT:"New referral",sdFormLead:"Details are copied from the last referral and the period is next month. You can change the hours – by default they're the hours worked last month."});
+{const css=document.createElement("style");css.textContent=`.studsec{display:flex;flex-direction:column;gap:10px;margin:14px 0 18px}.studsec .h3{margin:0;display:flex;align-items:baseline;gap:6px}.studsec .h3 small{color:var(--muted);font-weight:600}
+.studc{display:flex;flex-direction:column;gap:10px}.studc .sdtop small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.studc .sdtop b{font-size:16px}
+.sdn{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:var(--bg);border-radius:12px;padding:8px 10px;font-size:13.5px}.sdn>span:first-child{flex:1 1 160px;min-width:0}
+.sdn .sdst{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--surface);color:var(--muted)}.sdn .sdst.issued{background:#D1FAE5;color:#065F46}.sdn .sdst.confirmed{background:#FFF4D6;color:#8A5A00}
+.sdn button{margin:0}.sdn form{display:flex;gap:8px;align-items:center;flex:1 1 100%}.sdn form input{width:90px;min-width:0}.sdbtns{display:flex;gap:8px;flex-wrap:wrap}.sdbtns button{margin:0;flex:1 1 auto}`;document.head.appendChild(css)}
+function napLastF(f){for(let i=st.naps.length-1;i>=0;i--)if(f(st.naps[i]))return st.naps[i]}
+if(!st.studs||typeof st.studs!=="object"||Array.isArray(st.studs))st.studs={};if(!Array.isArray(st.studsDel))st.studsDel=[];
+function studAdd(o){if(!o.k||st.studsDel.includes(o.k))return false;const s=st.studs[o.k];
+  if(s){Object.keys(o).forEach(x=>{if(o[x]!=null&&o[x]!=="")s[x]=o[x]});return false}st.studs[o.k]=Object.assign({since:Date.now()},o);return true}
+function studScan(){let ch=false;
+  st.deals.forEach(d=>{if(d.kind!=="app"||d.role!=="company")return;const k=naKey(d);if(!k)return;const a=st.myAds.find(z=>z.id===d.item);
+    if(a?a.kind!=="stud":!st.studs[k])return;if(!(naIvDone(d)||st.naps.some(n=>n.k===k)))return;const p=person(d.other);
+    ch=studAdd({k,name:dealOther(d).name,town:p&&p.loc||"",adId:d.item,title:a?L(a.title):"",live:!!d.live,rid:d.rid||null,uid:d.live?String(d.other).slice(3):null,deal:d.id})||ch});
+  st.naps.forEach(n=>{ch=studAdd({k:n.k,name:n.cand,adId:n.adId,title:n.title,live:!!n.live,rid:n.live?String(n.k).slice(1):null})||ch});
+  if(ch)save();return ch}
+let sdConfirm=null,sdHrs=null;
+const sdDeal=s=>st.deals.find(d=>d.kind==="app"&&d.role==="company"&&(s.rid?d.rid===s.rid:d.fk&&d.fk.id==="fk_"+s.k));
+function sdHtml(){const list=Object.values(st.studs).sort((a,b)=>b.since-a.since);if(!list.length)return "";
+  return `<div class="studsec" id="studSec"><div class="h3">${t("sdTitle")} <small>(${list.length})</small></div><p class="hint" style="margin:0">${t("sdLead")}</p>
+  ${list.map(s=>{const naps=st.naps.filter(n=>n.k===s.k),d=sdDeal(s);
+    return `<div class="pcard studc"><div class="sdtop"><b>${esc(s.name||"—")}</b><small>${esc([s.town,s.title].filter(Boolean).join(" · "))}</small></div>
+    ${naps.length?naps.map(n=>`<div class="sdn"><span>📄 ${napDay(n.from)}–${napDay(n.to)} · ${esc(n.servis)} · ${t("sdPlan",{h:n.hours})}${n.hoursDone!=null?` · <b>${t("sdDone",{h:String(n.hoursDone).replace(".",",")})}</b>`:""}</span><span class="sdst ${esc(n.status)}">${t("napSt_"+n.status)}</span>
+      ${n.status==="issued"?sdHrs===n.id?`<form data-hf="${n.id}" novalidate><span style="flex:1">${t("sdHrsL")}:</span><input type="number" min="0" max="744" step="0.5" inputmode="decimal" value="${n.hoursDone!=null?n.hoursDone:n.hours}" aria-label="${esc(t("sdHrsL"))}"><button class="primary sm">${t("sdHrsSave")}</button></form>`
+        :`<button class="ghost sm" type="button" data-hrs="${n.id}">${n.hoursDone!=null?t("sdHrsEdit"):t("sdHrs")}</button>`:""}</div>`).join(""):`<p class="hint" style="margin:0">${t("sdNone")}</p>`}
+    <div class="sdbtns"><button class="primary sm" type="button" data-snew="${esc(s.k)}">${t("sdNew")}</button>${d?`<button class="ghost sm" type="button" data-schat="${d.id}">${t("sdChat")}</button>`:""}<button class="ghost sm bad" type="button" data-sdel="${esc(s.k)}">${sdConfirm===s.k?t("sdDelQ"):t("sdDel")}</button></div></div>`}).join("")}</div>`}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const box=$("coads");if(!box||!isCo()||coForm)return;studScan();const h=sdHtml();if(!h)return;
+  const sum=box.querySelector(".summary");if(sum)sum.insertAdjacentHTML("afterend",h);else box.insertAdjacentHTML("beforeend",h);const S=$("studSec");
+  S.querySelectorAll("[data-snew]").forEach(b=>b.onclick=()=>studNapForm(b.dataset.snew));
+  S.querySelectorAll("[data-schat]").forEach(b=>b.onclick=()=>openChat(b.dataset.schat));
+  S.querySelectorAll("[data-sdel]").forEach(b=>b.onclick=()=>{const k=b.dataset.sdel;if(sdConfirm!==k){sdConfirm=k;renderCoAds();return}
+    const s=st.studs[k];sdConfirm=null;delete st.studs[k];if(!st.studsDel.includes(k))st.studsDel.push(k);save();renderCoAds();toast(t("sdDelT",{x:s?s.name:""}))});
+  S.querySelectorAll("[data-hrs]").forEach(b=>b.onclick=()=>{sdHrs=b.dataset.hrs;renderCoAds();const i=$("studSec").querySelector(`[data-hf="${sdHrs}"] input`);if(i){i.focus();i.select()}});
+  S.querySelectorAll("[data-hf]").forEach(f=>f.onsubmit=e=>{e.preventDefault();const v=parseFloat(String(f.querySelector("input").value).replace(",","."));if(!(v>=0)){toast(t("sdHrsBad"));return}
+    const n=st.naps.find(z=>z.id===f.dataset.hf);if(!n)return;n.hoursDone=Math.round(v*2)/2;sdHrs=null;save();napPatch(n.id,{hours_done:n.hoursDone});renderCoAds();toast(t("sdHrsT",{h:String(n.hoursDone).replace(".",",")}))})}}
+/* a new referral, prefilled from the last one, for next month */
+function studNapForm(k){const s=st.studs[k];if(!s)return;const last=napLastF(n=>n.k===k),a=st.myAds.find(z=>z.id===s.adId);
+  let f0,t0;if(last&&last.to){const b=new Date(last.to+"T12:00");f0=new Date(b.getFullYear(),b.getMonth()+1,1);t0=new Date(f0.getFullYear(),f0.getMonth()+1,0)}
+  else{f0=napNext();t0=new Date(f0);t0.setDate(t0.getDate()+13)}
+  const today=new Date();today.setHours(0,0,0,0);if(f0<today){f0=new Date(today.getFullYear(),today.getMonth()+1,1);t0=new Date(f0.getFullYear(),f0.getMonth()+1,0)}
+  const hrs=last?(last.hoursDone!=null?last.hoursDone:last.hours):40,rate=last?last.rate:(a&&a.unit==="h"?a.min:8.5),sv=last?last.servis:NAP_SERVIS[0],loc=last?last.loc:(a&&a.loc)||"";
+  sheetOpts={napForm:k};
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+   <h2 class="section-title" style="margin-top:4px">${t("sdFormT")}</h2><p class="hint" style="margin:-4px 0 10px">${t("sdFormLead")}</p>
+   <div class="napbox" style="margin-top:0"><b>${esc(s.name)}${s.title?" · "+esc(s.title):""}</b><span class="hint" style="margin:0">${esc(s.town||"")}</span></div>
+   <form id="sdF" class="fbform" novalidate>
+    <label><span>${t("napServis")}</span><select id="nS">${NAP_SERVIS.map(x=>`<option${x===sv?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
+    <div class="two"><label><span>${t("napFrom")}</span><input type="date" id="nF" value="${napIso(f0)}"></label><label><span>${t("napTo")}</span><input type="date" id="nT" value="${napIso(t0)}"></label></div>
+    <div class="two"><label><span>${t("napHours")}</span><input type="number" id="nH" min="1" max="744" step="0.5" value="${hrs}" inputmode="decimal"></label><label><span>${t("napRate")}</span><input type="number" id="nR" min="1" step="0.1" value="${rate}" inputmode="decimal"></label></div>
+    <label><span>${t("napPlace")}</span><input id="nP" value="${esc(loc)}"></label>
+    <p class="napdemo">${t("napDemo")}</p><button class="primary">${t("napSend")}</button></form>`;
+  $("cls").onclick=closeSheet;
+  $("sdF").onsubmit=e=>{e.preventDefault();const n={id:"np"+Date.now(),adId:s.adId,k,cand:s.name,live:!!s.live,servis:$("nS").value,from:$("nF").value,to:$("nT").value,
+      hours:+String($("nH").value).replace(",",".")||40,rate:+String($("nR").value).replace(",",".")||8.5,loc:$("nP").value,title:s.title||(last&&last.title)||"",ts:Date.now(),status:"sent"};
+    st.naps.push(n);save();napDb(n,{uid:s.uid});
+    if(n.live&&s.rid){let d=st.deals.find(z=>z.kind==="app"&&z.role==="company"&&z.rid===s.rid);
+      if(!d){const pid=livePerson(s.uid,s.name,"iskalec",s.town);d=newDeal({kind:"app",item:s.adId,other:pid,role:"company",status:"ivok",offer:null});d.live=true;d.rid=s.rid;d.oname=s.name;d.iv={state:"none"};s.deal=d.id}
+      const txt=t("mNapReq",{s:n.servis,f:napDay(n.from),t:napDay(n.to),h:n.hours,r:String(n.rate).replace(".",",")});d.msgs.push({from:"me",text:txt,ts:now()});save();
+      sb("app_messages",{method:"POST",body:{app_id:s.rid,from_id:st.liveId,from_name:liveName(),body:"⟦NAP⟧"+JSON.stringify({id:n.id,co:myCo().name,servis:n.servis,from:n.from,to:n.to,hours:n.hours,rate:n.rate,loc:n.loc,title:n.title})}}).catch(e=>console.warn("nap",e))}
+    toast(t("napSentT"));closeSheet();if($("v-coads").hidden)show("coads");renderCoAds()};
+  openSheet(t("sdFormT"))}
+/* keep the list fresh while the company looks at it */
+setInterval(()=>{if(!isCo()||$("v-coads").hidden||coForm||document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#studSec"))return;
+  const sig=JSON.stringify(st.naps.map(n=>n.id+n.status));if(sig!==studScan.sig||studScan()){studScan.sig=sig;renderCoAds()}},3000);
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
