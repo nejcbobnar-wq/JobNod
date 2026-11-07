@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="74";
+const APP_VER="75";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4878,7 +4878,7 @@ renderPeople=function(){const el=$("people");if(!el)return;const V=$("v-people")
 
 /* ================= MY PROFILE: PRO BADGE NEXT TO MY NAME ================= */
 {const css=document.createElement("style");css.textContent=`.phero-txt strong .bdg{margin-left:8px;vertical-align:middle;font-size:12px}.phead h2 .bdg{margin-left:8px;vertical-align:middle;font-size:12px}`;document.head.appendChild(css)}
-const myProTag=()=>{const on=st.mode==="mojster"?st.pro:(st.mode==="zap"||st.mode==="stud")?st.coPro:false;return on?`<span class="bdg pro">${st.mode==="mojster"?t("bgPro"):t("cbPro")}</span>`:""};
+const myProTag=()=>(st.pro?`<span class="bdg pro">${t("bgPro")}</span>`:"")+(st.coPro&&st.profile&&st.profile.hasCo?`<span class="bdg pro">${t("cbPro")}</span>`:"");
 {const _rp=renderProfile;renderProfile=function(){_rp();const s=document.querySelector("#profile .phero-txt strong");if(s&&!s.querySelector(".bdg"))s.insertAdjacentHTML("beforeend",myProTag())}}
 {const _dp=drawProfile;drawProfile=function(){_dp();if(!(sheetOpts&&sheetOpts.id==="me"))return;const h=$("sheet").querySelector(".phead h2");if(h&&!h.querySelector(".bdg.pro"))h.insertAdjacentHTML("beforeend",myProTag())}}
 {const _rc=renderCoAds;renderCoAds=function(){_rc();if(document.querySelector("#coads .summary .bdg.pro")||!st.coPro)return;const n=document.querySelector("#coads .summary span, #coads .summary small, #coads .summary b");if(n)n.insertAdjacentHTML("afterend",` <span class="bdg pro" style="display:inline-block;margin:4px 0">${t("cbPro")}</span>`)}}
