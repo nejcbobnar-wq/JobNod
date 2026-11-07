@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="56";
+const APP_VER="57";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4508,6 +4508,13 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
   setTimeout(()=>{rec.after={hidden:$("sheetWrap").hidden,opts:JSON.stringify(sheetOpts),txt:$("sheet").innerText.slice(0,90),mode:st.mode,toast:$("toast").textContent};rec.errs=DG.errs.slice(rec.e0);delete rec.e0;
     if(ln.job||ln.ad||ln.offers||rec.thrown)dgSend(rec)},1800);
   if(rec.thrown)throw new Error(rec.thrown);return r}}
+
+/* ================= NEW POSTS: ALERT ONLY WHEN THEY MATCH MY PROFILE (others are found by swiping) ================= */
+["nLiveJob","nLiveAd"].forEach(k=>CH_KEYS.delete(k));
+{const _nf=notify;notify=function(k,p,l){
+  if(k==="nLiveJob"&&!(l&&maJob(jobById(l.job))))return;
+  if(k==="nLiveAd"&&!(l&&maAd(adById(l.ad))))return;
+  return _nf(k,p,l)}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
