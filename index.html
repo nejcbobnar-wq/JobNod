@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="91";
+const APP_VER="92";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -5044,11 +5044,12 @@ function ppInfo(){[["cnGo","pro"],["ccGo","co"]].forEach(([id,k])=>{const b=$(id
 {const _rc=renderCoAds;renderCoAds=function(...r){const x=_rc(...r);try{ppInfo()}catch(_){}return x}}
 new MutationObserver(()=>{if(($("cnGo")&&!$("cnGo").parentElement.classList.contains("pprow"))||($("ccGo")&&!$("ccGo").parentElement.classList.contains("pprow")))ppInfo()}).observe(document.body,{childList:true,subtree:true});
 /* no notices when PRO is switched; a small PRO mark next to the JobNod name while it is on */
-{const css=document.createElement("style");css.textContent=`.brand .brpro{display:inline-flex;align-items:center;font-size:10.5px;font-weight:800;letter-spacing:.02em;color:#fff;background:linear-gradient(135deg,#7B5CFF,#B44CFF);padding:2px 6px;border-radius:6px;line-height:1.2;margin-left:-2px;align-self:center}`;document.head.appendChild(css)}
+{const css=document.createElement("style");css.textContent=`.brand b .brpro{position:relative;display:inline-block;vertical-align:text-top;top:.3em;margin-left:2px;font-size:8.5px;font-weight:800;letter-spacing:.03em;color:#fff;-webkit-text-fill-color:#fff;background:linear-gradient(135deg,#7B5CFF,#B44CFF);-webkit-background-clip:border-box;background-clip:border-box;padding:1.5px 4px;border-radius:4px;line-height:1.1}`;document.head.appendChild(css)}
 const ppOn=()=>!!(st.pro||(st.coPro&&st.profile&&st.profile.hasCo));
-function brUpd(){const br=document.querySelector(".brand");if(!br)return;let m=br.querySelector(".brpro");if(ppOn()){if(!m)br.insertAdjacentHTML("beforeend",`<span class="brpro" aria-label="PRO">PRO</span>`)}else if(m)m.remove()}
+function brUpd(){const br=document.querySelector(".brand");if(!br)return;let m=br.querySelector(".brpro");if(ppOn()){if(!m)(br.querySelector("b")||br).insertAdjacentHTML("beforeend",`<span class="brpro" aria-label="PRO">PRO</span>`)}else if(m)m.remove()}
 {const _to=toast;const mute=()=>[t("cnOnT"),t("cnOffT"),t("ccOnT"),t("ccOffT")];toast=function(m,...r){if(mute().includes(m))return;return _to(m,...r)}}
-addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#cnGo,#ccGo"))setTimeout(brUpd,0)},true);
+addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#cnGo,#ccGo");if(!b)return;const id=b.id,was=id==="cnGo"?!!st.pro:!!st.coPro;
+  setTimeout(()=>{const now=id==="cnGo"?!!st.pro:!!st.coPro;if(was&&!now&&(st.pro||st.coPro)){st.pro=false;st.coPro=false;save();try{renderProfile()}catch(_){}try{renderCoAds()}catch(_){}try{renderPosts()}catch(_){}}brUpd()},0)},true);
 {const _sv=save;save=function(...r){const x=_sv(...r);try{brUpd()}catch(_){}return x}}
 setTimeout(brUpd,200);
 /* PRO mojster: alerts for every new real job nearby, not only own fields */
