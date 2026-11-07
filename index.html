@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="59";
+const APP_VER="60";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4521,6 +4521,20 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 {const _cp=chooseProDeal;chooseProDeal=function(jobId,proId){const j=jobById(jobId);
   if(j&&j.rid){const q=quotesFor(j).find(x=>x.pro===proId);if(q&&!q.live)sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{status:"assigned"}}).catch(e=>console.warn("assign",e))}
   return _cp(jobId,proId)}}
+
+/* ================= BELL LIST: ONE RELIABLE TAP HANDLER; A JOB ALERT SWITCHES TO "DELA" AND OPENS THE FULL JOB CARD ================= */
+window.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#sheet [data-n]");if(!b)return;e.stopImmediatePropagation();e.preventDefault();
+  const n=st.notes.find(x=>x.id===b.dataset.n);if(!n){dgSend({what:"no-note",id:b.dataset.n,ids:st.notes.slice(0,5).map(x=>x.id)});return}
+  n.read=true;save();try{updBell()}catch(err){DG.errs.push("updBell "+(err&&err.message))}
+  try{goNote(n)}catch(err){dgSend({what:"goNote-throw",k:n.k,link:n.link,err:String(err&&err.stack||err).slice(0,500)})}},true);
+{const _g=goNote;goNote=function(n){const ln=(n&&n.link)||{};if(!ln.job||ln.offers)return _g(n);const id=ln.job;
+  const go=()=>{const j=jobById(id);if(!j){closeSheet();toast(t("ntGone"));return}if(j.client==="me")return _g(n);
+    closeSheet();if(st.mode!=="mojster")setMode("mojster");show("swipe");
+    setTimeout(()=>{openJobCard(id);setTimeout(()=>{if(!(sheetOpts&&sheetOpts.job===id)||$("sheetWrap").hidden)openJobCard(id)},700)},150)};
+  if(jobById(id))return go();
+  if(!/^L/.test(id)){closeSheet();toast(t("ntGone"));return}
+  toast(t("ntLoading"));sb(`jobs?id=eq.${encodeURIComponent(id.slice(1))}&select=*`).then(r=>{r=r&&r[0];
+    if(r&&r.status==="open"){if(!jobById(id))DEMO_JOBS.unshift(liveJobFromRow(r));go()}else{closeSheet();toast(t("ntGone"))}}).catch(()=>{closeSheet();toast(t("ntGone"))})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
