@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="64";
+const APP_VER="65";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3257,7 +3257,7 @@ async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let chan
     const mine=st.applied.filter(x=>String(x.id).startsWith("LA")),pr=st.profile||{};
     for(const x of mine.filter(y=>!y.rid)){const a=adById(x.id);if(!a||LA.pushing.has(x.id))continue;LA.pushing.add(x.id);
       try{const [row]=await sb("applications",{method:"POST",prefer:"return=representation",body:{ad_id:a.rid,user_id:st.liveId,user_name:liveName(),
-          data:{town:pr.postCity||pr.town||st.home,cv:!!pr.cvName,m:matchPct(a)}}});x.rid=row.id;x.status="sent";x.ts=null;save();changed=true}
+          data:{town:pr.postCity||pr.town||st.home,cv:!!pr.cvName,m:matchPct(a),sp:!!pr.hasSp}}});x.rid=row.id;x.status="sent";x.ts=null;save();changed=true}
       catch(e){console.warn("live apply",e)}finally{LA.pushing.delete(x.id)}}
     const sent=mine.filter(x=>x.rid);
     if(sent.length){const rows=await sb(`applications?id=in.(${sent.map(x=>x.rid).join(",")})&select=id,status,iv_date,iv_time`);
@@ -4640,6 +4640,30 @@ Object.assign(LANGS.en,{isStud:"🎓 I'm a student or pupil",isStudD:"Turn on to
   ns.insertAdjacentHTML("beforebegin",`<label class="tog" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><span><b>${t("isStud")}</b><small>${t("isStudD")}</small></span><input type="checkbox" role="switch" id="p-isStud"${on?" checked":""}><i aria-hidden="true"></i></label>`);
   ns.hidden=!on;ns.style.borderTop="0";ns.style.marginTop="6px";
   $("p-isStud").addEventListener("change",e=>{setK("isStud",e.target.checked);ns.hidden=!e.target.checked;markDirty()})}}
+
+/* ================= JOB ADS FOR SOLE TRADERS (S.P.) – CONTRACT WORK ================= */
+ETYPES.sp={sl:"S.p. – pogodbeno sodelovanje",en:"Sole trader – contract work"};
+Object.assign(LANGS.sl,{spUnitH:"/ uro po računu",spUnitM:"/ mesec po računu",hasSp:"💼 Imam s.p.",hasSpD:"Za oglase, kjer delodajalci iščejo sodelovanje s s.p.",cdSp:"💼 Ima s.p.",cdNoSp:"Nima s.p.",
+ spNote:"Pri sodelovanju s s.p. delodajalec sam odgovarja, da to ni prikrito delovno razmerje (npr. stalni delovni čas in navodila kot pri zaposlenem). Plačilo vpišite kot znesek na račun."});
+Object.assign(LANGS.en,{spUnitH:"/ hour on invoice",spUnitM:"/ month on invoice",hasSp:"💼 I'm a sole trader (s.p.)",hasSpD:"For ads where employers look for contract work with a sole trader.",cdSp:"💼 Is a sole trader",cdNoSp:"Not a sole trader",
+ spNote:"With a sole trader, the employer is responsible for making sure it isn't disguised employment (e.g. fixed hours and instructions like an employee). Enter pay as the invoiced amount."});
+const spUnit=a=>a.unit==="h"?t("spUnitH"):t("spUnitM");
+{const _ac=adCard;adCard=function(a,...r){const h=_ac(a,...r);return a&&a.type==="sp"?h.split(payUnit(a)).join(spUnit(a)):h}}
+{const _ad=adDetail;adDetail=function(a,...r){const h=_ad(a,...r);return a&&a.type==="sp"&&typeof h==="string"?h.split(payUnit(a)).join(spUnit(a)):h}}
+{const _cr=cdReasons;cdReasons=function(a,x){const r=_cr(a,x);if(a&&a.type==="sp"){if(x.sp)r.ok.unshift(t("cdSp"));else r.no.unshift(t("cdNoSp"))}return r}}
+{const _ca=coApplicants;coApplicants=function(a){const list=_ca(a);if(!a||a.type!=="sp")return list;
+  return list.map(x=>{if(x.live){const r=a.rid&&(LA.apps[a.rid]||[]).find(z=>"L"+z.id===x.k);x.sp=!!(r&&r.data&&r.data.sp)}else x.sp=hashN(x.k+a.id)%10<7;return x})
+   .sort((p,q)=>(q.sp?1:0)-(p.sp?1:0))}}
+{const _nf=notify;notify=function(k,p,l){if(k==="nLiveAd"&&l&&l.ad){const a=adById(l.ad);if(a&&a.type==="sp"&&!(st.profile&&st.profile.hasSp))return}return _nf(k,p,l)}}
+/* profile: "I have an s.p." */
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||$("p-hasSp"))return;const sec=P.querySelector('section[data-show="seeker"]');if(!sec)return;
+  const anchor=$("p-isStud")?$("p-isStud").closest("label"):sec.querySelector("#napSec");const html=`<label class="tog" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><span><b>${t("hasSp")}</b><small>${t("hasSpD")}</small></span><input type="checkbox" role="switch" id="p-hasSp"${pd.hasSp?" checked":""}><i aria-hidden="true"></i></label>`;
+  if(anchor)anchor.insertAdjacentHTML("beforebegin",html);else sec.insertAdjacentHTML("beforeend",html);
+  $("p-hasSp").addEventListener("change",e=>{setK("hasSp",e.target.checked);markDirty()})}}
+/* ad form: a short note when "s.p." is chosen */
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const s=$("ca-type");if(!s||s.dataset.sp)return;s.dataset.sp="1";const lab=s.closest("label");
+  lab.insertAdjacentHTML("afterend",`<p class="hint" id="spNote" style="margin:6px 0 0;grid-column:1/-1"${s.value==="sp"?"":" hidden"}>⚖️ ${t("spNote")}</p>`);
+  s.addEventListener("change",()=>{$("spNote").hidden=s.value!=="sp"})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
