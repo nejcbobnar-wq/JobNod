@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="63";
+const APP_VER="64";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4631,6 +4631,15 @@ processFile=function(f){if(!f.type.startsWith("image/")){toast(t("tImg"));return
 function phBig(src){const o=document.createElement("div");o.className="phbig";o.setAttribute("role","dialog");o.innerHTML=`<img src="${src}" alt="">`;o.onclick=()=>o.remove();document.body.appendChild(o)}
 {const _oc=openJobCard;openJobCard=function(id){const r=_oc(id);const j=jobById(id);if(!r||!j||!j.photo)return r;const S=$("sheet"),st0=S.querySelector(".pstats");
   if(st0&&!S.querySelector(".jcphoto")){st0.insertAdjacentHTML("beforebegin",`<button type="button" class="jcphoto" aria-label="${esc(L(j.title))}"><img src="${j.photo}" alt=""></button>`);S.querySelector(".jcphoto").onclick=()=>phBig(j.photo)}return r}}
+
+/* ================= PROFILE: "I'M A STUDENT" SWITCH OPENS THE REFERRAL DETAILS ================= */
+Object.assign(LANGS.sl,{isStud:"🎓 Sem študent ali dijak",isStudD:"Vklopi, da vpišeš podatke za napotnico."});
+Object.assign(LANGS.en,{isStud:"🎓 I'm a student or pupil",isStudD:"Turn on to fill in the referral details."});
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile"),ns=P&&P.querySelector("#napSec");if(!ns||$("p-isStud"))return;
+  const on=pd.isStud!==undefined?!!pd.isStud:!!(pd.napTax||pd.napSchool||pd.napOk);
+  ns.insertAdjacentHTML("beforebegin",`<label class="tog" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><span><b>${t("isStud")}</b><small>${t("isStudD")}</small></span><input type="checkbox" role="switch" id="p-isStud"${on?" checked":""}><i aria-hidden="true"></i></label>`);
+  ns.hidden=!on;ns.style.borderTop="0";ns.style.marginTop="6px";
+  $("p-isStud").addEventListener("change",e=>{setK("isStud",e.target.checked);ns.hidden=!e.target.checked;markDirty()})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
