@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="66";
+const APP_VER="68";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4664,6 +4664,49 @@ const spUnit=a=>a.unit==="h"?t("spUnitH"):t("spUnitM");
 {const _rc=renderCoAds;renderCoAds=function(){_rc();const s=$("ca-type");if(!s||s.dataset.sp)return;s.dataset.sp="1";const lab=s.closest("label");
   lab.insertAdjacentHTML("afterend",`<p class="hint" id="spNote" style="margin:6px 0 0;grid-column:1/-1"${s.value==="sp"?"":" hidden"}>⚖️ ${t("spNote")}</p>`);
   s.addEventListener("change",()=>{$("spNote").hidden=s.value!=="sp"})}}
+
+/* ================= EVERY MULTI-CHOICE LIST: "(več izbir)" NEXT TO THE TITLE; LONGER ONES (AND WORK HOURS, BENEFITS) AS A COMPACT PICKER ================= */
+Object.assign(LANGS.sl,{pkMulti:"več izbir"});Object.assign(LANGS.en,{pkMulti:"multiple choice"});
+{const css=document.createElement("style");css.textContent=`.pkmulti{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px;letter-spacing:0;text-transform:none;white-space:nowrap}
+.pkbox .pkhead{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);cursor:pointer}
+.pkbox .pkhead:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.pkbox .pksel{flex:1;min-width:0;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pkbox .pksel.pkempty{color:var(--muted);font-weight:500}
+.pkbox .pkhead b{flex:none;font-size:13px;color:var(--accent)}.pkbox .pkpanel{margin-top:8px;border:1.5px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.pkbox .pkpanel input[type=search]{width:100%;font-size:16px}.pkbox .pklist{max-height:260px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch}
+.pkbox .pklist .benchip{display:flex;width:100%;margin:0}.pkbox .pklist .benchip[hidden]{display:none}
+.pkbox .pklist .benchip span{display:flex;align-items:center;gap:10px;width:100%;border-radius:10px;border:0;padding:10px;background:none;font-size:15px;font-weight:500}
+.pkbox .pklist .benchip span::before{content:"";flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);background:var(--bg)}
+.pkbox .pklist .benchip input:checked+span{background:rgba(255,94,58,.08);color:inherit;font-weight:700}.pkbox .pklist .benchip input:checked+span::before{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--bg)}
+.pkbox .pklist .benchip input:focus-visible+span{outline:2px solid var(--accent)}.pkbox .pkno{margin:4px 0;color:var(--muted);font-size:14px}.pkbox .pkdone{align-self:flex-end;margin:0}`;document.head.appendChild(css)}
+const PK_FORCE=["etypes","shifts","bens","cats","types"];
+const pkKey=i=>i.dataset.arr||i.dataset.ca||(i.hasAttribute("data-cat")?"cats":i.hasAttribute("data-ty")?"types":Object.keys(i.dataset)[0]||"x");
+function pkAll(root){if(!root)return;root.querySelectorAll(".benrow").forEach(row=>{if(row.dataset.pkd)return;const labs=[...row.children].filter(l=>l.classList.contains("benchip"));
+  const ins=labs.map(l=>l.querySelector("input"));if(!labs.length||ins.some(i=>!i||i.type!=="checkbox"))return;row.dataset.pkd="1";
+  const box=row.parentElement,key=pkKey(ins[0]),title=box.querySelector(":scope>legend,:scope>h3,:scope>.h3");
+  if(title&&!title.querySelector(".pkmulti"))title.insertAdjacentHTML("beforeend",`<span class="pkmulti">(${t("pkMulti")})</span>`);
+  if(labs.length<8&&!PK_FORCE.includes(key))return;
+  const rank=PK_RANK[key==="types"?"etypes":key]||[],orig=new Map(labs.map((l,i)=>[l,i])),ri=v=>{const i=rank.indexOf(v);return i<0?999:i},val=l=>{const i=l.querySelector("input");return i.value&&i.value!=="on"?i.value:i.dataset.cat||i.dataset.ty||""};
+  labs.sort((a,b)=>ri(val(a))-ri(val(b))||orig.get(a)-orig.get(b));box.classList.add("pkbox");
+  const wrap=document.createElement("div");row.replaceWith(wrap);const many=labs.length>=10;
+  wrap.innerHTML=`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden>${many?`<input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}">`:""}<div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`;
+  const head=wrap.querySelector(".pkhead"),panel=wrap.querySelector(".pkpanel"),list=wrap.querySelector(".pklist"),q=panel.querySelector("input[type=search]"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));
+  const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
+    s.textContent=on.length?on.slice(0,3).join(", ")+(on.length>3?" "+t("pkMore",{n:on.length-3}):""):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+  const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o&&q)setTimeout(()=>q.focus({preventScroll:true}),30)};
+  head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
+  if(q)q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
+  labs.forEach(l=>l.querySelector("input").addEventListener("change",sum));sum();if(pkOpen.has(key))set(true)})}
+pkEnhance=function(root){pkAll(root)};
+{let pend=false;const run=()=>{pend=false;["profile","coads","sheet"].forEach(id=>pkAll($(id)))};
+ new MutationObserver(()=>{if(!pend){pend=true;requestAnimationFrame(run)}}).observe(document.body,{childList:true,subtree:true});setTimeout(run,300)}
+
+/* ================= CLEARER BUTTONS: CHOSEN SORT IS COLOURED; "POST AN AD" STANDS OUT ================= */
+{const css=document.createElement("style");css.textContent=`.sortseg button[aria-pressed="true"]{background:linear-gradient(135deg,#FF8A3D,#FF5E3A 55%,#E8456B);color:#fff;box-shadow:0 4px 12px -4px rgba(255,94,58,.6)}
+.sortseg button[aria-pressed="false"]:hover{color:var(--ink)}
+#caNew{background:linear-gradient(135deg,#FF8A3D,#FF5E3A 55%,#E8456B)!important;color:#fff!important;border:0!important;font-weight:800;font-size:15px;padding:11px 18px;border-radius:999px;box-shadow:0 8px 20px -8px rgba(255,94,58,.7)}
+#caNew:active{transform:scale(.97)}`;document.head.appendChild(css)}
+const sortSync=()=>document.querySelectorAll("[data-sort]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sort===(st.fa&&st.fa.sort||"match"))));
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-sort]"))setTimeout(sortSync,0)});
+{const _h=renderHire;renderHire=function(...a){const r=_h(...a);sortSync();return r}}{const _s=renderStud;renderStud=function(...a){const r=_s(...a);sortSync();return r}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
