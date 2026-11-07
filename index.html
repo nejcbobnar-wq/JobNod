@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="52";
+const APP_VER="53";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4399,6 +4399,25 @@ const onMyPost=y=>allJobs().find(j=>j.client==="me"&&L(j.title)===y);
     setTimeout(()=>{const b=j&&document.querySelector(`#posts [data-del="${CSS.escape(j.id)}"]`),card=b&&b.closest(".post");
       if(card){card.scrollIntoView({behavior:"smooth",block:"start"});card.classList.add("flash");setTimeout(()=>card.classList.remove("flash"),2200)}},250);return}
   return _g(n)}}
+
+/* ================= MY STUDENTS: ONLY THE NAME; TAP TO OPEN THE OPTIONS ================= */
+{const css=document.createElement("style");css.textContent=`.sdhead{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sdhead b{flex:1;min-width:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sdhead .sdmini{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.sdhead .sdmini.issued{background:#D1FAE5;color:#065F46}.sdhead .sdmini.confirmed,.sdhead .sdmini.sent{background:#FFF4D6;color:#8A5A00}
+.sdhead i{font-style:normal;color:var(--muted);transition:transform .2s}.studc.open .sdhead i{transform:rotate(90deg)}.studc:not(.open){padding-top:14px;padding-bottom:14px}
+.sdhead:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}`;document.head.appendChild(css)}
+const sdOpenSet=new Set();
+{const _sh=sdHtml;sdHtml=function(){const h=_sh();if(!h)return h;const box=document.createElement("div");box.innerHTML=h;
+  box.querySelectorAll(".studc").forEach(c=>{const k=c.querySelector("[data-snew]").dataset.snew,s=st.studs[k],last=napLastF(n=>n.k===k),open=sdOpenSet.has(k);
+    const top=c.querySelector(".sdtop");top.remove();
+    c.insertAdjacentHTML("afterbegin",`<button type="button" class="sdhead" data-sopen="${esc(k)}" aria-expanded="${open}"><b>${esc((s&&s.name)||"—")}</b><i aria-hidden="true">›</i></button>`);
+    if(open){c.classList.add("open");c.querySelector(".sdhead").insertAdjacentElement("afterend",top)}
+    else[...c.children].forEach(ch=>{if(!ch.classList.contains("sdhead"))ch.remove()})});
+  return box.innerHTML}}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const S=$("studSec");if(!S)return;
+  S.querySelectorAll("[data-sopen]").forEach(b=>b.onclick=()=>{const k=b.dataset.sopen;sdOpenSet.has(k)?sdOpenSet.delete(k):sdOpenSet.add(k);renderCoAds()})}}
+/* opening a form or a delete question keeps that student open */
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#studSec [data-hrs],#studSec [data-sdel]");if(!b)return;const c=b.closest(".studc"),h=c&&c.querySelector("[data-sopen]");if(h)sdOpenSet.add(h.dataset.sopen)},true);
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
