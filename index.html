@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="76";
+const APP_VER="78";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4889,6 +4889,36 @@ const myProTag=()=>(st.pro?`<span class="bdg pro">${t("bgPro")}</span>`:"")+(st.
 const CB_IC={pro:"💎",ver:"✓",good:"⭐",fast:"⚡",stud:"🎓",reg:"🔁"};
 const coIcons=c=>{const k=coBadgeKeys(c);return k.length?`<span class="bico">${k.map(x=>`<span class="${CB[x][1]}" title="${esc(t(CB[x][0]))}" aria-label="${esc(t(CB[x][0]))}">${CB_IC[x]}</span>`).join("")}</span>`:""};
 {const _rc=renderCos;renderCos=function(){_rc();const el=$("cos");if(!el)return;el.querySelectorAll(".prow[data-co]").forEach(b=>{const c=COMPANIES.find(x=>x.id===b.dataset.co),h=b.querySelector("h4");if(c&&h&&!h.querySelector(".bico"))h.insertAdjacentHTML("beforeend",coIcons(c))})}}
+
+/* ================= PROFILE: LIGHT / DARK / AUTOMATIC ================= */
+Object.assign(LANGS.sl,{thTitle:"🌓 Videz aplikacije",thAuto:"Samodejno",thLight:"☀️ Svetlo",thDark:"🌙 Temno",thHint:"Samodejno sledi nastavitvi telefona."});
+Object.assign(LANGS.en,{thTitle:"🌓 Appearance",thAuto:"Automatic",thLight:"☀️ Light",thDark:"🌙 Dark",thHint:"Automatic follows your phone's setting."});
+{const css=document.createElement("style");css.textContent=`#thCard .sortseg{margin:8px 0 6px;display:flex;width:100%}#thCard .sortseg button{flex:1;padding:9px 8px;font-size:13.5px}`;document.head.appendChild(css)}
+const thGet=()=>{try{return localStorage.getItem("jn-theme")||"auto"}catch(_){return "auto"}};
+function thApply(v){const r=document.documentElement;if(v==="light"||v==="dark")r.setAttribute("data-theme",v);else r.removeAttribute("data-theme");
+  const dark=v==="dark"||(v!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches),m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",dark?"#0F0E13":"#FF5E3A")}
+thApply(thGet());
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||$("thCard"))return;const h=P.querySelector("h2.section-title");const v=thGet();
+  const html=`<section class="pcard" id="thCard"><div class="h3" style="margin-top:0">${t("thTitle")}</div><div class="sortseg" role="group" aria-label="${esc(t("thTitle"))}">${[["auto","thAuto"],["light","thLight"],["dark","thDark"]].map(([k,l])=>`<button type="button" data-th="${k}" aria-pressed="${v===k}">${t(l)}</button>`).join("")}</div><p class="hint" style="margin:0">${t("thHint")}</p></section>`;
+  if(h)h.insertAdjacentHTML("afterend",html);else P.insertAdjacentHTML("afterbegin",html);
+  $("thCard").querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{try{localStorage.setItem("jn-theme",b.dataset.th)}catch(_){}thApply(b.dataset.th);$("thCard").querySelectorAll("[data-th]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))})}}
+
+/* ================= PROFILE: ONE "SETTINGS" SECTION THAT OPENS ON TAP ================= */
+Object.assign(LANGS.sl,{setTitle:"⚙️ Nastavitve",setSub:"Videz, cenik in značke, zvoki, zasebnost, preverjanje računa, blokirani"});
+Object.assign(LANGS.en,{setTitle:"⚙️ Settings",setSub:"Appearance, plans & badges, sounds, privacy, account check, blocked"});
+{const css=document.createElement("style");css.textContent=`#setCard{padding:0;overflow:hidden}#setCard>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;align-items:center;gap:10px}
+#setCard>summary::-webkit-details-marker{display:none}#setCard>summary b{font-size:17px}#setCard>summary small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}#setCard>summary div{flex:1;min-width:0}
+#setCard>summary i{font-style:normal;color:var(--muted);font-size:20px;transition:transform .2s}#setCard[open]>summary i{transform:rotate(90deg)}
+#setCard .setin>.pcard{background:none;box-shadow:none;border-radius:0;margin:0;padding:16px 18px;border-top:1px solid var(--line)}`;document.head.appendChild(css)}
+let setOpen=false;
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||$("setCard"))return;
+  const byHead=txt=>[...P.querySelectorAll(":scope>section.pcard,:scope>div.pcard")].find(s=>{const h=s.querySelector("h3,.h3");return h&&h.textContent.trim().startsWith(txt)});
+  const cards=[$("thCard"),$("cnCard"),P.querySelector(":scope>.macard"),byHead(t("secPrivacy")),$("verSec"),byHead(t("blockedList"))].filter(Boolean);if(!cards.length)return;
+  const d=document.createElement("details");d.className="pcard";d.id="setCard";if(setOpen)d.open=true;
+  d.innerHTML=`<summary><div><b>${t("setTitle")}</b><small>${t("setSub")}</small></div><i aria-hidden="true">›</i></summary><div class="setin"></div>`;
+  const anchor=P.querySelector(":scope>.fbcard");if(anchor)anchor.after(d);else P.prepend(d);
+  const inner=d.querySelector(".setin");cards.forEach(c=>inner.appendChild(c));
+  d.addEventListener("toggle",()=>{setOpen=d.open})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
