@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="68";
+const APP_VER="69";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4707,6 +4707,26 @@ pkEnhance=function(root){pkAll(root)};
 const sortSync=()=>document.querySelectorAll("[data-sort]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sort===(st.fa&&st.fa.sort||"match"))));
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-sort]"))setTimeout(sortSync,0)});
 {const _h=renderHire;renderHire=function(...a){const r=_h(...a);sortSync();return r}}{const _s=renderStud;renderStud=function(...a){const r=_s(...a);sortSync();return r}}
+
+/* ================= MESSAGES: DELETE ONE CONVERSATION OR ALL (it comes back if a new message arrives) ================= */
+Object.assign(LANGS.sl,{mdDel:"Izbriši pogovor",mdDelQ:"Izbriši?",mdAll:"🗑 Izbriši vse",mdAllQ:"Res izbriši vse?",mdDone:"Pogovor je izbrisan.",mdDoneAll:"Pogovori so izbrisani."});
+Object.assign(LANGS.en,{mdDel:"Delete chat",mdDelQ:"Delete?",mdAll:"🗑 Delete all",mdAllQ:"Really delete all?",mdDone:"Chat deleted.",mdDoneAll:"Chats deleted."});
+{const css=document.createElement("style");css.textContent=`.crwrap{display:flex;gap:6px;align-items:stretch}.crwrap .crow{flex:1;min-width:0}
+.crwrap .mdx{flex:none;width:44px;border:0;border-radius:16px;background:var(--surface);color:var(--muted);font-size:17px;cursor:pointer;font-family:inherit}
+.crwrap .mdx.sure{width:auto;padding:0 12px;background:#FDE2E2;color:#B42318;font-size:13px;font-weight:700}.mdhead{display:flex;align-items:center;justify-content:space-between;gap:10px}.mdhead button{margin:0}`;document.head.appendChild(css)}
+const mdHidden=d=>{if(!d.hiddenAt)return false;const m=d.msgs.at(-1);return !(m&&m.ts>d.hiddenAt)};
+let mdSure=null;
+{const _rm=renderMsgs;renderMsgs=function(){_rm();const el=$("msgs");if(!el)return;const list=el.querySelector(".list");if(!list)return;let n=0;
+  list.querySelectorAll(".crow[data-chat]").forEach(b=>{const d=st.deals.find(x=>x.id===b.dataset.chat);if(!d)return;if(mdHidden(d)){b.remove();return}n++;
+    const w=document.createElement("div");w.className="crwrap";b.replaceWith(w);w.appendChild(b);const sure=mdSure===d.id;
+    w.insertAdjacentHTML("beforeend",`<button type="button" class="mdx${sure?" sure":""}" aria-label="${esc(t("mdDel"))}">${sure?t("mdDelQ"):"🗑"}</button>`);
+    w.querySelector(".mdx").onclick=()=>{if(mdSure!==d.id){mdSure=d.id;renderMsgs();return}mdSure=null;d.hiddenAt=Date.now();d.unread=0;save();updBell();renderMsgs();toast(t("mdDone"))}});
+  const h=el.querySelector("h2.section-title");
+  if(!n){if(!list.querySelector(".emptybox"))list.innerHTML=`<div class="emptybox"><b>${t("noChats")}</b><p class="hint">${st.mode==="mojster"?t("noChatsJobs"):t("noChatsApps")}</p></div>`}
+  else if(h&&!el.querySelector(".mdhead")){const w=document.createElement("div");w.className="mdhead";h.replaceWith(w);w.appendChild(h);
+    w.insertAdjacentHTML("beforeend",`<button type="button" class="ghost sm${mdSure==="*"?" bad":""}" id="mdAll">${mdSure==="*"?t("mdAllQ"):t("mdAll")}</button>`);
+    $("mdAll").onclick=()=>{if(mdSure!=="*"){mdSure="*";renderMsgs();return}mdSure=null;const now=Date.now();
+      list.querySelectorAll(".crow[data-chat]").forEach(b=>{const d=st.deals.find(x=>x.id===b.dataset.chat);if(d){d.hiddenAt=now;d.unread=0}});save();updBell();renderMsgs();toast(t("mdDoneAll"))}}}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
