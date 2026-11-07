@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="60";
+const APP_VER="62";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4535,6 +4535,89 @@ window.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("
   if(!/^L/.test(id)){closeSheet();toast(t("ntGone"));return}
   toast(t("ntLoading"));sb(`jobs?id=eq.${encodeURIComponent(id.slice(1))}&select=*`).then(r=>{r=r&&r[0];
     if(r&&r.status==="open"){if(!jobById(id))DEMO_JOBS.unshift(liveJobFromRow(r));go()}else{closeSheet();toast(t("ntGone"))}}).catch(()=>{closeSheet();toast(t("ntGone"))})}}
+
+/* ================= PROFILE: LONG CHOICE LISTS BECOME A COMPACT PICKER (tap → search + scroll); MANY MORE JOB TYPES, SKILLS, FIELDS ================= */
+{const EM=e=>`<svg viewBox="0 0 100 100"><text x="50" y="68" font-size="50" text-anchor="middle">${e}</text></svg>`,G=(a,b)=>`linear-gradient(160deg,${a},${b})`;
+ const dr=CATS.drugo;delete CATS.drugo;
+ const NC={varjenje:["Kovinarstvo in varjenje","Metalwork & welding","🔩","#B8C2CC","#5B6B7A"],steklar:["Steklarstvo","Glazing","🪟","#A8E0F0","#3A8FB7"],parket:["Parket in laminat","Parquet & laminate","🪵","#E8C39E","#9A6A3C"],
+  tesar:["Tesarstvo in nadstreški","Carpentry & carports","🪚","#E6B980","#A0703C"],kamnosek:["Kamnoseštvo in tlakovci","Stonework & paving","🧱","#C9C2B8","#7D746A"],bazen:["Bazeni in jacuzziji","Pools & hot tubs","🏊","#7FD8F5","#2C7DBF"],
+  solar:["Sončne elektrarne","Solar panels","☀️","#FFE08A","#E39B1B"],alarm:["Alarmi in video nadzor","Alarms & CCTV","📹","#B8B8D9","#4F4F8F"],omrezje:["Pametna hiša in omrežja","Smart home & networks","📶","#A6E3D3","#2F8F7A"],
+  aparati:["Popravilo gospodinjskih aparatov","Appliance repair","🧺","#CFD8E3","#6A7C93"],gospodinja:["Gospodinjska pomoč","Household help","🧹","#F7C6D9","#C2577E"],varstvo:["Varstvo otrok","Childcare","🧸","#FFD6A5","#E0873A"],
+  starejsi:["Pomoč starejšim","Elderly care","🤝","#D7C7F2","#7E5BC2"],zivali:["Varstvo in sprehajanje živali","Pet sitting & walking","🐕","#F3D9B1","#B07A3A"],sivilja:["Šivanje in popravila oblačil","Sewing & alterations","🧵","#F6C1C1","#C25B5B"],
+  kolo:["Servis koles in skirojev","Bike & scooter repair","🚲","#BFE6A8","#4E9A3A"],foto:["Fotografiranje in video","Photo & video","📷","#C9C9C9","#4A4A4A"],catering:["Catering in dogodki","Catering & events","🍽️","#FFC9A8","#D9653B"],
+  instrukcije:["Inštrukcije","Tutoring","📚","#BCD7FF","#3D6FD1"],prevod:["Prevajanje","Translation","🌐","#C6E8F7","#3A8CB0"],avtopranje:["Pranje in poliranje avtomobilov","Car wash & detailing","🚗","#BFE3F2","#2D7EA3"],
+  dezinsekcija:["Dezinsekcija in deratizacija","Pest control","🐜","#D9E6B8","#6E8B2E"],tapetnik:["Tapetništvo in sedežne","Upholstery","🛋️","#E9CFC0","#A06A55"],drva:["Drva in sekanje","Firewood & chopping","🪓","#D8B48C","#8A5A2B"],
+  izolacija:["Izolacija in hidroizolacija","Insulation & waterproofing","🧊","#CFE6F5","#4F86A8"],kuhinje:["Kuhinje po meri","Custom kitchens","🍳","#F3D3B0","#B5713A"],ciscenjeokna:["Čiščenje oken in steklenih površin","Window cleaning","✨","#D6F0FF","#4AA3D9"],
+  stopnice:["Stopnice in ograje iz kovine","Metal stairs & railings","🪜","#CBD2DA","#5E6B78"],pohistvo:["Obnova starega pohištva","Furniture restoration","🪑","#E5C9A8","#9A6B3F"],racunovodstvo:["Računovodstvo in davki","Accounting & taxes","🧾","#D7E8C7","#5E8C3A"]};
+ Object.keys(NC).forEach(k=>{if(CATS[k])return;const[sl,en,e,a,b]=NC[k];CATS[k]={name:{sl,en},bg:G(a,b),svg:EM(e)}});CATS.drugo=dr;
+ /* a few demo pros also do the new kinds of work, so demo offers come in */
+ const pros=PEOPLE.filter(p=>p.role==="mojster"&&!p.live);Object.keys(NC).forEach((k,i)=>{for(let x=0;x<4&&pros.length;x++){const p=pros[(i*4+x)%pros.length];if(!p.cats.includes(k))p.cats.push(k)}});
+ const SK={keramika:["Polaganje keramike","Tiling"],parket:["Polaganje parketa","Parquet laying"],laminat:["Polaganje laminata","Laminate laying"],knauf:["Knauf / suhomontaža","Drywall"],izolacija:["Izolacija","Insulation"],hidroizol:["Hidroizolacija","Waterproofing"],
+  zidanje:["Zidanje","Bricklaying"],betoniranje:["Betoniranje","Concrete work"],tlakovanje:["Tlakovanje","Paving"],strehe:["Krovska dela","Roofing"],zlebovi:["Žlebovi","Gutters"],varjenje:["Varjenje","Welding"],kovinarstvo:["Kovinarstvo","Metalwork"],
+  mizarstvo:["Mizarstvo","Joinery"],tesarstvo:["Tesarstvo","Carpentry"],kuhinje:["Montaža kuhinj","Kitchen fitting"],vrata:["Montaža vrat","Door fitting"],okna:["Montaža oken","Window fitting"],senčila:["Senčila in žaluzije","Blinds"],
+  klima:["Klimatske naprave","Air conditioning"],toplpcrp:["Toplotne črpalke","Heat pumps"],talno:["Talno gretje","Underfloor heating"],plin:["Plinske instalacije","Gas installations"],solar:["Sončne elektrarne","Solar panels"],
+  polnilnice:["Polnilnice za avto","EV chargers"],pametna:["Pametna hiša","Smart home"],alarm:["Alarmni sistemi","Alarm systems"],kamere:["Video nadzor","CCTV"],racunalniki:["Popravilo računalnikov","Computer repair"],
+  omrezja:["WiFi in omrežja","WiFi & networks"],telefoni:["Popravilo telefonov","Phone repair"],aparati:["Gospodinjski aparati","Home appliances"],ciscenje:["Čiščenje stanovanj","Home cleaning"],gencisc:["Generalno čiščenje","Deep cleaning"],
+  okna_c:["Čiščenje oken","Window cleaning"],preproge:["Čiščenje preprog in sedežnih","Carpet & sofa cleaning"],poslovni:["Čiščenje poslovnih prostorov","Office cleaning"],pranjeav:["Pranje avtomobilov","Car washing"],
+  kosnjazel:["Košnja zelenic","Lawn mowing"],trata:["Polaganje trave","Turf laying"],namakanje:["Namakalni sistemi","Irrigation"],sajenje:["Sajenje","Planting"],sneg:["Pluženje snega","Snow ploughing"],drva:["Žaganje in cepljenje drv","Firewood"],
+  odvoz:["Odvoz kosovnih odpadkov","Bulky waste removal"],rusenje:["Rušenje","Demolition"],izkopi:["Izkopi z bagrom","Excavation"],kombi:["Prevoz s kombijem","Van transport"],klavir:["Selitve klavirjev","Piano moving"],
+  dimnik:["Čiščenje dimnikov","Chimney sweeping"],kamini:["Kamini in peči","Fireplaces & stoves"],bazeni:["Vzdrževanje bazenov","Pool maintenance"],avtomeh:["Avtomehanika","Car mechanics"],vulkanizer:["Menjava gum","Tyre change"],
+  kolesa:["Servis koles","Bike service"],sivanje:["Šivanje","Sewing"],varstvootrok:["Varstvo otrok","Childcare"],starejsi:["Pomoč starejšim","Elderly care"],psi:["Sprehajanje psov","Dog walking"],
+  instrukcije:["Inštrukcije","Tutoring"],foto:["Fotografiranje","Photography"],video:["Snemanje in montaža videa","Video editing"],catering:["Catering","Catering"],kuhanje:["Kuhanje na domu","Home cooking"],
+  prevajanje:["Prevajanje","Translation"],racunovodstvo:["Računovodstvo","Accounting"],dezinsekcija:["Dezinsekcija","Pest control"],tapeciranje:["Tapeciranje","Upholstery"],ključavničar:["Ključavničarstvo","Locksmith"],steklarstvo:["Steklarstvo","Glazing"]};
+ Object.keys(SK).forEach(k=>{if(!SKILLS[k])SKILLS[k]={sl:SK[k][0],en:SK[k][1]}});
+ const dS=SECTORS.drugo;delete SECTORS.drugo;
+ const NS={zdrav:["Zdravstvo in farmacija","Healthcare & pharmacy","💊","#BFE8E0","#2E9C8A"],soc:["Socialno varstvo","Social care","🤝","#D8CCF2","#7A5BC2"],prav:["Pravo","Law","⚖️","#D9D2C3","#7D6E4F"],
+  nepr:["Nepremičnine","Real estate","🏠","#F2D6B5","#B57A3D"],zav:["Zavarovalništvo in bančništvo","Insurance & banking","🏦","#C9D6EA","#4D6A9C"],hr:["Kadrovanje (HR)","Human resources","🧑‍💼","#E8D0E8","#9C5B9C"],
+  energ:["Energetika","Energy","⚡","#FFE3A3","#D99A1A"],kem:["Kemija in laboratorij","Chemistry & lab","🧪","#D0F0D8","#3E9C5B"],les:["Lesarstvo","Woodworking","🪵","#E6C7A3","#9A6A3C"],
+  kovin:["Kovinarstvo in strojna obdelava","Metal & machining","🔩","#CDD5DD","#5E6B78"],tisk:["Grafika in tisk","Print & graphics","🖨️","#E3E3E3","#6A6A6A"],obl:["Oblikovanje in arhitektura","Design & architecture","📐","#D6E4F5","#4A74A8"],
+  znan:["Znanost in raziskave","Science & research","🔬","#D3E7FA","#3B79B8"],javna:["Javna uprava","Public sector","🏛️","#DDD8CC","#7A6F55"],kult:["Kultura in umetnost","Culture & arts","🎭","#F5CFD8","#B54A68"],
+  hrana:["Živilska industrija","Food industry","🥖","#F5DDB5","#B9803A"],skladisce:["Skladišče in viličarji","Warehouse & forklifts","📦","#E8D5B5","#9C7A45"],voz:["Vozniki (B, C, E kategorija)","Drivers (B, C, E)","🚚","#CFDDEA","#4A6A8A"],
+  lepota2:["Masaža in fizioterapija","Massage & physio","💆","#F7D6E6","#C25B8F"],telek:["Telekomunikacije","Telecom","📡","#D0E2F2","#3F6F9C"]};
+ Object.keys(NS).forEach(k=>{if(SECTORS[k])return;const[sl,en,e,a,b]=NS[k];SECTORS[k]={name:{sl,en},bg:G(a,b),svg:EM(e)}});
+ const NSS={stdost:["Dostava in kurirske storitve","Delivery & courier","🛵","#FFD8B0","#D9772E"],stskl:["Skladišče in komisioniranje","Warehouse picking","📦","#E8D5B5","#9C7A45"],sttrg:["Trgovina in blagajna","Shop & till","🛒","#C9E8C9","#3E8F4F"],
+  stgost:["Strežba in kuhinja","Waiting & kitchen","☕","#FFD3C2","#D9653B"],stcisc:["Čiščenje","Cleaning","🧽","#D6F0FF","#4AA3D9"],stadm:["Administracija in vnos podatkov","Admin & data entry","🗂️","#DCE3EE","#5A6F8F"],
+  stfiz:["Fizična dela in pomoč pri selitvah","Manual work & moving","💪","#E9D3C0","#A5704A"],stvarst:["Varstvo otrok in živali","Child & pet sitting","🧸","#FFE0B5","#D9902E"]};
+ Object.keys(NSS).forEach(k=>{if(SECTORS[k])return;const[sl,en,e,a,b]=NSS[k];SECTORS[k]={name:{sl,en},bg:G(a,b),svg:EM(e),stud:true}});SECTORS.drugo=dS;
+ ["ES","RU","UK","PL","SK","CZ","BS","MK","SQ","NL","PT","RO","TR","ZH","AR"].forEach(x=>{if(!PR_LANGS.includes(x))PR_LANGS.push(x)})}
+/* most searched first */
+const PK_RANK={cats:["ciscenje","selitev","kosnja","pleskanje","vodovod","elektrika","montaza","hisnik","vrt","tlaki","drevje","gospodinja","varstvo","odvoz","ogrevanje","mizar","zidar","suhomont","fasada","okna","streha","racunalnik","avto","aparati","parket","starejsi","zivali","instrukcije","avtopranje","sneg","ograja","izkop","dimnik","solar","kuhinje","ciscenjeokna","varjenje","alarm","omrezje","tesar","kamnosek","izolacija","bazen","steklar","catering","foto","kolo","sivilja","drva","dezinsekcija","tapetnik","stopnice","pohistvo","prevod","racunovodstvo"],
+ skills:["ciscenje","selitve","kosnja","pleskanje","vodovod","elektro","montaza","hisnik","kosnjazel","vrt","keramika","prevozi","kombi","gencisc","okna_c","glajenje","knauf","parket","laminat","klima","kopalnice","drevje","meje","odvoz","racunalniki","telefoni","aparati","avtomeh","vulkanizer","varstvootrok","psi","instrukcije","starejsi","ogrevanje","bojlerji","luci","toplpcrp","talno","solar","polnilnice","fasade","ometi","izolacija","hidroizol","zidanje","betoniranje","tlakovanje","strehe","zlebovi","varjenje","kovinarstvo","mizarstvo","tesarstvo","kuhinje","vrata","okna","senčila","kamere","alarm","pametna","omrezja","plin","preproge","poslovni","pranjeav","trata","namakanje","sajenje","podiranje","sneg","drva","rusenje","izkopi","klavir","dimnik","kamini","bazeni","kolesa","sivanje","foto","video","catering","kuhanje","prevajanje","racunovodstvo","dezinsekcija","tapeciranje","ključavničar","steklarstvo","tapete"],
+ sectors:["trg","gost","proiz","log","skladisce","voz","cisc","prod","pis","grad","osk","zdrav","it","teh","avtos","fin","mark","izob","lep","lepota2","hrana","kovin","les","varn","kmet","soc","energ","zav","nepr","hr","telek","kem","obl","tisk","prav","znan","javna","kult"],
+ langs:["SL","EN","DE","HR","SR","BS","IT","HU","MK","SQ","ES","FR","RU","UK","PL","SK","CZ","RO","NL","PT","TR","ZH","AR"]};
+Object.assign(LANGS.sl,{pkPick:"Izberi",pkNone:"Nič izbranega – pritisni za izbiro",pkSearch:"Išči …",pkNo:"Ni zadetkov.",pkDone:"Končano",pkMore:"+{n}"});
+Object.assign(LANGS.en,{pkPick:"Choose",pkNone:"Nothing selected – tap to choose",pkSearch:"Search …",pkNo:"No matches.",pkDone:"Done",pkMore:"+{n}"});
+{const css=document.createElement("style");css.textContent=`fieldset.pk .pkhead{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);cursor:pointer}
+fieldset.pk .pkhead:focus-visible{outline:2px solid var(--accent);outline-offset:2px}fieldset.pk .pksel{flex:1;min-width:0;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}fieldset.pk .pksel.pkempty{color:var(--muted);font-weight:500}
+fieldset.pk .pkhead b{flex:none;font-size:13px;color:var(--accent)}fieldset.pk .pkpanel{margin-top:8px;border:1.5px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+fieldset.pk .pkpanel input[type=search]{width:100%;font-size:16px}fieldset.pk .pklist{max-height:260px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch}
+fieldset.pk .pklist .benchip{display:flex;width:100%}fieldset.pk .pklist .benchip span{display:flex;align-items:center;gap:10px;width:100%;border-radius:10px;border:0;padding:10px 10px;background:none;font-size:15px;font-weight:500}
+fieldset.pk .pklist .benchip span::before{content:"";flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);background:var(--bg)}
+fieldset.pk .pklist .benchip input:checked+span{background:rgba(255,94,58,.08);color:var(--ink)}fieldset.pk .pklist .benchip input:checked+span::before{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--bg)}
+fieldset.pk .pklist .benchip input:focus-visible+span{outline:2px solid var(--accent)}fieldset.pk .pkno{margin:4px 0;color:var(--muted);font-size:14px}fieldset.pk .pkdone{align-self:flex-end;margin:0}fieldset.pk .benchip[hidden]{display:none}`;document.head.appendChild(css)}
+const pkNorm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const pkOpen=new Set();
+function pkEnhance(root){root.querySelectorAll("fieldset.bens").forEach(fs=>{if(fs.dataset.pk)return;const labs=[...fs.querySelectorAll(".benchip")];if(labs.length<8)return;
+  const inp0=labs[0].querySelector("input[data-arr]");if(!inp0)return;const key=inp0.dataset.arr;fs.dataset.pk="1";fs.classList.add("pk");
+  const rank=PK_RANK[key]||[],ri=v=>{const i=rank.indexOf(v);return i<0?999:i};
+  labs.sort((a,b)=>{const va=a.querySelector("input").value,vb=b.querySelector("input").value;return ri(va)-ri(vb)||a.textContent.localeCompare(b.textContent,"sl")});
+  const row=fs.querySelector(".benrow");row.remove();
+  fs.insertAdjacentHTML("beforeend",`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden><input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}"><div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`);
+  const head=fs.querySelector(".pkhead"),panel=fs.querySelector(".pkpanel"),list=fs.querySelector(".pklist"),q=panel.querySelector("input"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));[...fs.children].forEach(ch=>{if(ch.tagName!=="LEGEND"&&ch!==head&&ch!==panel)fs.appendChild(ch)});
+  const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
+    s.textContent=on.length?on.slice(0,3).join(", ")+(on.length>3?" "+t("pkMore",{n:on.length-3}):""):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+  const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o)setTimeout(()=>q.focus({preventScroll:true}),30)};
+  head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
+  q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
+  labs.forEach(l=>l.querySelector("input").addEventListener("change",sum));sum();if(pkOpen.has(key))set(true)})}
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P)pkEnhance(P)}}
+
+/* ================= OFFER FORM: "START OF WORK" DATE IS A CALENDAR LIKE THE VISIT TIME IN THE CHAT ================= */
+{const css=document.createElement("style");css.textContent=`#sheet input#of-date,#sheet input#og-d{width:100%;min-width:0;font-size:16px}`;document.head.appendChild(css)}
+function dateEnhance(root){const s=root.querySelector("select#of-date");if(!s||s.dataset.dt)return;s.dataset.dt="1";
+  const i=document.createElement("input");i.type="date";i.id="of-date";i.min=ivIso(new Date());i.value=s.value&&s.value>=i.min?s.value:ivNextWd();
+  i.addEventListener("change",()=>{if(!i.value||i.value<i.min)i.value=i.min});s.replaceWith(i)}
+{const sh=$("sheet");if(sh)new MutationObserver(()=>dateEnhance(sh)).observe(sh,{childList:true,subtree:true})}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
