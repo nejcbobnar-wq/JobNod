@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="88";
+const APP_VER="89";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4605,7 +4605,7 @@ function pkEnhance(root){root.querySelectorAll("fieldset.bens").forEach(fs=>{if(
   fs.insertAdjacentHTML("beforeend",`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden><input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}"><div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`);
   const head=fs.querySelector(".pkhead"),panel=fs.querySelector(".pkpanel"),list=fs.querySelector(".pklist"),q=panel.querySelector("input"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));[...fs.children].forEach(ch=>{if(ch.tagName!=="LEGEND"&&ch!==head&&ch!==panel)fs.appendChild(ch)});
   const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
-    s.textContent=on.length?on.join(", "):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+    s.textContent=on.length?pkShort(on):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
   const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o)setTimeout(()=>q.focus({preventScroll:true}),30)};
   head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
   q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
@@ -4690,7 +4690,7 @@ function pkAll(root){if(!root)return;root.querySelectorAll(".benrow").forEach(ro
   wrap.innerHTML=`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden>${many?`<input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}">`:""}<div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`;
   const head=wrap.querySelector(".pkhead"),panel=wrap.querySelector(".pkpanel"),list=wrap.querySelector(".pklist"),q=panel.querySelector("input[type=search]"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));
   const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
-    s.textContent=on.length?on.join(", "):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+    s.textContent=on.length?pkShort(on):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
   const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o&&q)setTimeout(()=>q.focus({preventScroll:true}),30)};
   head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
   if(q)q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
@@ -5038,6 +5038,7 @@ addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#cnGo,#
 /* PRO mojster: alerts for every new real job nearby, not only own fields */
 {const _nf=notify;notify=function(k,p,l){if(k==="nLiveJob"&&st.pro&&l&&l.job){const j=jobById(l.job);if(j&&j.client!=="me"&&!maJob(j)){st.notes.unshift({id:"n"+now()+Math.random().toString(36).slice(2,6),k,p:p||{},ts:now(),read:false,link:l});st.notes=st.notes.slice(0,60);save();updBell();return}}return _nf(k,p,l)}}
 
+function pkShort(on){let k=0,len=0;while(k<on.length&&k<3&&(k===0||len+on[k].length<=28)){len+=on[k].length+2;k++}return on.slice(0,k).join(", ")+(on.length>k?" "+t("pkMore",{n:on.length-k}):"")}
 /* ================= PROFILE ON PHONES: NOTHING CUT OFF (pickers show every choice on several lines, boxes never wider than the screen) ================= */
 {const css=document.createElement("style");css.textContent=`#profile fieldset,#profile .pkbox,#profile .benrow,#coads fieldset,#sheet fieldset{min-width:0;max-width:100%}
 .pkbox .pkhead{align-items:flex-start}.pkbox .pksel{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.35}
