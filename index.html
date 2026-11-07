@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="69";
+const APP_VER="70";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4727,6 +4727,96 @@ let mdSure=null;
     w.insertAdjacentHTML("beforeend",`<button type="button" class="ghost sm${mdSure==="*"?" bad":""}" id="mdAll">${mdSure==="*"?t("mdAllQ"):t("mdAll")}</button>`);
     $("mdAll").onclick=()=>{if(mdSure!=="*"){mdSure="*";renderMsgs();return}mdSure=null;const now=Date.now();
       list.querySelectorAll(".crow[data-chat]").forEach(b=>{const d=st.deals.find(x=>x.id===b.dataset.chat);if(d){d.hiddenAt=now;d.unread=0}});save();updBell();renderMsgs();toast(t("mdDoneAll"))}}}}
+
+/* ================= PROS: BADGES + PRICE LIST (BASIC / PRO) – demo, no payment ================= */
+Object.assign(LANGS.sl,{bgVer:"✓ Preverjen",bgTop:"⭐ Top ocena",bg50:"🏆 50+ del",bgFast:"⚡ Hiter odziv",bgIns:"🛡️ Zavarovan",bgPro:"💎 PRO",
+ bgVerD:"ima vpisan s.p. ali podjetje z davčno številko",bgTopD:"ocena 4,8 ali več in vsaj 10 ocen",bg50D:"50 ali več opravljenih del prek JobNod",bgFastD:"na povpraševanja odgovori v povprečju v 1 uri",bgInsD:"ima zavarovanje odgovornosti",bgProD:"plačan paket PRO",
+ cnTitle:"💎 Cenik in značke",cnNow:"Tvoj paket: {x}",cnBasic:"Osnovni",cnPro:"PRO",cnFree:"brezplačno",cnProP:"9,90 € / mesec",cnFee:"Provizija",cnFeeB:"2 € samo, ko stranka sprejme ponudbo",cnFeeP:"brez provizije",
+ cnOffers:"Ponudbe",cnOffB:"15 na mesec",cnOffP:"neomejeno",cnPlace:"Mesto pri stranki",cnPlB:"običajno",cnPlP:"na vrhu seznama",cnAlerts:"Obvestila",cnAlB:"za tvoja področja",cnAlP:"takoj, tudi širša okolica",
+ cnTry:"Preizkusi PRO (demo, brez plačila)",cnStop:"Izklopi PRO",cnOnT:"PRO je vklopljen (demo). Tvoje ponudbe so pri strankah na vrhu.",cnOffT:"Spet imaš Osnovni paket.",
+ cnMine:"Tvoje značke",cnNone:"Še nimaš značk.",cnNext:"Do naslednjih značk",cnNeedR:"še {n} ocen(e) s povprečjem 4,8 do ⭐ Top ocena",cnNeedJ:"še {n} del do 🏆 50+ del",cnNeedV:"vpiši s.p. ali podjetje za ✓ Preverjen",
+ cnIns:"🛡️ Imam zavarovanje odgovornosti",cnUsed:"Ta mesec: {n} od 15 ponudb",cnLimit:"Porabil si 15 ponudb tega meseca v paketu Osnovni. V demu lahko pošiljaš naprej – z PRO bi bilo neomejeno."});
+Object.assign(LANGS.en,{bgVer:"✓ Verified",bgTop:"⭐ Top rated",bg50:"🏆 50+ jobs",bgFast:"⚡ Fast reply",bgIns:"🛡️ Insured",bgPro:"💎 PRO",
+ bgVerD:"registered business with a tax number",bgTopD:"rating 4.8+ with at least 10 reviews",bg50D:"50+ jobs done on JobNod",bgFastD:"replies within 1 hour on average",bgInsD:"has liability insurance",bgProD:"paid PRO plan",
+ cnTitle:"💎 Plans & badges",cnNow:"Your plan: {x}",cnBasic:"Basic",cnPro:"PRO",cnFree:"free",cnProP:"€9.90 / month",cnFee:"Fee",cnFeeB:"€2 only when the client accepts",cnFeeP:"no fee",
+ cnOffers:"Offers",cnOffB:"15 a month",cnOffP:"unlimited",cnPlace:"Position for clients",cnPlB:"normal",cnPlP:"top of the list",cnAlerts:"Alerts",cnAlB:"your fields",cnAlP:"instant, wider area",
+ cnTry:"Try PRO (demo, no payment)",cnStop:"Turn PRO off",cnOnT:"PRO is on (demo). Your offers are at the top for clients.",cnOffT:"You're back on Basic.",
+ cnMine:"Your badges",cnNone:"No badges yet.",cnNext:"Next badges",cnNeedR:"{n} more reviews averaging 4.8 for ⭐ Top rated",cnNeedJ:"{n} more jobs for 🏆 50+ jobs",cnNeedV:"add your business for ✓ Verified",
+ cnIns:"🛡️ I have liability insurance",cnUsed:"This month: {n} of 15 offers",cnLimit:"You've used the 15 offers in Basic this month. In the demo you can keep going – PRO would be unlimited."});
+{const css=document.createElement("style");css.textContent=`.bdgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.bdg{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--soft,#F1EEF5);color:var(--ink);white-space:nowrap;line-height:1.3}
+.bdg.pro{background:linear-gradient(135deg,#7B5CFF,#B44CFF);color:#fff}.bdg.top{background:#FFF4D6;color:#8A5A00}.bdg.ver{background:#D1FAE5;color:#065F46}
+.phead .bdgs{justify-content:center;margin-top:8px}.qrow .bdgs{margin-top:3px}.qrow.isPro{box-shadow:inset 0 0 0 2px #9B5CFF;border-radius:16px}
+.cntbl{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 10px}.cntbl th,.cntbl td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}.cntbl th{font-size:12px;color:var(--muted)}
+.cntbl td:nth-child(3),.cntbl th:nth-child(3){background:rgba(155,92,255,.08)}.cnbtn{width:100%;margin-top:4px}.cnlist{display:flex;flex-direction:column;gap:6px;margin:6px 0}.cnlist div{font-size:14px}.cnlist small{color:var(--muted)}`;document.head.appendChild(css)}
+const BG_KEYS=["pro","ver","top","50","fast","ins"];
+function proBadgeKeys(id){const p=person(id);if(!p)return[];const out=[];
+  if(id==="me"){const pr=st.profile||{};if(st.pro)out.push("pro");if(pr.hasCo||pr.hasSp||(pr.co&&pr.co.tax))out.push("ver");const r=rating("me");if(r.n>=10&&r.avg>=4.8)out.push("top");
+    if(st.deals.filter(d=>d.kind==="job"&&d.role==="pro"&&["done","rated"].includes(d.status)).length>=50)out.push("50");if(pr.insured)out.push("ins");return out}
+  if(p.live||p.role!=="mojster")return out;const h=hashN(id),r=rating(id);
+  if(h%5===0)out.push("pro");if(h%4!==3)out.push("ver");if(r.n>=10&&r.avg>=4.8||(r.avg>=4.5&&h%2===0)||h%7===3)out.push("top");if(h%3===1)out.push("50");if(h%4===1)out.push("fast");if(h%2===0)out.push("ins");return out}
+const bgHtml=id=>{const k=proBadgeKeys(id);return k.length?`<div class="bdgs">${k.map(x=>`<span class="bdg ${x==="pro"?"pro":x==="top"?"top":x==="ver"?"ver":""}" title="${esc(t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x]+"D"))}">${t("bg"+{pro:"Pro",ver:"Ver",top:"Top","50":"50",fast:"Fast",ins:"Ins"}[x])}</span>`).join("")}</div>`:""};
+/* offers on my posts: badges, PRO first */
+{const _rp=renderPosts;renderPosts=function(){_rp();const P=$("posts");if(!P)return;
+  P.querySelectorAll(".qlist").forEach(ql=>{const rows=[...ql.querySelectorAll(":scope>.qrow")];rows.forEach(r=>{const nm=r.querySelector(".nm[data-person]");if(!nm||r.querySelector(".bdgs"))return;const id=nm.dataset.person;
+      const sm=nm.parentElement.querySelector("small");(sm||nm).insertAdjacentHTML("afterend",bgHtml(id));if(proBadgeKeys(id).includes("pro"))r.classList.add("isPro")});
+    rows.filter(r=>r.classList.contains("isPro")).reverse().forEach(r=>ql.prepend(r))})}}
+/* a pro's profile sheet */
+{const _dp=drawProfile;drawProfile=function(){_dp();const id=sheetOpts&&sheetOpts.id,p=id&&person(id);if(!p||p.role!=="mojster"&&id!=="me")return;const h=$("sheet").querySelector(".phead h2");if(h&&!$("sheet").querySelector(".phead .bdgs"))h.insertAdjacentHTML("afterend",bgHtml(id))}}
+/* chat with a pro: badges under the name */
+{const _dc=drawChat;drawChat=function(id){_dc(id);const d=st.deals.find(x=>x.id===id);if(!d||d.kind!=="job"||d.role!=="client")return;const o=dealOther(d),sh=$("sheet");if(sh.querySelector(".chathead .bdgs"))return;
+  const nm=sh.querySelector(".chathead > div small");const b=bgHtml(o.id);if(nm&&b)nm.insertAdjacentHTML("afterend",b)}}
+/* own profile (pro): price list, badges, PRO demo switch */
+const cnMonth=()=>{const n=new Date(),m=n.getFullYear()+"-"+n.getMonth();return st.deals.filter(d=>d.kind==="job"&&d.role==="pro"&&d.created&&(()=>{const x=new Date(d.created);return x.getFullYear()+"-"+x.getMonth()===m})()).length};
+{const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(!P||$("cnCard"))return;const sec=P.querySelector('section[data-show="pro"]');if(!sec)return;
+  const mine=proBadgeKeys("me"),r=rating("me"),done=st.deals.filter(d=>d.kind==="job"&&d.role==="pro"&&["done","rated"].includes(d.status)).length,need=[];
+  if(!mine.includes("ver"))need.push(t("cnNeedV"));if(!mine.includes("top"))need.push(t("cnNeedR",{n:Math.max(1,10-r.n)}));if(!mine.includes("50"))need.push(t("cnNeedJ",{n:50-done}));
+  sec.insertAdjacentHTML("afterend",`<section class="pcard" id="cnCard"><div class="h3" style="margin-top:0">${t("cnTitle")}</div><p style="margin:0 0 6px"><b>${t("cnNow",{x:st.pro?"💎 "+t("cnPro"):t("cnBasic")})}</b>${st.pro?"":` · <span class="hint">${t("cnUsed",{n:Math.min(15,cnMonth())})}</span>`}</p>
+   <div style="overflow-x:auto"><table class="cntbl"><thead><tr><th></th><th>${t("cnBasic")}</th><th>💎 ${t("cnPro")}</th></tr></thead><tbody>
+    <tr><th></th><td><b>${t("cnFree")}</b></td><td><b>${t("cnProP")}</b></td></tr>
+    <tr><th>${t("cnFee")}</th><td>${t("cnFeeB")}</td><td>${t("cnFeeP")}</td></tr><tr><th>${t("cnOffers")}</th><td>${t("cnOffB")}</td><td>${t("cnOffP")}</td></tr>
+    <tr><th>${t("cnPlace")}</th><td>${t("cnPlB")}</td><td>${t("cnPlP")}</td></tr><tr><th>${t("cnAlerts")}</th><td>${t("cnAlB")}</td><td>${t("cnAlP")}</td></tr></tbody></table></div>
+   <button type="button" class="${st.pro?"ghost":"primary"} cnbtn" id="cnGo">${st.pro?t("cnStop"):"💎 "+t("cnTry")}</button>
+   <div class="h3">${t("cnMine")}</div>${mine.length?bgHtml("me"):`<p class="hint" style="margin:0">${t("cnNone")}</p>`}
+   ${need.length?`<div class="cnlist"><small>${t("cnNext")}:</small>${need.map(x=>`<div>• ${esc(x)}</div>`).join("")}</div>`:""}
+   <label class="tog" style="margin-top:8px"><span>${t("cnIns")}</span><input type="checkbox" role="switch" id="cnIns"${st.profile.insured?" checked":""}><i aria-hidden="true"></i></label></section>`);
+  $("cnGo").onclick=()=>{st.pro=!st.pro;save();renderProfile();renderPosts();toast(st.pro?t("cnOnT"):t("cnOffT"))};
+  $("cnIns").onchange=e=>{st.profile.insured=e.target.checked;pd.insured=e.target.checked;save();renderProfile()}}}
+/* Basic plan: 15 offers a month (demo only reminds) */
+{const _oo=openOffer;openOffer=function(jobId){if(!st.pro&&cnMonth()>=15&&!dealFor("job",jobId))toast(t("cnLimit"));return _oo(jobId)}}
+
+/* ================= COMPANIES: BADGES + PRICE LIST ================= */
+Object.assign(LANGS.sl,{cbVer:"✓ Preverjeno podjetje",cbGood:"⭐ Dober delodajalec",cbFast:"⚡ Hitro odgovarja",cbStud:"🎓 Prijazno študentom",cbReg:"🔁 Redno zaposluje",cbPro:"💎 PRO podjetje",
+ cbVerD:"vpisana davčna številka",cbGoodD:"kandidati ga ocenjujejo s 4,5 ali več",cbFastD:"kandidatom odgovori v 1 dnevu",cbStudD:"5 ali več napotnic prek JobNod",cbRegD:"10 ali več oglasov",cbProD:"paket PRO za podjetja",
+ ccTitle:"💎 Cenik za podjetja",ccFreeFirst:"Prvi oglas",ccFree:"brezplačno",ccOne:"En oglas, 30 dni",ccPack:"Paket 5 oglasov",ccPackP:"69 € (13,80 € na oglas)",ccPro:"💎 PRO podjetje",ccProP:"49 € / mesec – neomejeno oglasov, na vrhu",
+ ccBoost:"Izpostavljen oglas",ccBoostP:"+ 5 € (7 dni na vrhu)",ccStud:"Študentsko delo",ccStudP:"brezplačno – JobNod dobi delež od študentskega servisa, ne od vas",ccUsed:"Prvi brezplačni oglas: {x}",ccUsedY:"že porabljen",ccUsedN:"še na voljo",
+ ccNow:"Vaš paket: {x}",ccBasic:"Plačilo po oglasu",ccTry:"Preizkusi PRO podjetje (demo, brez plačila)",ccStop:"Izklopi PRO",ccOnT:"PRO podjetje je vklopljeno (demo).",ccOffT:"Spet plačilo po oglasu.",ccMine:"Značke vašega podjetja",ccNone:"Še nimate značk.",
+ ccNeedV:"vpišite davčno številko za ✓ Preverjeno podjetje",ccNeedS:"še {n} napotnic do 🎓 Prijazno študentom",ccNeedR:"še {n} oglasov do 🔁 Redno zaposluje",ccCmp:"Primerjava: en oglas na velikih portalih stane okoli 150 € ali več."});
+Object.assign(LANGS.en,{cbVer:"✓ Verified company",cbGood:"⭐ Good employer",cbFast:"⚡ Replies fast",cbStud:"🎓 Student friendly",cbReg:"🔁 Hires regularly",cbPro:"💎 PRO company",
+ cbVerD:"tax number on file",cbGoodD:"rated 4.5+ by candidates",cbFastD:"replies to candidates within a day",cbStudD:"5+ referrals via JobNod",cbRegD:"10+ ads",cbProD:"PRO plan for companies",
+ ccTitle:"💎 Prices for companies",ccFreeFirst:"First ad",ccFree:"free",ccOne:"One ad, 30 days",ccPack:"Pack of 5 ads",ccPackP:"€69 (€13.80 per ad)",ccPro:"💎 PRO company",ccProP:"€49 / month – unlimited ads, top of the list",
+ ccBoost:"Featured ad",ccBoostP:"+ €5 (7 days on top)",ccStud:"Student work",ccStudP:"free – JobNod gets a share from the student service, not from you",ccUsed:"First free ad: {x}",ccUsedY:"used",ccUsedN:"still available",
+ ccNow:"Your plan: {x}",ccBasic:"Pay per ad",ccTry:"Try PRO company (demo, no payment)",ccStop:"Turn PRO off",ccOnT:"PRO company is on (demo).",ccOffT:"Back to pay per ad.",ccMine:"Your company's badges",ccNone:"No badges yet.",
+ ccNeedV:"add your tax number for ✓ Verified company",ccNeedS:"{n} more referrals for 🎓 Student friendly",ccNeedR:"{n} more ads for 🔁 Hires regularly",ccCmp:"For comparison: one ad on big job portals costs about €150 or more."});
+const CB={pro:["cbPro","pro"],ver:["cbVer","ver"],good:["cbGood","top"],fast:["cbFast",""],stud:["cbStud",""],reg:["cbReg",""]};
+function coBadgeKeys(c){if(!c)return[];const out=[];
+  if(c.id==="me"||c.mine){const co=(st.profile&&st.profile.co)||{};if(st.coPro)out.push("pro");if(co.tax)out.push("ver");if((st.naps||[]).filter(n=>n.status==="issued").length>=5)out.push("stud");if((st.myAds||[]).length>=10)out.push("reg");return out}
+  if(c.live)return out;const h=hashN(String(c.id||c.name));if(h%6===0)out.push("pro");if(h%4!==2)out.push("ver");if(h%3===0)out.push("good");if(h%4===1)out.push("fast");if(h%5===2)out.push("stud");if(h%3===2)out.push("reg");return out}
+const coBgHtml=c=>{const k=coBadgeKeys(c);return k.length?`<div class="bdgs">${k.map(x=>`<span class="bdg ${CB[x][1]}" title="${esc(t(CB[x][0]+"D"))}">${t(CB[x][0])}</span>`).join("")}</div>`:""};
+{const _ad=adDetail;adDetail=function(a,...r){const h=_ad(a,...r);if(typeof h!=="string"||!a)return h;const b=coBgHtml(coOf(a));return b?h.replace(/(<button class="role link" data-co="[^"]*">[\s\S]*?<\/button>)/,"$1"+b):h}}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();const box=$("coads");if(!box||!isCo()||coForm||$("ccCard"))return;const mine=coBadgeKeys({id:"me"}),need=[];
+  const co=(st.profile&&st.profile.co)||{},iss=(st.naps||[]).filter(n=>n.status==="issued").length,nAds=(st.myAds||[]).length;
+  if(!mine.includes("ver"))need.push(t("ccNeedV"));if(!mine.includes("stud"))need.push(t("ccNeedS",{n:5-iss}));if(!mine.includes("reg"))need.push(t("ccNeedR",{n:10-nAds}));
+  box.insertAdjacentHTML("beforeend",`<details class="pcard" id="ccCard" style="margin-top:16px"${box.dataset.ccOpen?" open":""}><summary class="h3" style="margin:0;cursor:pointer">${t("ccTitle")}</summary>
+   <p style="margin:10px 0 6px"><b>${t("ccNow",{x:st.coPro?t("ccPro"):t("ccBasic")})}</b></p><p class="hint" style="margin:0 0 6px">${t("ccUsed",{x:nAds?t("ccUsedY"):t("ccUsedN")})}</p>
+   <div style="overflow-x:auto"><table class="cntbl"><tbody>
+    <tr><th>${t("ccFreeFirst")}</th><td><b>${t("ccFree")}</b></td></tr><tr><th>${t("ccOne")}</th><td><b>19 €</b></td></tr><tr><th>${t("ccPack")}</th><td>${t("ccPackP")}</td></tr>
+    <tr><th>${t("ccPro")}</th><td>${t("ccProP")}</td></tr><tr><th>${t("ccBoost")}</th><td>${t("ccBoostP")}</td></tr><tr><th>${t("ccStud")}</th><td>${t("ccStudP")}</td></tr></tbody></table></div>
+   <p class="hint" style="margin:0 0 8px">${t("ccCmp")}</p>
+   <button type="button" class="${st.coPro?"ghost":"primary"} cnbtn" id="ccGo">${st.coPro?t("ccStop"):"💎 "+t("ccTry")}</button>
+   <div class="h3">${t("ccMine")}</div>${mine.length?coBgHtml({id:"me"}):`<p class="hint" style="margin:0">${t("ccNone")}</p>`}
+   ${need.length?`<div class="cnlist"><small>${t("cnNext")}:</small>${need.map(x=>`<div>• ${esc(x)}</div>`).join("")}</div>`:""}</details>`);
+  $("ccCard").addEventListener("toggle",e=>{box.dataset.ccOpen=e.target.open?"1":""});
+  $("ccGo").onclick=()=>{st.coPro=!st.coPro;save();box.dataset.ccOpen="1";renderCoAds();toast(st.coPro?t("ccOnT"):t("ccOffT"))}}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
