@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="86";
+const APP_VER="88";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -2986,7 +2986,7 @@ Object.assign(PR_EMPTY,{addr:"",street:"",houseNo:"",postCode:"",postCity:"",see
 Object.assign(LANGS.sl,{roleProD:"Opravljam dela kot podjetje ali s.p. in prevzemam naročila.",fAddr:"Naslov (ulica in hišna številka)",fAddrPh:"npr. Cankarjeva ulica 5",
  seekExp:"Delovne izkušnje (let)",seekSkills:"Znanja in spretnosti",seekSkillsPh:"npr. delo z ljudmi, vozniško dovoljenje B, angleščina, delo na blagajni …",lastJob:"Zadnje delovno mesto",lastJobPh:"npr. natakar v Hotelu Lipov Gaj, 2 leti",
  eRoles:"Izberite vsaj eno možnost.",ePickOne:"Izberite vsaj eno.",eCv:"Naložite življenjepis (PDF).",proCoLock:"Izvajalci del se morajo registrirati kot podjetje ali s.p., zato je ta možnost vklopljena.",
- needClient:"Za naročanje del potrebujemo ime, naslov, telefon in e-pošto, da vas mojster lahko kontaktira.",fStreet:"Ulica",fStreetPh:"npr. Cankarjeva ulica",fHouseNo:"Hišna številka",fPostCode:"Poštna številka",fPostCity:"Pošta (mesto)",fPostCityPh:"npr. Kranj",ePost:"Vpišite veljavno poštno številko, npr. 4000.",needPro:"Za opravljanje del se registrirate kot podjetje ali s.p. Izpolnite podatke podjetja in izberite vrste del.",
+ needClient:"Za naročanje del potrebujemo ime, naslov, telefon in e-pošto, da vas mojster lahko kontaktira.",fStreet:"Ulica",fStreetPh:"npr. Cankarjeva",fHouseNo:"Hišna številka",fPostCode:"Poštna številka",fPostCity:"Pošta (mesto)",fPostCityPh:"npr. Kranj",ePost:"Vpišite veljavno poštno številko, npr. 4000.",needPro:"Za opravljanje del se registrirate kot podjetje ali s.p. Izpolnite podatke podjetja in izberite vrste del.",
  needSeeker:"Za iskanje zaposlitve izpolnite znanja, izkušnje in naložite življenjepis.",needNone:"Najprej izberite, kaj želite v aplikaciji. Glede na izbiro vam pokažemo, katere podatke potrebujemo."});
 Object.assign(LANGS.en,{roleProD:"I do jobs as a company or sole trader and take on orders.",fAddr:"Address (street and number)",fAddrPh:"e.g. 5 Main Street",
  seekExp:"Work experience (years)",seekSkills:"Skills",seekSkillsPh:"e.g. customer service, driving licence B, English, till work …",lastJob:"Most recent job",lastJobPh:"e.g. waiter at Hotel Lipov Gaj, 2 years",
@@ -4605,7 +4605,7 @@ function pkEnhance(root){root.querySelectorAll("fieldset.bens").forEach(fs=>{if(
   fs.insertAdjacentHTML("beforeend",`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden><input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}"><div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`);
   const head=fs.querySelector(".pkhead"),panel=fs.querySelector(".pkpanel"),list=fs.querySelector(".pklist"),q=panel.querySelector("input"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));[...fs.children].forEach(ch=>{if(ch.tagName!=="LEGEND"&&ch!==head&&ch!==panel)fs.appendChild(ch)});
   const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
-    s.textContent=on.length?on.slice(0,3).join(", ")+(on.length>3?" "+t("pkMore",{n:on.length-3}):""):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+    s.textContent=on.length?on.join(", "):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
   const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o)setTimeout(()=>q.focus({preventScroll:true}),30)};
   head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
   q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
@@ -4690,7 +4690,7 @@ function pkAll(root){if(!root)return;root.querySelectorAll(".benrow").forEach(ro
   wrap.innerHTML=`<button type="button" class="pkhead" aria-expanded="false"><span class="pksel"></span><b></b></button><div class="pkpanel" hidden>${many?`<input type="search" placeholder="${esc(t("pkSearch"))}" aria-label="${esc(t("pkSearch"))}">`:""}<div class="pklist"></div><p class="pkno" hidden>${t("pkNo")}</p><button type="button" class="ghost sm pkdone">${t("pkDone")}</button></div>`;
   const head=wrap.querySelector(".pkhead"),panel=wrap.querySelector(".pkpanel"),list=wrap.querySelector(".pklist"),q=panel.querySelector("input[type=search]"),no=panel.querySelector(".pkno");labs.forEach(l=>list.appendChild(l));
   const sum=()=>{const on=labs.filter(l=>l.querySelector("input").checked).map(l=>l.textContent.trim()),s=head.querySelector(".pksel");
-    s.textContent=on.length?on.slice(0,3).join(", ")+(on.length>3?" "+t("pkMore",{n:on.length-3}):""):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
+    s.textContent=on.length?on.join(", "):t("pkNone");s.classList.toggle("pkempty",!on.length);head.querySelector("b").textContent=t("pkPick")+(on.length?` (${on.length})`:"")+" ›"};
   const set=o=>{panel.hidden=!o;head.setAttribute("aria-expanded",String(o));o?pkOpen.add(key):pkOpen.delete(key);if(o&&q)setTimeout(()=>q.focus({preventScroll:true}),30)};
   head.onclick=()=>set(panel.hidden);panel.querySelector(".pkdone").onclick=()=>{set(false);head.scrollIntoView({block:"nearest",behavior:"smooth"})};
   if(q)q.oninput=()=>{const s=pkNorm(q.value.trim());let n=0;labs.forEach(l=>{const ok=!s||pkNorm(l.textContent).includes(s);l.hidden=!ok;if(ok)n++});no.hidden=n>0};
@@ -4878,10 +4878,10 @@ renderPeople=function(){const el=$("people");if(!el)return;const V=$("v-people")
 
 /* ================= MY PROFILE: PRO BADGE NEXT TO MY NAME ================= */
 {const css=document.createElement("style");css.textContent=`.phero-txt strong .bdg{margin-left:8px;vertical-align:middle;font-size:12px}.phead h2 .bdg{margin-left:8px;vertical-align:middle;font-size:12px}`;document.head.appendChild(css)}
-const myProTag=()=>(st.pro?`<span class="bdg pro">${t("bgPro")}</span>`:"")+(st.coPro&&st.profile&&st.profile.hasCo?`<span class="bdg pro">${t("cbPro")}</span>`:"");
+const myProTag=()=>(st.pro||(st.coPro&&st.profile&&st.profile.hasCo))?`<span class="bdg pro">💎 PRO</span>`:"";
 {const _rp=renderProfile;renderProfile=function(){_rp();const s=document.querySelector("#profile .phero-txt strong");if(s&&!s.querySelector(".bdg"))s.insertAdjacentHTML("beforeend",myProTag())}}
 {const _dp=drawProfile;drawProfile=function(){_dp();if(!(sheetOpts&&sheetOpts.id==="me"))return;const h=$("sheet").querySelector(".phead h2");if(h&&!h.querySelector(".bdg.pro"))h.insertAdjacentHTML("beforeend",myProTag())}}
-{const _rc=renderCoAds;renderCoAds=function(){_rc();if(document.querySelector("#coads .summary .bdg.pro")||!st.coPro)return;const n=document.querySelector("#coads .summary span, #coads .summary small, #coads .summary b");if(n)n.insertAdjacentHTML("afterend",` <span class="bdg pro" style="display:inline-block;margin:4px 0">${t("cbPro")}</span>`)}}
+{const _rc=renderCoAds;renderCoAds=function(){_rc();if(document.querySelector("#coads .summary .bdg.pro")||!st.coPro)return;const n=document.querySelector("#coads .summary span, #coads .summary small, #coads .summary b");if(n)n.insertAdjacentHTML("afterend",` <span class="bdg pro" style="display:inline-block;margin:4px 0">💎 PRO</span>`)}}
 
 /* ================= COMPANY LIST: ICON-ONLY BADGES NEXT TO THE NAME ================= */
 {const css=document.createElement("style");css.textContent=`.bico{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.bico span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;font-size:11px;line-height:1;background:var(--soft,#F1EEF5)}
@@ -5014,17 +5014,17 @@ addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-c
 /* ================= PRO SWITCH MAKES A VISIBLE DIFFERENCE: BENEFITS CARD UNDER MY NAME, BADGE, BELL NOTICE (mojster PRO and company PRO) ================= */
 Object.assign(LANGS.sl,{ppTitle:"💎 PRO je vklopljen – tvoje ugodnosti",ppCoTitle:"💎 PRO podjetje je vklopljeno – vaše ugodnosti",
  ppPro:["✓ Brez provizije (sicer 2 € na sprejeto ponudbo)","✓ Neomejeno ponudb (sicer 15 na mesec)","✓ Tvoje ponudbe so pri strankah na vrhu","✓ Obvestila o vseh novih delih v okolici, ne samo za tvoja področja","✓ Značka 💎 PRO ob imenu"],
- ppCo:["✓ Neomejeno oglasov (sicer 19 € na oglas)","✓ Študenti brez doplačila (sicer 5 € na študenta)","✓ Vaši oglasi so na vrhu swipa","✓ Značka 💎 PRO podjetje ob imenu"],
+ ppCo:["✓ Neomejeno oglasov (sicer 19 € na oglas)","✓ Študenti brez doplačila (sicer 5 € na študenta)","✓ Vaši oglasi so na vrhu swipa","✓ Značka 💎 PRO ob imenu"],
  ppOff:"Izklopi",nProOn:"💎 PRO vklopljen: brez provizije, neomejeno ponudb, na vrhu pri strankah",nProOff:"PRO izklopljen – spet imaš Osnovni paket",
  nCoProOn:"💎 PRO podjetje vklopljeno: neomejeno oglasov in študentov, oglasi na vrhu",nCoProOff:"PRO podjetje izklopljeno – spet plačilo po oglasu"});
 Object.assign(LANGS.en,{ppTitle:"💎 PRO is on – your benefits",ppCoTitle:"💎 PRO company is on – your benefits",
  ppPro:["✓ No fee (otherwise €2 per accepted offer)","✓ Unlimited offers (otherwise 15 a month)","✓ Your offers are on top for clients","✓ Alerts for all new jobs nearby, not only your fields","✓ 💎 PRO badge next to your name"],
- ppCo:["✓ Unlimited ads (otherwise €19 per ad)","✓ Students at no extra cost (otherwise €5 per student)","✓ Your ads are on top of the swipe","✓ 💎 PRO company badge next to your name"],
+ ppCo:["✓ Unlimited ads (otherwise €19 per ad)","✓ Students at no extra cost (otherwise €5 per student)","✓ Your ads are on top of the swipe","✓ 💎 PRO badge next to your name"],
  ppOff:"Switch off",nProOn:"💎 PRO on: no fee, unlimited offers, on top for clients",nProOff:"PRO off – back to the Basic plan",
  nCoProOn:"💎 PRO company on: unlimited ads and students, ads on top",nCoProOff:"PRO company off – paying per ad again"});
 {const css=document.createElement("style");css.textContent=`.ppcard{margin:12px 0 4px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,rgba(123,92,255,.14),rgba(180,76,255,.14));box-shadow:inset 0 0 0 1.5px #9B5CFF}
 .ppcard h3{margin:0 0 8px;font-size:15.5px;font-weight:800}.ppcard ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:14px}.ppcard .ppx{margin-top:10px}
-.phero-txt strong .bdg.pro{font-size:13px;padding:4px 10px}`;document.head.appendChild(css)}
+.phero-txt strong .bdg.pro{font-size:13px;padding:4px 10px;display:inline-block;max-width:none;overflow:visible;text-overflow:clip}.phero-txt strong{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}`;document.head.appendChild(css)}
 const ppHtml=()=>{const co=st.coPro&&st.profile&&st.profile.hasCo;if(!st.pro&&!co)return "";
   const box=(h,list,id)=>`<div class="ppcard"><h3>${h}</h3><ul>${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><button type="button" class="ghost sm ppx" data-ppoff="${id}">${t("ppOff")}</button></div>`;
   return `<div id="ppWrap">${st.pro?box(t("ppTitle"),LANGS[lang==="sl"?"sl":"en"].ppPro,"pro"):""}${co?box(t("ppCoTitle"),LANGS[lang==="sl"?"sl":"en"].ppCo,"co"):""}</div>`};
@@ -5037,6 +5037,12 @@ addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#cnGo,#
   setTimeout(()=>{const now=id==="cnGo"?!!st.pro:!!st.coPro;if(now===was)return;notify(id==="cnGo"?(now?"nProOn":"nProOff"):(now?"nCoProOn":"nCoProOff"));try{renderProfile()}catch(_){}},0)},true);
 /* PRO mojster: alerts for every new real job nearby, not only own fields */
 {const _nf=notify;notify=function(k,p,l){if(k==="nLiveJob"&&st.pro&&l&&l.job){const j=jobById(l.job);if(j&&j.client!=="me"&&!maJob(j)){st.notes.unshift({id:"n"+now()+Math.random().toString(36).slice(2,6),k,p:p||{},ts:now(),read:false,link:l});st.notes=st.notes.slice(0,60);save();updBell();return}}return _nf(k,p,l)}}
+
+/* ================= PROFILE ON PHONES: NOTHING CUT OFF (pickers show every choice on several lines, boxes never wider than the screen) ================= */
+{const css=document.createElement("style");css.textContent=`#profile fieldset,#profile .pkbox,#profile .benrow,#coads fieldset,#sheet fieldset{min-width:0;max-width:100%}
+.pkbox .pkhead{align-items:flex-start}.pkbox .pksel{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.35}
+.pkbox .pkhead b{padding-top:1px}
+#profile .bdgs{flex-wrap:wrap!important}#profile .bdg{white-space:normal;max-width:100%}`;document.head.appendChild(css)}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
