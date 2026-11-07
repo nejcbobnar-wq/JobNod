@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="55";
+const APP_VER="56";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3518,7 +3518,7 @@ function faDraw(err){let w=$("fbAdmin");if(!w){w=document.createElement("div");w
   $("faR").onclick=faLoad;
   w.querySelectorAll("[data-fa]").forEach(b=>b.onclick=()=>{faTab=b.dataset.fa;faDraw()});
   w.querySelectorAll("[data-big]").forEach(im=>im.onclick=()=>{const o=document.createElement("div");o.className="big";o.innerHTML=`<img src="${im.src}" alt="">`;o.onclick=()=>o.remove();w.appendChild(o)})}
-async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&order=created_at.desc&limit=300");faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
+async function faLoad(){faRows=null;faDraw();try{faRows=await sb("feedback?select=*&kind=neq.diag&order=created_at.desc&limit=300");faDraw()}catch(e){faDraw("Mnenj ni bilo mogoče naložiti. Preveri internet in klikni Osveži.")}}
 function faCheck(){if(location.hash==="#mnenja")faLoad();else{const w=$("fbAdmin");if(w)w.remove()}}
 addEventListener("hashchange",faCheck);setTimeout(faCheck,300);
 /* ================= USE MY CURRENT LOCATION ================= */
@@ -4495,6 +4495,19 @@ let ntSure=false;
   S.querySelectorAll(".note[data-n]").forEach(b=>{const r=document.createElement("div");r.className="nrow";b.replaceWith(r);r.appendChild(b);
     r.insertAdjacentHTML("beforeend",`<button class="nx" type="button" aria-label="${esc(t("ntDel"))}" data-nx="${b.dataset.n}">×</button>`);
     r.querySelector(".nx").onclick=e=>{e.stopPropagation();st.notes=st.notes.filter(n=>n.id!==b.dataset.n);save();updBell();openNotes()}})}}
+
+/* ================= DIAGNOSTICS: WHAT HAPPENS WHEN AN ALERT IS TAPPED (sent to the feedback table as kind "diag", hidden from #mnenja) ================= */
+const DG={errs:[],clickAt:0,calledAt:0};
+addEventListener("error",e=>DG.errs.push(String(e.message||e).slice(0,200)));
+addEventListener("unhandledrejection",e=>DG.errs.push("rej "+String(e.reason&&e.reason.message||e.reason).slice(0,200)));
+const dgSend=rec=>{try{sb("feedback",{method:"POST",body:{user_id:st.liveId,user_name:liveName(),kind:"diag",body:JSON.stringify(rec).slice(0,2000),ctx:{ver:APP_VER,ua:navigator.userAgent,view:"diag"}}}).catch(()=>{})}catch(_){}};
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#sheet [data-n]");if(!b)return;DG.clickAt=Date.now();DG.calledAt=0;const id=b.dataset.n,e0=DG.errs.length;
+  setTimeout(()=>{if(DG.calledAt)return;const n=st.notes.find(x=>x.id===id);dgSend({what:"tap-no-goNote",k:n&&n.k,link:n&&n.link,errs:DG.errs.slice(e0)})},1500)},true);
+{const _g=goNote;goNote=function(n){DG.calledAt=Date.now();const ln=(n&&n.link)||{},rec={what:"goNote",k:n&&n.k,link:ln,mode:st.mode,found:ln.job?!!jobById(ln.job):ln.ad?!!adById(ln.ad):null,e0:DG.errs.length};let r;
+  try{r=_g(n)}catch(e){rec.thrown=String(e&&e.stack||e).slice(0,500)}
+  setTimeout(()=>{rec.after={hidden:$("sheetWrap").hidden,opts:JSON.stringify(sheetOpts),txt:$("sheet").innerText.slice(0,90),mode:st.mode,toast:$("toast").textContent};rec.errs=DG.errs.slice(rec.e0);delete rec.e0;
+    if(ln.job||ln.ad||ln.offers||rec.thrown)dgSend(rec)},1800);
+  if(rec.thrown)throw new Error(rec.thrown);return r}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
