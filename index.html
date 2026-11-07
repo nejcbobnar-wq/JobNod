@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="53";
+const APP_VER="54";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4418,6 +4418,83 @@ const sdOpenSet=new Set();
   S.querySelectorAll("[data-sopen]").forEach(b=>b.onclick=()=>{const k=b.dataset.sopen;sdOpenSet.has(k)?sdOpenSet.delete(k):sdOpenSet.add(k);renderCoAds()})}}
 /* opening a form or a delete question keeps that student open */
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#studSec [data-hrs],#studSec [data-sdel]");if(!b)return;const c=b.closest(".studc"),h=c&&c.querySelector("[data-sopen]");if(h)sdOpenSet.add(h.dataset.sopen)},true);
+
+/* ================= DELA: JOB CARD LIKE THE AD CARD; EDIT MY POST UNTIL AGREED; DELETE ALERTS ================= */
+Object.assign(LANGS.sl,{jcTake:"✓ Prevzamem delo",jcOffer:"Pošlji ponudbo",jcChat:"💬 Odpri pogovor",jcBudget:"proračun",jcQuotes:"stranka zbira ponudbe",jcClient:"Stranka",jcWhy:"Zakaj je zate",jcNear:"Blizu tebe ({d})",jcFresh:"Objavljeno pred kratkim",jcLive:"Prava objava testerja",jcMine:"To je tvoja objava.",
+ peEdit:"✏️ Uredi",peTitle:"Uredi objavo",peName:"Naslov",peDesc:"Opis",peQty:"Količina ({u})",peMin:"Cena od (€)",peMax:"Cena do (€)",peUMin:"Cena od (€/{u})",peUMax:"Cena do (€/{u})",peWhere:"Kraj",peWhen:"Kdaj",peSave:"Shrani spremembe",peSaved:"Objava je posodobljena.",peBad:"Preveri naslov in cene.",peLocked:"Urejanje ni več mogoče – dogovor je sklenjen.",
+ ntDelAll:"🗑 Izbriši vse",ntDelQ:"Res izbriši vse?",ntDel:"Izbriši obvestilo",ntDeleted:"Obvestila so izbrisana."});
+Object.assign(LANGS.en,{jcTake:"✓ Take the job",jcOffer:"Send an offer",jcChat:"💬 Open chat",jcBudget:"budget",jcQuotes:"client is collecting offers",jcClient:"Client",jcWhy:"Why it suits you",jcNear:"Near you ({d})",jcFresh:"Posted recently",jcLive:"Real post by a tester",jcMine:"This is your post.",
+ peEdit:"✏️ Edit",peTitle:"Edit post",peName:"Title",peDesc:"Description",peQty:"Quantity ({u})",peMin:"Price from (€)",peMax:"Price to (€)",peUMin:"Price from (€/{u})",peUMax:"Price to (€/{u})",peWhere:"Town",peWhen:"When",peSave:"Save changes",peSaved:"Post updated.",peBad:"Check the title and prices.",peLocked:"Editing is no longer possible – an agreement was made.",
+ ntDelAll:"🗑 Delete all",ntDelQ:"Really delete all?",ntDel:"Delete alert",ntDeleted:"Alerts deleted."});
+{const css=document.createElement("style");css.textContent=`.jcico{width:92px;height:92px;border-radius:26px;display:grid;place-items:center;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.12)}.jcico svg{width:62%;height:62%}.jcico img{width:100%;height:100%;object-fit:cover}
+.jcwhy{display:flex;flex-direction:column;gap:6px;margin:14px 0 4px}.jcwhy b{font-size:16px}.jcwhy span{font-size:15px}.jcwhy span::before{content:"✓ ";color:#10B981;font-weight:800}
+.jcbtn{width:100%;margin-top:14px}.postacts{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.nrow{display:flex;gap:6px;align-items:stretch}.nrow .note{flex:1;min-width:0}.nrow .nx{flex:none;width:40px;border:0;border-radius:14px;background:var(--surface);color:var(--muted);font-size:18px;cursor:pointer}
+.ntacts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.ntacts button{margin:0}#peF{display:flex;flex-direction:column;gap:12px}#peF label{display:flex;flex-direction:column;gap:6px}#peF textarea{min-height:90px}`;document.head.appendChild(css)}
+/* ---- the job card ---- */
+function openJobCard(id){const j=jobById(id);if(!j)return false;sheetOpts={job:id};
+  const p=person(j.client),rt=rating(p.id),d=dist(j),mine=j.client==="me",deal=!mine&&dealFor("job",id),s=MEASURE[j.cat],us=uSh(j.unit);
+  const cn=j.catCustom||catName(j.cat),priceT=j.quotes?t("collectingQ"):j.per&&j.umin>0?`${range(j.umin,j.umax)}/${us}`:range(j.min,j.max);
+  const desc=typeof j.desc==="object"&&j.desc?L(j.desc):typeof j.desc==="string"?j.desc:"";
+  const why=[d!==null&&d<=st.radius?t("jcNear",{d:fkm(d)}):"",j.live?t("jcLive"):"",j.urgent?t("urgent"):""].filter(Boolean);
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+  <div class="phead"><div class="jcico" style="background:${cat(j).bg}">${art(j)}</div><h2>${esc(L(j.title))}</h2>
+   <button class="role link" data-person="${p.id}">${esc(pName(p))} · ${esc(j.loc||"—")}${d!==null?" · "+fkm(d):""}</button></div>
+  <div class="pstats"><div><strong>${esc(priceT)}</strong><span>${j.quotes?t("dPrice"):t("jcBudget")}</span></div><div><strong>${esc(fmtQty(j))}</strong><span>${esc(s?L(s.q):t("dQty"))}</span></div><div><strong>${esc(whenTxt(j.when))}</strong><span>${t("dWhen")}</span></div></div>
+  <div class="addesc">${desc?`<p>${esc(desc)}</p>`:`<p style="color:var(--muted)">${t("dNoDesc")}</p>`}
+   <div class="kv"><span>${t("dCat")}</span><b>${esc(cn)}</b></div>
+   ${j.from&&j.to?`<div class="kv"><span>${t("dRoute")}</span><b>${esc(j.from)} → ${esc(j.to)}</b></div>`:""}
+   <div class="kv"><span>${t("dBill")}</span><b>${j.per?esc(t("billPer",{u:us})):esc(t("billTotal"))}</b></div>
+   <div class="kv"><span>${t("dWhere")}</span><b>${esc(j.loc||"—")}${d!==null?" · "+fkm(d):""}</b></div>
+   <div class="kv"><span>${t("jcClient")}</span><b>${esc(pName(p))} · ${rt.n?stars(rt.avg)+" "+f1(rt.avg):t("newClient")}</b></div></div>
+  ${why.length?`<div class="jcwhy"><b>${t("jcWhy")}</b>${why.map(w=>`<span>${esc(w)}</span>`).join("")}</div>`:""}
+  ${mine?`<p class="hint">${t("jcMine")}</p>`:`<button class="primary jcbtn" id="jcGo">${deal?t("jcChat"):j.quotes?t("jcOffer"):t("jcTake")}</button>`}`;
+  $("cls").onclick=closeSheet;$("sheet").querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>openProfile(b.dataset.person));
+  if($("jcGo"))$("jcGo").onclick=()=>{if(deal){openChat(deal.id);return}if(st.mode!=="mojster")setMode("mojster");setTimeout(()=>openOffer(id),60)};
+  openSheet(L(j.title));return true}
+openJobDetail=function(id){openJobCard(id)};
+/* alerts about a job open this card – straight away, without switching screens first */
+{const _g=goNote;goNote=function(n){const ln=(n&&n.link)||{};if(!ln.job||ln.offers)return _g(n);const id=ln.job;
+  const go=()=>{const j=jobById(id);if(!j)return;if(j.client==="me")return _g(n);closeSheet();openJobCard(id);
+    setTimeout(()=>{if(!(sheetOpts&&sheetOpts.job===id)||$("sheetWrap").hidden)openJobCard(id)},700)};
+  if(jobById(id))return go();
+  if(!/^L/.test(id)){closeSheet();toast(t("ntGone"));return}
+  toast(t("ntLoading"));sb(`jobs?id=eq.${encodeURIComponent(id.slice(1))}&select=*`).then(r=>{r=r&&r[0];
+    if(r&&r.status==="open"){if(!jobById(id))DEMO_JOBS.unshift(liveJobFromRow(r));go()}else{closeSheet();toast(t("ntGone"))}}).catch(()=>{closeSheet();toast(t("ntGone"))})}}
+/* ---- my posts: edit until a pro is chosen ---- */
+const peLocked=j=>!!st.chosen[j.id]||st.deals.some(d=>d.kind==="job"&&d.item===j.id&&["agreed","progress","done","rated"].includes(d.status));
+function peForm(id){const j=jobById(id);if(!j)return;if(peLocked(j)){toast(t("peLocked"));return}const us=uSh(j.unit),desc=typeof j.desc==="object"&&j.desc?L(j.desc):j.desc||"";
+  sheetOpts={pedit:id};
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("peTitle")}</h2>
+  <form id="peF" novalidate><label><span>${t("peName")}</span><input id="pe-t" maxlength="80" value="${esc(L(j.title))}"></label>
+   <label><span>${t("peDesc")}</span><textarea id="pe-d" maxlength="1000">${esc(desc)}</textarea></label>
+   <label><span>${t("peQty",{u:us})}</span><input id="pe-q" type="number" min="0" step="any" inputmode="decimal" value="${esc(j.qty)}"></label>
+   ${j.quotes?"":`<div class="two"><label><span>${j.per?t("peUMin",{u:us}):t("peMin")}</span><input id="pe-a" type="number" min="0" step="any" inputmode="decimal" value="${esc(j.per?j.umin:j.min)}"></label>
+    <label><span>${j.per?t("peUMax",{u:us}):t("peMax")}</span><input id="pe-b" type="number" min="0" step="any" inputmode="decimal" value="${esc(j.per?j.umax:j.max)}"></label></div>`}
+   <div class="two"><label><span>${t("peWhere")}</span><select id="pe-l">${townList().map(x=>`<option value="${esc(x)}"${x===j.loc?" selected":""}>${esc(townLabel(x))}</option>`).join("")}</select></label>
+    <label><span>${t("peWhen")}</span><select id="pe-w">${Object.keys(WHEN).map(k=>`<option value="${k}"${k===j.when?" selected":""}>${esc(L(WHEN[k]))}</option>`).join("")}</select></label></div>
+   <div class="ferr" id="pe-e" role="alert"></div><button class="primary">${t("peSave")}</button></form>`;
+  $("cls").onclick=closeSheet;
+  $("peF").onsubmit=e=>{e.preventDefault();const ti=$("pe-t").value.trim(),q=+$("pe-q").value||j.qty,a=$("pe-a")?+$("pe-a").value:0,b=$("pe-b")?+$("pe-b").value:0;
+    if(!ti||(!j.quotes&&(!(a>0)||!(b>=a)))){$("pe-e").textContent=t("peBad");return}
+    j.title=typeof j.title==="object"&&j.title?{sl:ti,en:ti}:ti;const dv=$("pe-d").value.trim();j.desc=typeof j.desc==="object"&&j.desc?{sl:dv,en:dv}:dv;j.qty=q;j.loc=$("pe-l").value;j.when=$("pe-w").value;
+    if(!j.quotes){if(j.per){j.umin=a;j.umax=b;j.min=Math.round(a*q);j.max=Math.round(b*q)}else{j.min=a;j.max=b}}
+    save();if(j.rid)sb(`jobs?id=eq.${j.rid}`,{method:"PATCH",body:{title:ti.slice(0,80),descr:dv.slice(0,1000)||null,qty:q||null,loc:j.loc,when_:j.when,min:j.min||null,max:j.max||null,umin:j.umin||null,umax:j.umax||null}}).catch(e=>console.warn("edit job",e));
+    closeSheet();renderPosts();toast(t("peSaved"))};
+  openSheet(t("peTitle"))}
+{const _rp=renderPosts;renderPosts=function(){_rp();const P=$("posts");if(!P)return;
+  P.querySelectorAll(".post [data-del]").forEach(b=>{const j=jobById(b.dataset.del);if(!j||peLocked(j)||b.parentElement.classList.contains("postacts"))return;
+    const w=document.createElement("div");w.className="postacts";b.replaceWith(w);w.innerHTML=`<button class="x" type="button" data-pedit="${esc(j.id)}">${t("peEdit")}</button>`;w.appendChild(b);b.style.alignSelf="";
+    w.querySelector("[data-pedit]").onclick=()=>peForm(j.id)})}}
+/* ---- alerts: delete one or all ---- */
+let ntSure=false;
+{const _on=openNotes;openNotes=function(){_on();const S=$("sheet"),head=S.querySelector(".mine-head");if(!st.notes.length){ntSure=false;return}
+  if(head){const old=head.querySelector("#nAll");const w=document.createElement("div");w.className="ntacts";if(old){old.replaceWith(w);w.appendChild(old)}else head.appendChild(w);
+    w.insertAdjacentHTML("beforeend",`<button class="ghost sm${ntSure?" bad":""}" type="button" id="nDelAll">${ntSure?t("ntDelQ"):t("ntDelAll")}</button>`);
+    $("nDelAll").onclick=()=>{if(!ntSure){ntSure=true;openNotes();return}ntSure=false;st.notes=[];save();updBell();openNotes();toast(t("ntDeleted"))}}
+  S.querySelectorAll(".note[data-n]").forEach(b=>{const r=document.createElement("div");r.className="nrow";b.replaceWith(r);r.appendChild(b);
+    r.insertAdjacentHTML("beforeend",`<button class="nx" type="button" aria-label="${esc(t("ntDel"))}" data-nx="${b.dataset.n}">×</button>`);
+    r.querySelector(".nx").onclick=e=>{e.stopPropagation();st.notes=st.notes.filter(n=>n.id!==b.dataset.n);save();updBell();openNotes()}})}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
