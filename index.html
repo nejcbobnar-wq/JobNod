@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="51";
+const APP_VER="52";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4386,6 +4386,18 @@ Object.assign(LANGS.en,{ntGone:"This post is no longer available – it was take
       if(r&&r.status==="open"){if(!jobById(ln.job))DEMO_JOBS.unshift(liveJobFromRow(r));_g(n)}else{_g(Object.assign({},n,{link:{view:"swipe"}}));toast(t("ntGone"))}});return}
   if(ln.ad&&!adById(ln.ad)&&/^LA/.test(ln.ad)){toast(t("ntLoading"));one("ads",ln.ad.slice(2)).then(r=>{
       if(r&&r.status==="open"){const a=adFromRow(r);if(!adById(a.id))(a.kind==="stud"?STUD:ADS).unshift(a);_g(n)}else{closeSheet();toast(t("ntGone"))}});return}
+  return _g(n)}}
+
+/* ================= ALERTS: NEW POSTS RING TOO; AN OFFER ALERT OPENS THE CLIENT'S POST WITH ITS OFFERS ================= */
+["nLiveJob","nLiveAd"].forEach(k=>CH_KEYS.add(k));
+{const css=document.createElement("style");css.textContent=`#posts .post.flash{outline:3px solid var(--accent);outline-offset:2px;transition:outline-color .6s}`;document.head.appendChild(css)}
+const onMyPost=y=>allJobs().find(j=>j.client==="me"&&L(j.title)===y);
+{const _nf=notify;notify=function(k,p,l){if((k==="nLiveOffer"||k==="nNewOffer")&&!l){const j=onMyPost(p&&p.y);l={offers:j?j.id:"1"}}return _nf(k,p,l)}}
+{const _g=goNote;goNote=function(n){const ln=(n&&n.link)||{};
+  if(ln.offers||(n&&(n.k==="nLiveOffer"||n.k==="nNewOffer"))){closeSheet();const j=ln.offers&&ln.offers!=="1"?jobById(ln.offers):onMyPost(n.p&&n.p.y);
+    if(st.mode!=="stranka")setMode("stranka");show("mine");
+    setTimeout(()=>{const b=j&&document.querySelector(`#posts [data-del="${CSS.escape(j.id)}"]`),card=b&&b.closest(".post");
+      if(card){card.scrollIntoView({behavior:"smooth",block:"start"});card.classList.add("flash");setTimeout(()=>card.classList.remove("flash"),2200)}},250);return}
   return _g(n)}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
