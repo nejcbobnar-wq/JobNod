@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="80";
+const APP_VER="81";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4927,6 +4927,32 @@ document.addEventListener("change",e=>{const cb=e.target;if(!cb.matches||!cb.mat
   const P=$("profile"),hc=P.querySelector('[data-tog="hasCo"]'),box=P.querySelector('[data-show="co"]');
   if(cb.checked){pd.hasCo=true;if(hc)hc.checked=true;if(box)box.hidden=false;setTimeout(()=>{const c=$("profile").querySelector(".cocard");if(c)scrollToEl(c,"start")},120)}
   else if(!(st.myAds&&st.myAds.length)){pd.hasCo=false;if(hc){hc.checked=false;hc.disabled=false}if(box)box.hidden=true;P.querySelectorAll(".cocard .rolenote").forEach(n=>n.remove())}},true);
+
+/* ================= SWIPE CARDS FIT ANY SCREEN: NOTHING OVERLAPS (all modes: Dela, Zaposlitve, Študentsko delo, mojstri) ================= */
+{const css=document.createElement("style");css.textContent=`.card .info .chips,.card .info .bdgs{flex-wrap:nowrap;overflow:hidden}.card .info .chips>*,.card .info .bdgs>*{flex:none}
+.card .info .chips>[data-fh],.card .info .bdgs>[data-fh]{display:none!important}
+.card.fit1 .info .desc{-webkit-line-clamp:1}
+.card.fit2 .photo>svg{display:none}
+.card.fit3 .info .desc{display:none!important}
+.card.fit4 .info{gap:7px;padding-top:12px;padding-bottom:16px}.card.fit4 .info h2{font-size:21px}.card.fit4 .info .bdgs{margin:0}
+.card.fit5 .info .bdgs{display:none}
+.card.fit6 .info .chips{display:none}`;document.head.appendChild(css)}
+function fitRow(row){if(!row)return;const kids=[...row.children];kids.forEach(k=>k.removeAttribute("data-fh"));const w=row.clientWidth;if(!w)return;const rr=row.getBoundingClientRect().right;
+  let hid=false;kids.forEach(k=>{if(hid||k.getBoundingClientRect().right>rr+1){k.setAttribute("data-fh","");hid=true}})}
+function fitBad(c){const info=c.querySelector(".info");if(!info)return false;const ch=c.offsetHeight;if(!ch)return false;const R=c.getBoundingClientRect(),k=R.height/ch||1;
+  const first=[...info.children].find(x=>x.offsetHeight&&getComputedStyle(x).display!=="none");
+  const iTop=((first?first.getBoundingClientRect().top:info.getBoundingClientRect().top)-R.top)/k;
+  if(info.scrollHeight>info.clientHeight+2)return true;
+  const top=c.querySelector(":scope>.top");if(top&&top.offsetHeight&&(top.getBoundingClientRect().bottom-R.top)/k>iTop-6)return true;
+  const svg=c.querySelector(".photo>svg");if(svg&&getComputedStyle(svg).display!=="none"){const sb=(svg.getBoundingClientRect().bottom-R.top)/k;if(sb>iTop-6)return true}
+  return false}
+function fitCard(c){for(let i=1;i<=6;i++)c.classList.remove("fit"+i);const info=c.querySelector(".info");if(!info||!c.offsetHeight)return;
+  const rows=()=>info.querySelectorAll(".chips,.bdgs").forEach(fitRow);rows();
+  for(let lv=1;lv<=6&&fitBad(c);lv++){c.classList.add("fit"+lv);rows()}}
+let fitPend=false;const fitAll=()=>{fitPend=false;document.querySelectorAll(".stack .card,.card").forEach(fitCard)};
+const fitSoon=()=>{if(!fitPend){fitPend=true;requestAnimationFrame(()=>requestAnimationFrame(fitAll))}};
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1&&(n.classList.contains("card")||n.querySelector&&n.querySelector(".card"))){fitSoon();return}}).observe(document.body,{childList:true,subtree:true});
+addEventListener("resize",fitSoon);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitSoon);setTimeout(fitSoon,300);
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
