@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="102";
+const APP_VER="103";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -3257,7 +3257,7 @@ async function adTick(){if(LA.busy||document.hidden)return;LA.busy=true;let chan
     const mine=st.applied.filter(x=>String(x.id).startsWith("LA")),pr=st.profile||{};
     for(const x of mine.filter(y=>!y.rid)){const a=adById(x.id);if(!a||LA.pushing.has(x.id))continue;LA.pushing.add(x.id);
       try{const [row]=await sb("applications",{method:"POST",prefer:"return=representation",body:{ad_id:a.rid,user_id:st.liveId,user_name:liveName(),
-          data:{town:pr.postCity||pr.town||st.home,cv:!!pr.cvName,m:matchPct(a),sp:!!pr.hasSp}}});x.rid=row.id;x.status="sent";x.ts=null;save();changed=true}
+          data:{town:pr.postCity||pr.town||st.home,cv:false,m:matchPct(a),sp:!!pr.hasSp}}});x.rid=row.id;x.status="sent";x.ts=null;save();changed=true}
       catch(e){console.warn("live apply",e)}finally{LA.pushing.delete(x.id)}}
     const sent=mine.filter(x=>x.rid);
     if(sent.length){const rows=await sb(`applications?id=in.(${sent.map(x=>x.rid).join(",")})&select=id,status,iv_date,iv_time`);
@@ -3749,7 +3749,7 @@ async function cvEnsure(){const p=st.profile||{};if(!p.cvName)return null;const 
   const f=await IDB.get("cv").catch(()=>null);if(!f)return null;const data=await cvB64(f);if(data.length>7400000)return null;
   const [row]=await sb("cv_files",{method:"POST",prefer:"return=representation",body:{user_id:st.liveId,name:p.cvName,size:p.cvSize||f.size,data}});
   st.cvRemote={id:row.id,sig};save();return row.id}
-{const _sb=sb;sb=async function(path,opt={}){if(path==="applications"&&opt&&opt.method==="POST"&&opt.body&&opt.body.data){try{const id=await cvEnsure();if(id)opt.body.data.cv_id=id}catch(e){console.warn("cv upload",e)}}
+{const _sb=sb;sb=async function(path,opt={}){/* v103: the CV is no longer attached automatically – it is sent from Moje prijave or the chat */
   return _sb(path,opt)}}
 /* company side: real testers carry their CV id */
 {const _ca=coApplicants;coApplicants=function(a){const list=_ca(a);if(!a.rid)return list;const rows=LA.apps[a.rid]||[];
@@ -6436,9 +6436,9 @@ cvOpenRemote=async function(id){toast(t("cvlLoading"));try{const rows=await sb(`
   const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));
   const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){toast("⚠️ "+e)}};
 /* CV as a chat message: small "Pošlji CV" button under the message box; the company opens it from the message */
-Object.assign(LANGS.sl,{cvmSend:"📄 Pošlji CV",cvmTxt:"📄 Življenjepis (CV): {x}",cvmOpen:"Odpri CV",cvmNeed:"Najprej naloži CV v profil.",cvmAtt:"📄 Priložen življenjepis (CV)"});
-Object.assign(LANGS.en,{cvmSend:"📄 Send CV",cvmTxt:"📄 CV: {x}",cvmOpen:"Open CV",cvmNeed:"Upload your CV in your profile first.",cvmAtt:"📄 CV attached"});
-{const css=document.createElement("style");css.textContent=`.cvmrow{display:flex;margin:6px 0 0}.cvmrow button{margin:0;padding:6px 12px;font-size:13px}.mb .cvmo{display:block;margin:8px 0 2px;padding:6px 12px;font-size:13px}`;document.head.appendChild(css)}
+Object.assign(LANGS.sl,{cvmSend:"📄 Ponovno pošlji CV",cvmTxt:"📄 Življenjepis (CV): {x}",cvmOpen:"Odpri CV",cvmNeed:"Najprej naloži CV v profil.",cvmAtt:"📄 Priložen življenjepis (CV)"});
+Object.assign(LANGS.en,{cvmSend:"📄 Send CV again",cvmTxt:"📄 CV: {x}",cvmOpen:"Open CV",cvmNeed:"Upload your CV in your profile first.",cvmAtt:"📄 CV attached"});
+{const css=document.createElement("style");css.textContent=`.chatin>.cvmrow{align-self:stretch;display:flex;justify-content:flex-end;margin:-4px 0 0}.cvmrow button{margin:0;padding:6px 12px;font-size:13px}.mb .cvmo{display:block;margin:8px 0 2px;padding:6px 12px;font-size:13px}`;document.head.appendChild(css)}
 const cvmText=n=>n?t("cvmTxt",{x:n}):t("cvmAtt");
 /* incoming marker ⟦CV⟧name -> readable message */
 {const _tm=theirMsg;theirMsg=function(d,text,...r){if(typeof text==="string"&&text.startsWith("⟦CV⟧")){const nm=text.slice(4)||"CV.pdf";d.msgs.push({from:"them",text:cvmText(nm),cv:nm,ts:now()});
@@ -6460,7 +6460,17 @@ const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of lis
   const box=$("chatBox");if(box){const cvs=d.msgs.filter(m=>m.cv);const bubbles=[...box.querySelectorAll(".mb")];
     cvs.forEach(m=>{const b=bubbles.find(el=>{const p=el.querySelector("p");return p&&p.textContent===m.text&&!el.dataset.cvm});if(!b)return;b.dataset.cvm="1";
       if(d.role==="company"){b.insertAdjacentHTML("beforeend",`<button type="button" class="primary sm cvmo">${t("cvmOpen")}</button>`);b.querySelector(".cvmo").onclick=()=>{const row=cvlRow(d);if(m.cvId)return cvOpenRemote(m.cvId);cvlOpen(row&&row.user_id)}}})}
-  if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){f.insertAdjacentHTML("afterend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d)}}}catch(_){}return x}}
+  if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){(f.querySelector("input")||f).insertAdjacentHTML(f.querySelector("input")?"afterend":"beforeend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d)}}}catch(_){}return x}}
+/* Moje prijave: "send CV to the selected" really sends it for real (live) applications */
+{const css=document.createElement("style");css.textContent=`.delbar small.hint:last-child{display:none}`;document.head.appendChild(css)}
+addEventListener("click",e=>{if(!(e.target.closest&&e.target.closest("#apYes")))return;const pr=st.profile||{};if(!pr.cvName)return;const ids=[...appSel],cover=(typeof appCover==="string"?appCover:"").trim();
+  const today=new Date().toISOString().slice(0,10);setTimeout(()=>{st.applied.forEach(x=>{if(ids.includes(x.id)&&x.cvSent)x.cvSent=today});save()},0);
+  (async()=>{try{await cvlUpload()}catch(_){}try{if(typeof cvEnsure==="function")await cvEnsure()}catch(_){}
+    for(const id of ids){const x=st.applied.find(z=>z.id===id);if(!x||!x.rid)continue;const d=st.deals.find(z=>z.kind==="app"&&z.live&&String(z.rid)===String(x.rid));
+      if(d){d.msgs.push({from:"me",text:cvmText(pr.cvName),cv:pr.cvName,ts:now()});if(cover)d.msgs.push({from:"me",text:cover,ts:now()})}
+      try{await sb("app_messages",{method:"POST",body:{app_id:x.rid,from_id:st.liveId,from_name:liveName(),body:"⟦CV⟧"+pr.cvName}});
+        if(cover)await sb("app_messages",{method:"POST",body:{app_id:x.rid,from_id:st.liveId,from_name:liveName(),body:cover}})}catch(err){console.warn(err)}}
+    save()})()},true);
 
 /* ================= CHAT: THE REFERRAL (NAPOTNICA) BOX ONLY WHEN SOMETHING MUST BE DONE (confirm / send); otherwise it lives in Moje prijave / Moji študenti ================= */
 {const css=document.createElement("style");css.textContent=`#chatBox>.napbox{align-self:stretch;margin:4px 0;background:var(--surface);border:1.5px solid var(--line);flex:none}`;document.head.appendChild(css)}
