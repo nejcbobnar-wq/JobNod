@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="100";
+const APP_VER="102";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6462,10 +6462,17 @@ const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of lis
       if(d.role==="company"){b.insertAdjacentHTML("beforeend",`<button type="button" class="primary sm cvmo">${t("cvmOpen")}</button>`);b.querySelector(".cvmo").onclick=()=>{const row=cvlRow(d);if(m.cvId)return cvOpenRemote(m.cvId);cvlOpen(row&&row.user_id)}}})}
   if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){f.insertAdjacentHTML("afterend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d)}}}catch(_){}return x}}
 
-/* ================= CHAT: THE REFERRAL (NAPOTNICA) BOX IS A MESSAGE AT THE END OF THE CHAT, SO IT SCROLLS AWAY ================= */
+/* ================= CHAT: THE REFERRAL (NAPOTNICA) BOX ONLY WHEN SOMETHING MUST BE DONE (confirm / send); otherwise it lives in Moje prijave / Moji študenti ================= */
 {const css=document.createElement("style");css.textContent=`#chatBox>.napbox{align-self:stretch;margin:4px 0;background:var(--surface);border:1.5px solid var(--line);flex:none}`;document.head.appendChild(css)}
-{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const sh=$("sheet"),box=$("chatBox");if(box)sh.querySelectorAll(".napbox").forEach(n=>{if(n.parentElement!==box)box.appendChild(n)});
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const sh=$("sheet"),box=$("chatBox");sh.querySelectorAll(".napbox").forEach(n=>{
+    if(!n.querySelector("#napOk,#naGo")){n.remove();return}if(box&&n.parentElement!==box)box.appendChild(n)});
   if(box)box.scrollTop=box.scrollHeight}catch(_){}return x}}
+
+/* ================= CHAT: "PODATKI O OGLASU" SITS INSIDE THE INTERVIEW BOX, RIGHT UNDER THE DATE ================= */
+{const css=document.createElement("style");css.textContent=`.dealcard>.adinfo{grid-column:1/-1;width:100%;margin:10px 0 0;padding:8px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.dealcard>.adinfo>summary{font-size:13.5px;font-weight:700;color:var(--muted);padding:0;cursor:pointer}.dealcard>.adinfo[open]>summary{margin-bottom:6px}`;document.head.appendChild(css)}
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const sh=$("sheet"),card=sh.querySelector(".dealcard.ivtop")||sh.querySelector(".dealcard"),ai=sh.querySelector(":scope>.adinfo");
+  if(card&&ai)card.appendChild(ai)}catch(_){}return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
