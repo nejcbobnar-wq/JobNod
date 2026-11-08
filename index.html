@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="95";
+const APP_VER="97";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4052,7 +4052,7 @@ function ivPicker(o){sheetOpts={ivpick:1};const s=$("sheet");let how="pick",err=
    s.querySelectorAll("[data-how]").forEach(b=>b.onclick=()=>{grab();how=b.dataset.how;err="";draw()});
    s.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{grab();v.mode=b.dataset.mode;err="";draw()});
    $("ivF").onsubmit=e=>{e.preventDefault();if(how==="chat"){o.onDone({chat:true});return}grab();
-     if(!v.date||!v.time||ivAt(v)<Date.now()+5*60e3){err=t("ivEDate");draw();return}
+     if(!v.date||!v.time||ivAt(v)<Date.now()-2*60e3){err=t("ivEDate");draw();return}
      if(v.mode==="place"&&!String(v.place).trim()){err=t("ivEAddr");draw();return}
      o.onDone({date:v.date,time:v.time,mode:v.mode,place:v.mode==="place"?String(v.place).trim():""})}};
   draw();openSheet(o.title)}
@@ -6411,6 +6411,29 @@ const qfCoUrl=c=>"https://jobnodapp.com/?firma="+(c.live?(qfSlug(c.name)?qfSlug(
 {const _oc=openCompany;openCompany=function(id,...r){const x=_oc(id,...r);const c=CO_MAP.get(id);if(c&&!$("qfCoBtn")){const tr=$("sheet").querySelector(".trust,.trustrow")||null;
   const html=`<div style="display:flex;justify-content:center;margin:12px 0 0"><button type="button" class="ghost sm" id="qfCoBtn">${t("qfCoBtn")}</button></div>`;if(tr)tr.insertAdjacentHTML("beforebegin",html);else $("sheet").insertAdjacentHTML("beforeend",html);
   $("qfCoBtn").onclick=()=>qfOpen(qfCoUrl(c),c.name)}return x}}
+
+/* ================= REAL CV: the candidate's PDF goes to Supabase (table cvs); the company opens it from the candidate card and the chat ================= */
+Object.assign(LANGS.sl,{cvlOpen:"📄 CV",cvlLoading:"Nalagam CV …",cvlNone:"Kandidat še ni naložil CV (potrebuje novo verzijo aplikacije).",cvlBig:"CV je prevelik (največ 4 MB)."});
+Object.assign(LANGS.en,{cvlOpen:"📄 CV",cvlLoading:"Loading CV …",cvlNone:"The candidate has not uploaded a CV yet (needs the new app version).",cvlBig:"The CV is too large (max 4 MB)."});
+const CVL={busy:false,miss:0};
+async function cvlUpload(){const pr=st.profile||{};if(!st.liveId||CVL.busy||!pr.cvName||CVL.miss>3)return;const sig=[pr.cvName,pr.cvSize,pr.cvDate].join("|");if(st.cvUp===sig)return;CVL.busy=true;
+  try{const f=await IDB.get("cv");if(!f){CVL.busy=false;return}if(f.size>4*1024*1024){toast(t("cvlBig"));st.cvUp=sig;save();return}
+    const data=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(f)});
+    await sb("cvs?on_conflict=user_id",{method:"POST",prefer:"resolution=merge-duplicates",body:{user_id:st.liveId,name:pr.cvName,size:f.size,data,updated_at:new Date().toISOString()}});st.cvUp=sig;save()}
+  catch(e){console.warn("cv up",e);CVL.miss++}finally{CVL.busy=false}}
+async function cvlOpen(uid){if(!uid)return toast(t("cdCvDemo"));toast(t("cvlLoading"));
+  try{const rows=await sb(`cvs?user_id=eq.${encodeURIComponent(uid)}&select=name,data`);const r=rows&&rows[0];if(!r||!r.data)return toast(t("cvlNone"));
+    const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));
+    const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+  catch(e){toast("⚠️ "+e)}}
+const cvlUid=k=>{const id=String(k||"").replace(/^L/,"");for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===id)return r.user_id;return null};
+/* candidate card at the company */
+{const _co=cdOpen;cdOpen=function(adId,k,...r){const x=_co(adId,k,...r);const b=$("cdCv");if(b&&String(k).startsWith("L"))b.onclick=()=>cvlOpen(cvlUid(k));return x}}
+/* chat at the company: a small CV button in the chat header */
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const d=st.deals.find(z=>z.id===id);if(d&&d.kind==="app"&&d.role==="company"&&d.live&&d.rid){const uid=cvlUid("L"+d.rid);
+  const h=$("sheet").querySelector(".chathead");if(h&&uid&&!h.querySelector(".cvlb")){h.insertAdjacentHTML("beforeend",`<button type="button" class="ghost sm cvlb" style="margin:0 0 0 auto;flex:none">${t("cvlOpen")}</button>`);h.querySelector(".cvlb").onclick=e=>{e.stopPropagation();cvlOpen(uid)}}}}catch(_){}return x}}
+{const _sv=save;let tm=0;save=function(...r){const x=_sv(...r);clearTimeout(tm);tm=setTimeout(cvlUpload,3000);return x}}
+setTimeout(cvlUpload,4000);
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
