@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="92";
+const APP_VER="93";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4861,13 +4861,13 @@ renderPeople=function(){const el=$("people");if(!el)return;const V=$("v-people")
     <select id="plSort"><option value="pro">${t("plSortPro")}</option><option value="rate">${t("plSortRate")}</option><option value="near">${t("plSortNear")}</option><option value="cheap">${t("plSortCheap")}</option></select></div><p class="plcount" id="plN"></p></div>`);
   const q=$("plQ"),c=$("plCat"),s=$("plSort");q.value=PL.q;c.value=PL.cat;s.value=PL.sort;
   q.oninput=()=>{PL.q=q.value;draw()};c.onchange=()=>{PL.cat=c.value;draw()};s.onchange=()=>{PL.sort=s.value;draw()};
-  function draw(){const nq=pkNorm(PL.q.trim());let list=PEOPLE.filter(p=>p.role==="mojster"&&p.id!=="me"&&!p.live&&!isBlocked(p.id)).map(p=>({p,rt:rating(p.id),d:distP(p),pro:proBadgeKeys(p.id).includes("pro")}));
+  function draw(){const nq=pkNorm(PL.q.trim());let list=PEOPLE.filter(p=>p.role==="mojster"&&p.id!=="me"&&(!p.live||p.livePro)&&!isBlocked(p.id)).map(p=>({p,rt:rating(p.id),d:distP(p),pro:proBadgeKeys(p.id).includes("pro")}));
     if(PL.cat)list=list.filter(x=>x.p.cats.includes(PL.cat));
     if(nq)list=list.filter(x=>pkNorm([x.p.name,x.p.loc,...x.p.cats.map(catName),...(x.p.skills||[]).map(k=>SKILLS[k]?L(SKILLS[k]):"")].join(" ")).includes(nq));
     const byR=(a,b)=>b.rt.avg-a.rt.avg||b.rt.n-a.rt.n,byD=(a,b)=>(a.d??999)-(b.d??999),byC=(a,b)=>(a.p.rate||99)-(b.p.rate||99);
     list.sort(PL.sort==="rate"?byR:PL.sort==="near"?byD:PL.sort==="cheap"?byC:(a,b)=>(b.pro?1:0)-(a.pro?1:0)||byD(a,b));
-    $("plN").textContent=t("plN",{n:list.length});
-    el.innerHTML=list.length?list.slice(0,80).map(({p,rt,d,pro})=>`<div class="plrow${pro?" isPro":""}"><button type="button" class="pltop" data-person="${p.id}">${av(p,"md")}<div><h4>${esc(p.name)}${vBadge(p.id)}</h4>
+    list=list.filter(x=>x.p.livePro).concat(list.filter(x=>!x.p.livePro));$("plN").textContent=t("plN",{n:list.length});
+    el.innerHTML=list.length?list.slice(0,80).map(({p,rt,d,pro})=>`<div class="plrow${pro?" isPro":""}"><button type="button" class="pltop" data-person="${p.id}">${av(p,"md")}<div><h4>${esc(p.name)}${vBadge(p.id)}${p.livePro?`<span class="lptag">${t("lpTag")}</span>`:""}</h4>
        <p>${rt.n?stars(rt.avg)+" "+f1(rt.avg)+" ("+nRev(rt.n)+")":t("newPro")}</p><p>${esc(p.cats.map(catName).join(" · "))}</p><p>${esc(p.loc||"")} ${d!==null&&d!==undefined?t("plNear",{d:fkm(d)}):""}</p></div>
        <span class="plr">${p.rate?t("plFrom",{x:money(p.rate)}):""}</span></button>${bgHtml(p.id)}
        <button type="button" class="${plInvited(p.id)?"ghost":"primary"} sm plinv" data-inv="${p.id}">${plInvited(p.id)?t("plInvited"):t("plInvite")}</button></div>`).join("")
@@ -5061,6 +5061,50 @@ function pkShort(on){let k=0,len=0;while(k<on.length&&k<3&&(k===0||len+on[k].len
 .pkbox .pkhead{align-items:flex-start}.pkbox .pksel{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.35}
 .pkbox .pkhead b{padding-top:1px}
 #profile .bdgs{flex-wrap:wrap!important}#profile .bdg{white-space:normal;max-width:100%}`;document.head.appendChild(css)}
+
+/* ================= REAL PROS IN "MOJSTRI": testers with "Opravljam dela" are published to Supabase (table pros), shown on top, can be invited (table invites) ================= */
+Object.assign(LANGS.sl,{lpTag:"Tester",lpNoLive:"Mojstra lahko povabiš na delo, ki je že objavljeno (počakaj nekaj sekund po objavi).",nInvite:"📨 {x} te vabi na delo: {y}",lpSentLive:"Povabilo poslano. {x} bo dobil obvestilo."});
+Object.assign(LANGS.en,{lpTag:"Tester",lpNoLive:"You can invite a pro to a job that is already published (wait a few seconds after posting).",nInvite:"📨 {x} invites you to a job: {y}",lpSentLive:"Invite sent. {x} will get a notification."});
+CH_KEYS.add("nInvite");
+{const css=document.createElement("style");css.textContent=`.lptag{display:inline-block;margin-left:6px;font-size:11px;font-weight:800;color:#fff;background:#16B07A;padding:2px 7px;border-radius:999px;vertical-align:2px}`;document.head.appendChild(css)}
+const LP={ids:new Set(),busy:false,sig:"",at:0,ok:true};
+const lpIsPro=()=>{const r=(st.profile&&st.profile.roles)||[];return r.includes("pro")};
+/* 1) publish my pro profile (only while "Opravljam dela" is on) */
+async function lpPublish(force){if(!st.liveId||LP.ok===false)return;const pr=st.profile||{},on=lpIsPro();
+  if(!on&&!st.lpPub)return;
+  const row={id:st.liveId,name:liveName(),town:pr.town||st.home||"",cats:on?(pr.cats||[]):[],skills:on?(pr.skills||[]):[],rate:+pr.rate||0,years:+pr.exp||0,bio:(pr.bio||"").slice(0,400),
+    photo:pr.photo&&pr.photo.length<60000?pr.photo:null,badges:on?proBadgeKeys("me").filter(k=>k!=="pro"):[],is_pro:!!st.pro,active:on,updated_at:new Date().toISOString()};
+  const sig=JSON.stringify(Object.assign({},row,{updated_at:0}));if(!force&&sig===LP.sig&&Date.now()-LP.at<10*60000)return;
+  try{await sb("pros?on_conflict=id",{method:"POST",prefer:"resolution=merge-duplicates",body:row});LP.sig=sig;LP.at=Date.now();st.lpPub=on;save()}catch(e){console.warn("pros",e);if(String(e).includes("404")||String(e).includes("PGRST"))LP.ok=false}}
+/* 2) load the real pros and make them people of the app */
+async function lpLoad(){if(LP.busy||LP.ok===false)return;LP.busy=true;
+  try{const rows=await sb("pros?active=eq.true&select=*&order=updated_at.desc&limit=200");const ids=new Set();
+    (rows||[]).forEach(r=>{if(!r||r.id===st.liveId)return;const pid="lv_"+r.id;ids.add(pid);let p=PMAP.get(pid);
+      if(!p){p={id:pid,role:"mojster",since:2026,jobs:0,live:true};PEOPLE.push(p);PMAP.set(pid,p)}
+      Object.assign(p,{name:r.name||"Tester",loc:TOWNS[r.town]?r.town:(r.town||""),cats:(r.cats||[]).filter(k=>CATS[k]),skills:(r.skills||[]).filter(k=>SKILLS[k]),rate:+r.rate||0,
+        years:+r.years||0,bio:r.bio?{sl:r.bio,en:r.bio}:null,photo:r.photo||p.photo||"",lpBadges:(r.badges||[]).concat(r.is_pro?["pro"]:[]),livePro:true,role:"mojster"})});
+    PEOPLE.forEach(p=>{if(p.livePro&&!ids.has(p.id))p.livePro=false});LP.ids=ids;if(!$("v-people").hidden&&st.mode==="mojster")renderPeople()}
+  catch(e){console.warn("pros load",e)}finally{LP.busy=false}}
+/* their badges come from their own app */
+{const _pb=proBadgeKeys;proBadgeKeys=function(id){const p=person(id);if(p&&p.livePro)return (p.lpBadges||[]).slice();return _pb(id)}}
+/* 3) inviting a real pro writes an invite row; demo pros keep the demo behaviour */
+{const _pi=plInvite;plInvite=function(pid){const p=person(pid);if(!p||!p.livePro)return _pi(pid);
+  const jobs=plMyJobs().filter(j=>j.rid);if(!jobs.length){toast(t(plMyJobs().length?"lpNoLive":"plNoJob"));if(!plMyJobs().length)show("post");return}
+  const go=async j=>{(st.jinv[j.id]=st.jinv[j.id]||[]).push({pro:pid,ts:Date.now(),live:1});save();closeSheet();
+    try{await sb("invites",{method:"POST",body:{pro_id:pid.slice(3),job_id:String(j.rid),from_id:st.liveId,from_name:liveName(),title:L(j.title),town:j.loc||""}});toast(t("lpSentLive",{x:p.name}))}catch(e){toast("⚠️ "+e)}renderPeople()};
+  if(jobs.length===1)return go(jobs[0]);
+  sheetOpts={plinv:1};$("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("plPick")}</h2>
+   <p class="hint" style="margin:0">${esc(p.name)}</p><div class="pljobs">${jobs.map(j=>`<button class="ghost" data-pj="${esc(j.id)}">${esc(L(j.title))} · ${esc(j.loc||"")}</button>`).join("")}</div>`;
+  $("cls").onclick=closeSheet;$("sheet").querySelectorAll("[data-pj]").forEach(b=>b.onclick=()=>go(jobs.find(j=>j.id===b.dataset.pj)));openSheet(t("plPick"))}}
+/* 4) a pro receives invites as alerts; tapping opens the job */
+if(!Array.isArray(st.invSeen))st.invSeen=[];
+async function lpInvites(){if(!st.liveId||LP.ok===false||!lpIsPro())return;
+  try{const rows=await sb(`invites?pro_id=eq.${encodeURIComponent(st.liveId)}&order=created_at.desc&limit=20&select=*`);
+    (rows||[]).reverse().forEach(r=>{if(st.invSeen.includes(r.id))return;st.invSeen.push(r.id);notify("nInvite",{x:r.from_name||"Stranka",y:r.title||""},{job:"L"+r.job_id})});
+    st.invSeen=st.invSeen.slice(-200);save()}catch(e){}}
+{const _sv=save;let tm=0;save=function(...r){const x=_sv(...r);clearTimeout(tm);tm=setTimeout(()=>lpPublish(false),4000);return x}}
+setTimeout(()=>{lpPublish(true);lpLoad();lpInvites()},2500);setInterval(()=>{if(!document.hidden){lpLoad();lpInvites();lpPublish(false)}},20000);
+{const _s=show;show=function(v,...r){const x=_s(v,...r);if(v==="people")lpLoad();return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
