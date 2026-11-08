@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="98";
+const APP_VER="100";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6429,21 +6429,43 @@ async function cvlOpen(uid){if(!uid)return toast(t("cdCvDemo"));toast(t("cvlLoad
 const cvlUid=k=>{const id=String(k||"").replace(/^L/,"");for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===id)return r.user_id;return null};
 /* candidate card at the company */
 {const _co=cdOpen;cdOpen=function(adId,k,...r){const x=_co(adId,k,...r);const b=$("cdCv");if(b&&String(k).startsWith("L"))b.onclick=()=>cvlOpen(cvlUid(k));return x}}
-/* chat: a CV card above the messages – the company opens it, the candidate sees it was sent */
-Object.assign(LANGS.sl,{cvlCo:"📄 Kandidat je priložil življenjepis (CV)",cvlMe:"📄 Tvoj življenjepis (CV) je poslan podjetju",cvlBtn:"Odpri CV"});
-Object.assign(LANGS.en,{cvlCo:"📄 The candidate attached a CV",cvlMe:"📄 Your CV was sent to the company",cvlBtn:"Open CV"});
-{const css=document.createElement("style");css.textContent=`.cvcard{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface);border-radius:14px;padding:10px 12px;margin:0 0 10px;font-size:13.5px;font-weight:600}.cvcard button{margin:0;flex:none}`;document.head.appendChild(css)}
-const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===String(d.rid))return r;return null};
-{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const d=st.deals.find(z=>z.id===id),box=$("chatBox");if(!d||d.kind!=="app"||!d.live||!box||$("cvCard"))return x;
-  if(d.role==="company"){const row=cvlRow(d),dd=(row&&row.data)||{};if(row&&(dd.cv||dd.cv_id)){box.insertAdjacentHTML("beforebegin",`<div class="cvcard" id="cvCard"><span>${t("cvlCo")}</span><button type="button" class="primary sm">${t("cvlBtn")}</button></div>`);
-    $("cvCard").querySelector("button").onclick=()=>dd.cv_id?cvOpenRemote(dd.cv_id):cvlOpen(row.user_id)}}
-  else if(st.profile&&st.profile.cvName)box.insertAdjacentHTML("beforebegin",`<div class="cvcard" id="cvCard"><span>${t("cvlMe")}</span></div>`)}catch(_){}return x}}
 {const _sv=save;let tm=0;save=function(...r){const x=_sv(...r);clearTimeout(tm);tm=setTimeout(cvlUpload,3000);return x}}
 setTimeout(cvlUpload,4000);
 /* open any stored PDF the same reliable way (no blank window in the installed app) */
 cvOpenRemote=async function(id){toast(t("cvlLoading"));try{const rows=await sb(`cv_files?id=eq.${id}&select=name,data`);const r=rows&&rows[0];if(!r||!r.data)return toast(t("cvlNone"));
   const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));
   const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){toast("⚠️ "+e)}};
+/* CV as a chat message: small "Pošlji CV" button under the message box; the company opens it from the message */
+Object.assign(LANGS.sl,{cvmSend:"📄 Pošlji CV",cvmTxt:"📄 Življenjepis (CV): {x}",cvmOpen:"Odpri CV",cvmNeed:"Najprej naloži CV v profil.",cvmAtt:"📄 Priložen življenjepis (CV)"});
+Object.assign(LANGS.en,{cvmSend:"📄 Send CV",cvmTxt:"📄 CV: {x}",cvmOpen:"Open CV",cvmNeed:"Upload your CV in your profile first.",cvmAtt:"📄 CV attached"});
+{const css=document.createElement("style");css.textContent=`.cvmrow{display:flex;margin:6px 0 0}.cvmrow button{margin:0;padding:6px 12px;font-size:13px}.mb .cvmo{display:block;margin:8px 0 2px;padding:6px 12px;font-size:13px}`;document.head.appendChild(css)}
+const cvmText=n=>n?t("cvmTxt",{x:n}):t("cvmAtt");
+/* incoming marker ⟦CV⟧name -> readable message */
+{const _tm=theirMsg;theirMsg=function(d,text,...r){if(typeof text==="string"&&text.startsWith("⟦CV⟧")){const nm=text.slice(4)||"CV.pdf";d.msgs.push({from:"them",text:cvmText(nm),cv:nm,ts:now()});
+  if(sheetOpts.chat!==d.id)d.unread=(d.unread||0)+1;save();updBell();if(sheetOpts.chat===d.id)drawChat(d.id);if(!$("v-msgs").hidden)renderMsgs();return}return _tm(d,text,...r)}}
+{const _nf=notify;notify=function(k,p,...r){if(p&&typeof p.y==="string"&&p.y.startsWith("⟦CV⟧"))p=Object.assign({},p,{y:cvmText(p.y.slice(4))});return _nf(k,p,...r)}}
+async function cvmSend(d){const pr=st.profile||{};if(!pr.cvName){toast(t("cvmNeed"));return}
+  d.msgs.push({from:"me",text:cvmText(pr.cvName),cv:pr.cvName,ts:now()});save();drawChat(d.id);
+  if(d.live&&d.rid){try{await cvlUpload()}catch(_){}try{if(typeof cvEnsure==="function")await cvEnsure()}catch(_){}
+    sb("app_messages",{method:"POST",body:{app_id:d.rid,from_id:st.liveId,from_name:liveName(),body:"⟦CV⟧"+pr.cvName}}).catch(e=>console.warn(e))}}
+/* the CV sent with the application shows as the first message */
+async function cvmAuto(d){if(d.cvAuto!==undefined||!d.live||!d.rid)return;d.cvAuto=null;
+  try{let row=d.role==="company"?cvlRow(d):null;if(!row){const r=await sb(`applications?id=eq.${encodeURIComponent(d.rid)}&select=data,user_id,created_at`);row=r&&r[0]}
+    const dd=(row&&row.data)||{};d.cvAuto=!!(dd.cv||dd.cv_id);
+    if(d.cvAuto&&!d.msgs.some(m=>m.cv)){const nm=d.role==="company"?"":(st.profile&&st.profile.cvName)||"";d.msgs.unshift({from:d.role==="company"?"them":"me",text:cvmText(nm),cv:nm||"CV",cvId:dd.cv_id||null,ts:Date.parse(row.created_at)||now()});save();if(sheetOpts.chat===d.id)drawChat(d.id)}else save()}
+  catch(_){d.cvAuto=undefined}}
+const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===String(d.rid))return r;return null};
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const d=st.deals.find(z=>z.id===id);if(!d||d.kind!=="app")return x;
+  if(d.cvAuto===undefined)cvmAuto(d);
+  const box=$("chatBox");if(box){const cvs=d.msgs.filter(m=>m.cv);const bubbles=[...box.querySelectorAll(".mb")];
+    cvs.forEach(m=>{const b=bubbles.find(el=>{const p=el.querySelector("p");return p&&p.textContent===m.text&&!el.dataset.cvm});if(!b)return;b.dataset.cvm="1";
+      if(d.role==="company"){b.insertAdjacentHTML("beforeend",`<button type="button" class="primary sm cvmo">${t("cvmOpen")}</button>`);b.querySelector(".cvmo").onclick=()=>{const row=cvlRow(d);if(m.cvId)return cvOpenRemote(m.cvId);cvlOpen(row&&row.user_id)}}})}
+  if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){f.insertAdjacentHTML("afterend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d)}}}catch(_){}return x}}
+
+/* ================= CHAT: THE REFERRAL (NAPOTNICA) BOX IS A MESSAGE AT THE END OF THE CHAT, SO IT SCROLLS AWAY ================= */
+{const css=document.createElement("style");css.textContent=`#chatBox>.napbox{align-self:stretch;margin:4px 0;background:var(--surface);border:1.5px solid var(--line);flex:none}`;document.head.appendChild(css)}
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const sh=$("sheet"),box=$("chatBox");if(box)sh.querySelectorAll(".napbox").forEach(n=>{if(n.parentElement!==box)box.appendChild(n)});
+  if(box)box.scrollTop=box.scrollHeight}catch(_){}return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
