@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="97";
+const APP_VER="98";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6422,18 +6422,28 @@ async function cvlUpload(){const pr=st.profile||{};if(!st.liveId||CVL.busy||!pr.
     await sb("cvs?on_conflict=user_id",{method:"POST",prefer:"resolution=merge-duplicates",body:{user_id:st.liveId,name:pr.cvName,size:f.size,data,updated_at:new Date().toISOString()}});st.cvUp=sig;save()}
   catch(e){console.warn("cv up",e);CVL.miss++}finally{CVL.busy=false}}
 async function cvlOpen(uid){if(!uid)return toast(t("cdCvDemo"));toast(t("cvlLoading"));
-  try{const rows=await sb(`cvs?user_id=eq.${encodeURIComponent(uid)}&select=name,data`);const r=rows&&rows[0];if(!r||!r.data)return toast(t("cvlNone"));
+  try{const rows=await sb(`cvs?user_id=eq.${encodeURIComponent(uid)}&select=name,data`);const r=rows&&rows[0];if(!r||!r.data){const o=await sb(`cv_files?user_id=eq.${encodeURIComponent(uid)}&select=id&order=created_at.desc&limit=1`).catch(()=>null);if(o&&o[0])return cvOpenRemote(o[0].id);return toast(t("cvlNone"))}
     const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));
     const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
   catch(e){toast("⚠️ "+e)}}
 const cvlUid=k=>{const id=String(k||"").replace(/^L/,"");for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===id)return r.user_id;return null};
 /* candidate card at the company */
 {const _co=cdOpen;cdOpen=function(adId,k,...r){const x=_co(adId,k,...r);const b=$("cdCv");if(b&&String(k).startsWith("L"))b.onclick=()=>cvlOpen(cvlUid(k));return x}}
-/* chat at the company: a small CV button in the chat header */
-{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const d=st.deals.find(z=>z.id===id);if(d&&d.kind==="app"&&d.role==="company"&&d.live&&d.rid){const uid=cvlUid("L"+d.rid);
-  const h=$("sheet").querySelector(".chathead");if(h&&uid&&!h.querySelector(".cvlb")){h.insertAdjacentHTML("beforeend",`<button type="button" class="ghost sm cvlb" style="margin:0 0 0 auto;flex:none">${t("cvlOpen")}</button>`);h.querySelector(".cvlb").onclick=e=>{e.stopPropagation();cvlOpen(uid)}}}}catch(_){}return x}}
+/* chat: a CV card above the messages – the company opens it, the candidate sees it was sent */
+Object.assign(LANGS.sl,{cvlCo:"📄 Kandidat je priložil življenjepis (CV)",cvlMe:"📄 Tvoj življenjepis (CV) je poslan podjetju",cvlBtn:"Odpri CV"});
+Object.assign(LANGS.en,{cvlCo:"📄 The candidate attached a CV",cvlMe:"📄 Your CV was sent to the company",cvlBtn:"Open CV"});
+{const css=document.createElement("style");css.textContent=`.cvcard{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface);border-radius:14px;padding:10px 12px;margin:0 0 10px;font-size:13.5px;font-weight:600}.cvcard button{margin:0;flex:none}`;document.head.appendChild(css)}
+const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of list||[])if(String(r.id)===String(d.rid))return r;return null};
+{const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const d=st.deals.find(z=>z.id===id),box=$("chatBox");if(!d||d.kind!=="app"||!d.live||!box||$("cvCard"))return x;
+  if(d.role==="company"){const row=cvlRow(d),dd=(row&&row.data)||{};if(row&&(dd.cv||dd.cv_id)){box.insertAdjacentHTML("beforebegin",`<div class="cvcard" id="cvCard"><span>${t("cvlCo")}</span><button type="button" class="primary sm">${t("cvlBtn")}</button></div>`);
+    $("cvCard").querySelector("button").onclick=()=>dd.cv_id?cvOpenRemote(dd.cv_id):cvlOpen(row.user_id)}}
+  else if(st.profile&&st.profile.cvName)box.insertAdjacentHTML("beforebegin",`<div class="cvcard" id="cvCard"><span>${t("cvlMe")}</span></div>`)}catch(_){}return x}}
 {const _sv=save;let tm=0;save=function(...r){const x=_sv(...r);clearTimeout(tm);tm=setTimeout(cvlUpload,3000);return x}}
 setTimeout(cvlUpload,4000);
+/* open any stored PDF the same reliable way (no blank window in the installed app) */
+cvOpenRemote=async function(id){toast(t("cvlLoading"));try{const rows=await sb(`cv_files?id=eq.${id}&select=name,data`);const r=rows&&rows[0];if(!r||!r.data)return toast(t("cvlNone"));
+  const bin=atob(r.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([u8],{type:"application/pdf"}));
+  const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=r.name||"CV.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){toast("⚠️ "+e)}};
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
