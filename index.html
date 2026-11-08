@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="104";
+const APP_VER="106";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6438,7 +6438,7 @@ cvOpenRemote=async function(id){toast(t("cvlLoading"));try{const rows=await sb(`
 /* CV as a chat message: small "Pošlji CV" button under the message box; the company opens it from the message */
 Object.assign(LANGS.sl,{cvmSend:"📄 Ponovno pošlji CV",cvmTxt:"📄 Življenjepis (CV): {x}",cvmOpen:"Odpri CV",cvmNeed:"Najprej naloži CV v profil.",cvmAtt:"📄 Priložen življenjepis (CV)"});
 Object.assign(LANGS.en,{cvmSend:"📄 Send CV again",cvmTxt:"📄 CV: {x}",cvmOpen:"Open CV",cvmNeed:"Upload your CV in your profile first.",cvmAtt:"📄 CV attached"});
-{const css=document.createElement("style");css.textContent=`.chatin>.cvmrow{align-self:stretch;display:flex;justify-content:flex-end;margin:-4px 0 0}.cvmrow button{margin:0;padding:6px 12px;font-size:13px}.mb .cvmo{display:block;margin:8px 0 2px;padding:6px 12px;font-size:13px}`;document.head.appendChild(css)}
+{const css=document.createElement("style");css.textContent=`.chatin>.cvmrow{align-self:stretch;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin:-2px 0 0}.chatin>.cvmrow>.primary{margin:0;grid-column:2;grid-row:1;min-width:64px;padding:12px 22px;font-size:18px}.chatin>.cvmrow>#cvmBtn{grid-column:3;grid-row:1;justify-self:end;white-space:nowrap;font-size:12px;padding:5px 9px;min-height:0;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis}.cvmrow button{margin:0;padding:6px 12px;font-size:13px}.mb .cvmo{display:block;margin:8px 0 2px;padding:6px 12px;font-size:13px}`;document.head.appendChild(css)}
 const cvmText=n=>n?t("cvmTxt",{x:n}):t("cvmAtt");
 /* incoming marker ⟦CV⟧name -> readable message */
 {const _tm=theirMsg;theirMsg=function(d,text,...r){if(typeof text==="string"&&text.startsWith("⟦CV⟧")){const nm=text.slice(4)||"CV.pdf";d.msgs.push({from:"them",text:cvmText(nm),cv:nm,ts:now()});
@@ -6460,7 +6460,7 @@ const cvlRow=d=>{for(const list of Object.values(LA.apps||{}))for(const r of lis
   const box=$("chatBox");if(box){const cvs=d.msgs.filter(m=>m.cv);const bubbles=[...box.querySelectorAll(".mb")];
     cvs.forEach(m=>{const b=bubbles.find(el=>{const p=el.querySelector("p");return p&&p.textContent===m.text&&!el.dataset.cvm});if(!b)return;b.dataset.cvm="1";
       if(d.role==="company"){b.insertAdjacentHTML("beforeend",`<button type="button" class="primary sm cvmo">${t("cvmOpen")}</button>`);b.querySelector(".cvmo").onclick=()=>{const row=cvlRow(d);if(m.cvId)return cvOpenRemote(m.cvId);cvlOpen(row&&row.user_id)}}})}
-  if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){(f.querySelector("input")||f).insertAdjacentHTML(f.querySelector("input")?"afterend":"beforeend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d)}}}catch(_){}return x}}
+  if(d.role!=="company"){const f=$("chatForm");if(f&&!$("cvmBtn")){(f.querySelector("input")||f).insertAdjacentHTML(f.querySelector("input")?"afterend":"beforeend",`<div class="cvmrow"><button type="button" class="ghost sm" id="cvmBtn">${t("cvmSend")}</button></div>`);$("cvmBtn").onclick=()=>cvmSend(d);const sb2=f.querySelector(":scope>button.primary");if(sb2)$("cvmBtn").parentElement.appendChild(sb2)}}}catch(_){}return x}}
 /* Moje prijave: "send CV to the selected" really sends it for real (live) applications */
 {const css=document.createElement("style");css.textContent=`.delbar small.hint:last-child{display:none}`;document.head.appendChild(css)}
 addEventListener("click",e=>{if(!(e.target.closest&&e.target.closest("#apYes")))return;const pr=st.profile||{};if(!pr.cvName)return;const ids=[...appSel],cover=(typeof appCover==="string"?appCover:"").trim();
