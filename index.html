@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="106";
+const APP_VER="107";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6494,6 +6494,23 @@ const ndOff=()=>st.noDemo===true;
   inn.insertAdjacentHTML("beforeend",`<div class="pcard" id="ndCard"><h3 style="margin:0 0 4px">${t("ndTitle")}</h3><p class="hint" style="margin:0 0 6px">${t("ndLead")}</p>
    <label class="tog"><span><b>${t("ndOn")}</b></span><input type="checkbox" role="switch" id="ndSw"${ndOff()?"":" checked"}><i aria-hidden="true"></i></label></div>`);
   $("ndSw").onchange=e=>{st.noDemo=!e.target.checked;save();try{renderCoAds()}catch(_){}try{renderPosts()}catch(_){}try{renderMine()}catch(_){}}}}catch(_){}return x}}
+
+/* ================= "PODATKI O OGLASU": EXACT AND COMPLETE (type of ad first, real units) ================= */
+Object.assign(LANGS.sl,{iKind:"Oglas",iKStud:"🎓 Študentsko delo (prek napotnice)",iKZap:"💼 Zaposlitev",iKSp:"💼 Pogodbeno delo (s.p.)",iSec:"Panoga",iEType:"Vrsta zaposlitve",iDur:"Trajanje",
+ iOpenZ:"Prosta mesta",iOpenS:"Število študentov",iStart:"Začetek",iStartNow:"takoj",iPosted:"Objavljeno"});
+Object.assign(LANGS.en,{iKind:"Ad",iKStud:"🎓 Student work (with referral)",iKZap:"💼 Employment",iKSp:"💼 Contract work (sole trader)",iSec:"Sector",iEType:"Employment type",iDur:"Duration",
+ iOpenZ:"Open positions",iOpenS:"Students needed",iStart:"Start",iStartNow:"immediately",iPosted:"Posted"});
+adInfoHtml=function(a,applied){const c=coOf(a)||{name:"—"},kv=(k,v)=>v||v===0?`<div class="kv"><span>${t(k)}</span><b>${esc(String(v))}</b></div>`:"";
+  const stud=a.kind==="stud"||a.type==="student",sp=a.type==="sp",dt=s=>{if(!s)return "";const [y,m,d]=String(s).slice(0,10).split("-");return d?`${+d}. ${+m}. ${y}`:""};
+  const list=(arr,M)=>(arr||[]).filter(k=>M[k]).map(k=>L(M[k])).join(", ");let unit="";try{unit=payUnit(a)}catch(_){unit=a.unit==="h"?t("iPerH"):t("iPerM")}
+  let sec=a.secCustom||"";try{if(!sec&&SECTORS[a.sec])sec=secName(a.sec)}catch(_){}
+  return `<details class="adinfo"><summary>${t("adDetails")}</summary>
+   ${kv("iKind",stud?t("iKStud"):sp?t("iKSp"):t("iKZap"))}${kv("iPos",L(a.title))}${kv("iCo",c.name)}${kv("iSec",typeof sec==="string"?sec:"")}${kv("iWhere",a.loc)}
+   <div class="kv"><span>${t("iPay")}</span><b>${payRange(a)} ${esc(unit)}</b></div>
+   ${stud?kv("iDur",STUD_DUR[a.dur]?L(STUD_DUR[a.dur]):"")+kv("iHrs",a.hrs):kv("iEType",ETYPES[a.type]?L(ETYPES[a.type]):"")}
+   ${kv("iShift",list(a.shifts,SHIFTS))}${kv(stud?"iOpenS":"iOpenZ",+a.open||1)}${a.urgent?kv("iStart",t("iStartNow")):""}
+   ${kv("iBen",list(a.bens,BENEFITS))}${kv("iPosted",dt(a.posted))}${applied?kv("iApplied",ago(applied)):""}
+   ${a.desc&&L(a.desc)?`<p><b>${t("iDesc")}:</b> ${esc(L(a.desc))}</p>`:""}</details>`};
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
