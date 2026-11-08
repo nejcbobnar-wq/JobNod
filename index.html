@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="103";
+const APP_VER="104";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6483,6 +6483,17 @@ addEventListener("click",e=>{if(!(e.target.closest&&e.target.closest("#apYes")))
 .dealcard>.adinfo>summary{font-size:13.5px;font-weight:700;color:var(--muted);padding:0;cursor:pointer}.dealcard>.adinfo[open]>summary{margin-bottom:6px}`;document.head.appendChild(css)}
 {const _dc=drawChat;drawChat=function(id,...r){const x=_dc(id,...r);try{const sh=$("sheet"),card=sh.querySelector(".dealcard.ivtop")||sh.querySelector(".dealcard"),ai=sh.querySelector(":scope>.adinfo");
   if(card&&ai)card.appendChild(ai)}catch(_){}return x}}
+
+/* ================= SETTINGS: SWITCH OFF DEMO CANDIDATES AND OFFERS (only real testers apply / send offers) ================= */
+Object.assign(LANGS.sl,{ndTitle:"🧪 Demo kandidati in ponudbe",ndLead:"Izklopi, ko testiraš s pravimi uporabniki.",ndOn:"Prikaži demo kandidate in ponudbe"});
+Object.assign(LANGS.en,{ndTitle:"🧪 Demo candidates and offers",ndLead:"Switch off while testing with real users.",ndOn:"Show demo candidates and offers"});
+const ndOff=()=>st.noDemo===true;
+{const _ca=coApplicants;coApplicants=function(a,...r){const list=_ca(a,...r);return ndOff()?list.filter(x=>x.live):list}}
+{const _q=quotesFor;quotesFor=function(j,...r){const list=_q(j,...r);if(!ndOff())return list;return list.filter(q=>{const p=person(q.pro);return p&&p.live})}}
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const sc=$("setCard"),inn=sc&&(sc.querySelector(".setin")||sc);if(inn&&!$("ndCard")){
+  inn.insertAdjacentHTML("beforeend",`<div class="pcard" id="ndCard"><h3 style="margin:0 0 4px">${t("ndTitle")}</h3><p class="hint" style="margin:0 0 6px">${t("ndLead")}</p>
+   <label class="tog"><span><b>${t("ndOn")}</b></span><input type="checkbox" role="switch" id="ndSw"${ndOff()?"":" checked"}><i aria-hidden="true"></i></label></div>`);
+  $("ndSw").onchange=e=>{st.noDemo=!e.target.checked;save();try{renderCoAds()}catch(_){}try{renderPosts()}catch(_){}try{renderMine()}catch(_){}}}}catch(_){}return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
