@@ -1,5 +1,5 @@
 /* JobNod service worker: keeps the app working offline after the first visit */
-const CACHE = "jobnod-v123";
+const CACHE = "jobnod-v124";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
@@ -20,7 +20,9 @@ self.addEventListener("fetch", e => {
 function jnPush(d) {
   return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(cs => {
     cs.forEach(c => c.postMessage({ type: "jn-push", d }));
-    if (cs.some(c => c.visibilityState === "visible" && c.focused)) return;
+    // iPhone/iPad/Mac Safari cancel push for apps that receive an alert without showing it, so there it is always shown
+    const apple = /iPhone|iPad|iPod|Macintosh/.test(self.navigator.userAgent);
+    if (!apple && cs.some(c => c.visibilityState === "visible" && c.focused)) return;
     return self.registration.showNotification(d.title || "JobNod", { body: d.body || "", icon: "./icon-192.png", tag: d.tag || "jn", renotify: true, data: { url: d.url || "./" } });
   });
 }
