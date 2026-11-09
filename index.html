@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="117";
+const APP_VER="118";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6795,34 +6795,101 @@ async function jaSignIn(){if(st.auth&&st.auth.rt){await jaRefresh();if(st.auth)r
   if(!r.ok){const tx=(await r.text()).toLowerCase();return tx.includes("anonymous")||tx.includes("disabled")?"off":"err"}
   return jaSet(await r.json())?"ok":"err"}
 const jaIsIn=()=>!JN_CLOSED||!!(st.auth&&st.member);
+Object.assign(LANGS.sl,{jlSign:"Prijavi se",jlGet:"Prenesi aplikacijo",jlPill:"Zaprt test",jlH:"Delo na dlani.",jlSub:"Mojster za popravilo, nova služba ali študentsko delo – JobNod te poveže z ljudmi in podjetji v tvoji bližini. Povleci v desno in dogovorjeno.",
+  jlHow:"Kako deluje",jlS1:"Objavi",jlS1d:"Slikaj, kaj je treba narediti, ali objavi oglas za delo.",jlS2:"Povleci",jlS2d:"Mojstri in kandidati povlečejo v desno, če jih delo zanima.",jlS3:"Dogovori se",jlS3d:"Pogovor, termin in CV – vse v aplikaciji.",
+  jlFree:"Brezplačno v testni fazi",jlModalT:"Vstop v JobNod",jlInstT:"Namesti JobNod",jlInstOk:"Razumem",
+  jlIos:"Na iPhonu: odpri jobnodapp.com v <b>Safariju</b> → tapni <b>Deli</b> (kvadrat s puščico) → <b>Dodaj na začetni zaslon</b>.",
+  jlAnd:"Na Androidu: odpri jobnodapp.com v <b>Chromu</b> → meni <b>⋮</b> zgoraj desno → <b>Namesti aplikacijo</b>.",
+  jlPc:"Na računalniku: v Chromu ali Edgu klikni ikono za namestitev v naslovni vrstici. Najbolje pa deluje na telefonu.",jlInstalled:"Aplikacija je nameščena. Odpri jo z ikono JobNod na začetnem zaslonu.",jlRights:"Vse pravice pridržane."});
+Object.assign(LANGS.en,{jlSign:"Sign in",jlGet:"Get the app",jlPill:"Closed test",jlH:"Work at your fingertips.",jlSub:"A pro for a repair, a new job or student work – JobNod connects you with people and companies nearby. Swipe right and it's agreed.",
+  jlHow:"How it works",jlS1:"Post",jlS1d:"Snap what needs doing, or post a job ad.",jlS2:"Swipe",jlS2d:"Pros and candidates swipe right if the job suits them.",jlS3:"Agree",jlS3d:"Chat, appointment and CV – all in the app.",
+  jlFree:"Free during the test",jlModalT:"Enter JobNod",jlInstT:"Install JobNod",jlInstOk:"Got it",
+  jlIos:"On iPhone: open jobnodapp.com in <b>Safari</b> → tap <b>Share</b> (square with arrow) → <b>Add to Home Screen</b>.",
+  jlAnd:"On Android: open jobnodapp.com in <b>Chrome</b> → menu <b>⋮</b> top right → <b>Install app</b>.",
+  jlPc:"On a computer: in Chrome or Edge click the install icon in the address bar. It works best on a phone, though.",jlInstalled:"The app is installed. Open it with the JobNod icon on your home screen.",jlRights:"All rights reserved."});
+let jaBIP=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();jaBIP=e;document.documentElement.classList.add("jacaninst")});
+addEventListener("appinstalled",()=>{jaBIP=null;try{toast(t("jlInstalled"))}catch(_){}});
+const jaStandalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(_){return false}};
+const jaIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 {const css=document.createElement("style");css.textContent=`
-#jaGate{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow:auto;display:flex;justify-content:center;padding:max(28px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 28px max(18px,env(safe-area-inset-left))}
-#jaGate .jin{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;margin:auto 0}
-#jaGate .jlogo{width:84px;height:84px;margin:0 auto}#jaGate .jlogo svg{width:100%;height:100%}
-#jaGate h1{margin:0;font-size:26px;line-height:1.15;color:var(--ink);text-wrap:balance}#jaGate p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
-#jaGate .jcard{background:var(--surface);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;text-align:left;box-shadow:0 8px 24px -14px rgba(40,20,60,.35)}
-#jaGate label.jf{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--muted)}
-#jaGate input[type=text],#jaGate input[type=email]{font-size:18px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);letter-spacing:.04em}
-#jaGate label.jagree{flex-direction:row!important;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.4;font-weight:500}#jaGate .jagree input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--accent)}
-#jaGate .jagree a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
-#jaGate .jerr{color:var(--bad,#E11D48);font-size:14px;font-weight:600;min-height:0}#jaGate .jerr:empty{display:none}
-#jaGate .jok{color:var(--good,#16A34A);font-size:14px;font-weight:600}#jaGate .jok:empty{display:none}
-#jaGate .jwait{display:flex;gap:8px}#jaGate .jwait input{flex:1;min-width:0;font-size:16px;letter-spacing:0}#jaGate .jwait button{margin:0;white-space:nowrap}
-#jaGate .jlang{display:flex;justify-content:center;gap:6px}#jaGate .jlang button{margin:0;padding:6px 12px;font-size:13px}
-#jaDel .danger,#jaDel .ghost{margin:0}html.jain #setCard .danger-zone{display:none}#jaDel .two{display:flex;gap:8px}#jaDel .two button{flex:1}`;document.head.appendChild(css)}
-function jaGate(){if(jaIsIn()){const g=$("jaGate");if(g)g.remove();return}
-  let g=$("jaGate");if(!g){g=document.createElement("div");g.id="jaGate";g.setAttribute("role","dialog");g.setAttribute("aria-modal","true");document.body.appendChild(g)}
-  const logo=document.querySelector(".logo")?document.querySelector(".logo").outerHTML:"";
-  const ag=t("jaAgree",{t:`<a data-lg="terms">${t("jaTerms")}</a>`,p:`<a data-lg="privacy">${t("jaPriv")}</a>`});
-  g.innerHTML=`<div class="jin"><div class="jlang">${["sl","en"].map(k=>`<button type="button" class="${lang===k?"primary":"ghost"} sm" data-jl="${k}">${k==="sl"?"Slovenščina":"English"}</button>`).join("")}</div>
-   <div class="jlogo">${logo}</div><h1>${t("jaTitle")}</h1><p>${t("jaLead")}</p>
-   <form class="jcard" id="jaF" novalidate><label class="jf">${t("jaCode")}<input type="text" id="jaCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="${esc(t("jaCodePh"))}"></label>
+#jaGate{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow-y:auto;overflow-x:hidden;color:var(--ink);-webkit-overflow-scrolling:touch}
+#jaGate .jw{max-width:1080px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+#jaGate .jtop{width:100%;position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding-top:env(safe-area-inset-top)}
+#jaGate .jtop .jw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:12px}
+#jaGate .jbrand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.02em;color:var(--ink)}#jaGate .jbrand svg{width:36px;height:36px;border-radius:10px}
+#jaGate .jbrand b{background:linear-gradient(90deg,#FF9E3D,#EC3B5F);-webkit-background-clip:text;background-clip:text;color:transparent}
+#jaGate .jtopr{display:flex;align-items:center;gap:8px}#jaGate .jlg{margin:0;padding:7px 10px;font-size:13px;min-height:0;border-radius:999px}
+#jaGate .jsign{margin:0;padding:10px 18px;font-size:15px;min-height:0;border-radius:999px}
+#jaGate .jhero{display:grid;gap:28px;align-items:center;padding-block:22px 34px}
+@media(min-width:860px){#jaGate .jhero{grid-template-columns:1.1fr .9fr;padding-block:56px 64px}}
+#jaGate .jpill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:color-mix(in srgb,#FF5E3A 12%,var(--surface));color:#E0482C;font-weight:800;font-size:13px;letter-spacing:.02em}
+#jaGate h1{margin:14px 0 12px;font-size:clamp(38px,9vw,64px);line-height:1;letter-spacing:-.035em;text-wrap:balance}
+#jaGate h1 em{font-style:normal;background:linear-gradient(90deg,#FF9E3D,#FF5E3A 55%,#EC3B5F);-webkit-background-clip:text;background-clip:text;color:transparent}
+#jaGate .jsub{margin:0;color:var(--muted);font-size:17px;line-height:1.5;max-width:34em}
+#jaGate .jcta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}#jaGate .jcta button{margin:0;padding:15px 22px;font-size:17px;border-radius:16px}
+#jaGate .jfree{margin-top:12px;font-size:13.5px;color:var(--muted);font-weight:600}
+#jaGate .jphone{justify-self:center;width:min(300px,82vw);aspect-ratio:9/18.5;border-radius:42px;padding:12px;background:linear-gradient(160deg,#FF9E3D,#FF5E3A 55%,#EC3B5F);box-shadow:0 30px 60px -28px rgba(236,59,95,.55);position:relative}
+#jaGate .jscreen{height:100%;border-radius:32px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;padding:16px 12px 12px;gap:10px}
+#jaGate .jseg{display:flex;gap:4px;background:var(--soft);border-radius:12px;padding:3px;font-size:10px;font-weight:700;color:var(--muted)}#jaGate .jseg span{flex:1;text-align:center;padding:6px 2px;border-radius:9px}#jaGate .jseg span.on{background:var(--ink);color:var(--bg)}
+#jaGate .jcard{flex:1;border-radius:22px;background:#3B7CC4;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;gap:6px;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)}
+#jaGate .jcard .jt{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 9px;border-radius:999px}
+#jaGate .jcard .jn{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;background:#EC3B5F;padding:4px 9px;border-radius:999px}
+#jaGate .jcard .jic{position:absolute;top:28%;left:50%;transform:translateX(-50%);width:54px;height:70px}
+#jaGate .jcard b.jp{align-self:flex-start;background:#fff;color:#121726;border-radius:10px;padding:5px 9px;font-size:16px}#jaGate .jcard strong{font-size:18px;line-height:1.1}#jaGate .jcard small{opacity:.8;font-size:10.5px}
+#jaGate .jbtns{display:flex;justify-content:center;gap:14px}#jaGate .jbtns i{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:20px;font-weight:900;background:var(--surface);box-shadow:0 6px 16px -8px rgba(0,0,0,.35)}
+#jaGate .jbtns i.y{background:linear-gradient(135deg,#FF9E3D,#EC3B5F);color:#fff}#jaGate .jbtns i.n{color:#EC3B5F}
+
+#jaGate .jstack{flex:1;position:relative}#jaGate .jstack .jcard{position:absolute;inset:0}
+#jaGate .jcard{transform:rotate(-2deg);transition:none}#jaGate .jcard.jback{transform:scale(.93) translateY(10px);filter:brightness(.9);box-shadow:none}
+#jaGate .jcard.jfly{transition:transform .6s cubic-bezier(.5,0,.75,.4),opacity .6s;transform:translateX(150%) rotate(24deg);opacity:.5}
+#jaGate .jcard .jstamp{position:absolute;top:42px;left:14px;transform:rotate(-14deg) scale(1.6);opacity:0;background:#16B07A;border:3px solid #fff;color:#fff;font-weight:900;font-size:15px;letter-spacing:.06em;padding:4px 10px;border-radius:10px;transition:opacity .25s,transform .25s;box-shadow:none;right:auto}
+#jaGate .jcard.jston .jstamp{opacity:1;transform:rotate(-14deg) scale(1)}
+#jaGate .jbtns i{transition:transform .2s}#jaGate .jbtns i.jpress{animation:jaPress .45s ease}@keyframes jaPress{40%{transform:scale(1.22)}100%{transform:scale(1)}}
+
+#jaGate .jchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}#jaGate .jchips span{display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 7px;border-radius:999px;background:var(--surface);font-weight:700;font-size:14px;box-shadow:0 6px 16px -12px rgba(40,20,60,.4)}
+#jaGate .jchips i{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#FF9E3D,#EC3B5F)}#jaGate .jchips i svg{width:15px;height:15px}
+#jaGate section.jsec{padding-block:26px}#jaGate h2{margin:0 0 14px;font-size:24px;letter-spacing:-.02em}
+#jaGate .jmodes{display:grid;gap:12px}@media(min-width:760px){#jaGate .jmodes{grid-template-columns:repeat(3,1fr)}}
+#jaGate .jmode{background:var(--surface);border-radius:22px;padding:18px;display:flex;gap:14px;align-items:flex-start;box-shadow:0 8px 24px -16px rgba(40,20,60,.35)}
+#jaGate .jmode .ci{flex:none;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#FF9E3D,#EC3B5F)}#jaGate .jmode .ci svg{width:24px;height:24px}
+#jaGate .jmode h3{margin:0 0 4px;font-size:18px}#jaGate .jmode p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.45}
+#jaGate .jsteps{display:grid;gap:12px;counter-reset:s}@media(min-width:760px){#jaGate .jsteps{grid-template-columns:repeat(3,1fr)}}
+#jaGate .jstep{display:flex;gap:12px;align-items:flex-start}#jaGate .jstep::before{counter-increment:s;content:counter(s);flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#fff;background:linear-gradient(135deg,#FF9E3D,#EC3B5F)}
+#jaGate .jstep b{display:block;font-size:16.5px;margin-bottom:2px}#jaGate .jstep span{color:var(--muted);font-size:14.5px;line-height:1.45}
+#jaGate .jband{margin-block:18px 8px;border-radius:26px;padding:24px 20px;background:linear-gradient(135deg,#FF9E3D,#FF5E3A 55%,#EC3B5F);color:#fff;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+#jaGate .jband h2{margin:0;color:#fff}#jaGate .jband button{margin:0;background:#fff;color:#E0482C;border:0;padding:14px 20px;border-radius:14px;font-weight:800;font-size:16px}
+#jaGate .jfoot{padding-block:20px calc(28px + env(safe-area-inset-bottom));color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;text-align:center}
+#jaGate .jfoot a{color:var(--muted);text-decoration:underline;cursor:pointer}
+html.jastand #jaGate .jget{display:none!important}
+#jaModal{position:fixed;inset:0;z-index:10001;display:grid;place-items:center;padding:18px;background:rgba(18,12,28,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#jaModal .jm{width:100%;max-width:420px;max-height:calc(100dvh - 36px);overflow:auto;background:var(--bg);border-radius:26px;padding:20px 18px 18px;display:flex;flex-direction:column;gap:12px;position:relative;box-shadow:0 30px 70px -20px rgba(0,0,0,.5)}
+#jaModal h2{margin:0 36px 0 0;font-size:22px}#jaModal .jx{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--soft);color:var(--ink);font-size:20px;margin:0;padding:0;min-height:0}
+#jaModal p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}#jaModal p b{color:var(--ink)}
+#jaModal .jcard2{background:var(--surface);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+#jaModal label.jf{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--muted)}
+#jaModal input[type=text],#jaModal input[type=email]{font-size:18px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+#jaModal label.jagree{flex-direction:row!important;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.4;font-weight:500}#jaModal .jagree input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#FF5E3A}
+#jaModal .jagree a{color:#E0482C;font-weight:700;cursor:pointer;text-decoration:underline}
+#jaModal .jerr{color:var(--bad,#E11D48);font-size:14px;font-weight:600}#jaModal .jerr:empty,#jaModal .jok:empty{display:none}#jaModal .jok{color:var(--good,#16A34A);font-size:14px;font-weight:600}
+#jaModal .jwait{display:flex;gap:8px}#jaModal .jwait input{flex:1;min-width:0;font-size:16px}#jaModal .jwait button,#jaModal button.primary{margin:0}
+#jaModal .jinst{display:flex;flex-direction:column;gap:10px}#jaModal .jinst p{color:var(--ink)}`;document.head.appendChild(css)}
+if(jaStandalone())document.documentElement.classList.add("jastand");
+function jaClose(){const m=$("jaModal");if(m)m.remove()}
+function jaModal(html){jaClose();const m=document.createElement("div");m.id="jaModal";m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");m.innerHTML=`<div class="jm"><button class="jx" type="button" aria-label="${t("close")}">×</button>${html}</div>`;
+  document.body.appendChild(m);m.onclick=e=>{if(e.target===m)jaClose()};m.querySelector(".jx").onclick=jaClose;return m}
+function jaInstall(){if(jaStandalone()){toast(t("jlInstalled"));return}
+  if(jaBIP){const p=jaBIP;jaBIP=null;p.prompt();p.userChoice&&p.userChoice.finally(()=>document.documentElement.classList.remove("jacaninst"));return}
+  const ios=jaIOS(),and=/android/i.test(navigator.userAgent);
+  const m=jaModal(`<h2>${t("jlInstT")}</h2><div class="jinst">${ios?`<p>${t("jlIos")}</p>`:and?`<p>${t("jlAnd")}</p>`:`<p>${t("jlAnd")}</p><p>${t("jlIos")}</p><p>${t("jlPc")}</p>`}</div><button class="primary" type="button" id="jaIOk">${t("jlInstOk")}</button>`);
+  m.querySelector("#jaIOk").onclick=jaClose}
+function jaLogin(){const ag=t("jaAgree",{t:`<a data-lg="terms">${t("jaTerms")}</a>`,p:`<a data-lg="privacy">${t("jaPriv")}</a>`});
+  const m=jaModal(`<h2>${t("jlModalT")}</h2><p>${t("jaLead")}</p>
+   <form class="jcard2" id="jaF" novalidate><label class="jf">${t("jaCode")}<input type="text" id="jaCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="${esc(t("jaCodePh"))}"></label>
     <label class="jagree"><input type="checkbox" id="jaOk"><span>${ag}</span></label><div class="jerr" id="jaErr" role="alert"></div>
     <button class="primary" type="submit" id="jaGo">${t("jaGo")}</button></form>
-   <div class="jcard"><p style="text-align:left">${t("jaWait")}</p><form class="jwait" id="jaWF" novalidate><input type="email" id="jaMail" autocomplete="email" placeholder="${esc(t("jaWaitPh"))}"><button class="ghost" type="submit">${t("jaWaitBtn")}</button></form>
-    <div class="jok" id="jaWOk"></div><div class="jerr" id="jaWErr"></div></div></div>`;
-  g.querySelectorAll("[data-jl]").forEach(b=>b.onclick=()=>{try{setLang(b.dataset.jl)}catch(_){}jaGate()});
-  g.querySelectorAll("[data-lg]").forEach(a=>a.onclick=e=>{e.preventDefault();openLegal(a.dataset.lg)});
+   <div class="jcard2"><p>${t("jaWait")}</p><form class="jwait" id="jaWF" novalidate><input type="email" id="jaMail" autocomplete="email" placeholder="${esc(t("jaWaitPh"))}"><button class="ghost" type="submit">${t("jaWaitBtn")}</button></form>
+    <div class="jok" id="jaWOk"></div><div class="jerr" id="jaWErr"></div></div>`);
+  m.querySelectorAll("[data-lg]").forEach(a=>a.onclick=e=>{e.preventDefault();openLegal(a.dataset.lg)});
   $("jaF").onsubmit=async e=>{e.preventDefault();const code=$("jaCode").value.trim(),err=$("jaErr"),btn=$("jaGo");err.textContent="";
     if(!code){err.textContent=t("jaNeedCode");$("jaCode").focus();return}if(!$("jaOk").checked){err.textContent=t("jaNeedAgree");return}
     btn.disabled=true;btn.textContent=t("jaBusy");
@@ -6833,12 +6900,51 @@ function jaGate(){if(jaIsIn()){const g=$("jaGate");if(g)g.remove();return}
         st.jaHello=res;save();setTimeout(()=>location.reload(),80)}
       else err.textContent=t("jaBad")}
     catch(x){err.textContent=t("jaNet")}finally{btn.disabled=false;btn.textContent=t("jaGo")}};
-  $("jaWF").onsubmit=async e=>{e.preventDefault();const m=$("jaMail").value.trim();$("jaWErr").textContent="";$("jaWOk").textContent="";
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$("jaWErr").textContent=t("jaWaitBad");return}
-    try{await fetch(`${SB_URL}/rest/v1/jn_waitlist`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:m.slice(0,200)})}).then(r=>{if(!r.ok)throw 0});$("jaWOk").textContent=t("jaWaitOk");$("jaMail").value=""}
-    catch(_){$("jaWErr").textContent=t("jaNet")}}}
+  $("jaWF").onsubmit=async e=>{e.preventDefault();const mm=$("jaMail").value.trim();$("jaWErr").textContent="";$("jaWOk").textContent="";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mm)){$("jaWErr").textContent=t("jaWaitBad");return}
+    try{await fetch(`${SB_URL}/rest/v1/jn_waitlist`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:mm.slice(0,200)})}).then(r=>{if(!r.ok)throw 0});$("jaWOk").textContent=t("jaWaitOk");$("jaMail").value=""}
+    catch(_){$("jaWErr").textContent=t("jaNet")}};
+  setTimeout(()=>{const c=$("jaCode");if(c)c.focus()},60)}
+const JA_CARDS=[
+ {bg:"linear-gradient(180deg,#5AA8E6 0%,#3B7CC4 45%,#121726 100%)",tag:["Vodovodar","Plumber"],hot:["Nujno","Urgent"],ic:'<svg class="jic" viewBox="0 0 54 70"><rect x="10" y="2" width="34" height="12" rx="4" fill="#DDEBFA"/><path d="M6 20h42c0 14-8 22-21 22S6 34 6 20z" fill="#fff"/><path d="M16 42h22l-3 24H19z" fill="#fff"/></svg>',
+  p:"40–80 €",ti:["Popravilo WC školjke","Toilet repair"],sm:["Kranj · < 1 km · Čim prej","Kranj · < 1 km · ASAP"],st:["PREVZAMEM","TAKE IT"]},
+ {bg:"linear-gradient(180deg,#FFB36B 0%,#E0592A 45%,#1C1210 100%)",tag:["Gostinstvo","Hospitality"],hot:["Takoj","Now"],ic:'<svg class="jic" viewBox="0 0 54 70"><circle cx="27" cy="34" r="20" fill="#fff"/><circle cx="27" cy="34" r="12" fill="#FFE2CC"/><path d="M3 14v16M7 14v16M3 30h4v34M51 14c-6 4-6 14 0 18v32" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+  p:"1.600 € bruto",ti:["Natakar / natakarica","Waiter / waitress"],sm:["Bled · 25 km · Polni delovni čas","Bled · 25 km · Full time"],st:["PRIJAVIM SE","APPLY"]},
+ {bg:"linear-gradient(180deg,#B9A7E8 0%,#6C5BB8 45%,#15122A 100%)",tag:["Dogodki","Events"],hot:["Vikend","Weekend"],ic:'<svg class="jic" viewBox="0 0 54 70"><path d="M27 6 50 58H4z" fill="#fff"/><path d="M27 6v52" stroke="#E4DCFA" stroke-width="3"/><path d="M27 6 34 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M20 58l7-16 7 16z" fill="#E4DCFA"/></svg>',
+  p:"8,50 €/h",ti:["Pomoč na festivalu","Festival helper"],sm:["Ljubljana · Študentska napotnica","Ljubljana · Student referral"],st:["PRIJAVIM SE","APPLY"]}];
+JA.rot=0;
+function jaFill(el,i,front){const d=JA_CARDS[i],L2=x=>x[lang==="sl"?0:1];el.style.background=d.bg;
+  el.innerHTML=`<span class="jt">${L2(d.tag)}</span><span class="jn">${L2(d.hot)}</span>${d.ic}<b class="jp">${d.p}</b><strong>${L2(d.ti)}</strong><small>${esc(L2(d.sm))}</small>${front?`<span class="jstamp">${L2(d.st)}</span>`:""}`}
+function jaRot(i){const f=$("jaCard"),bk=$("jaCard2");if(!f)return;JA.rot=i;f.className="jcard";jaFill(f,i,true);if(bk)jaFill(bk,(i+1)%3,false);
+  document.querySelectorAll("#jaGate .jseg span").forEach((x,k)=>x.classList.toggle("on",k===i))}
+function jaCycle(){const f=$("jaCard");if(!f)return false;const y=$("jaYes");
+  setTimeout(()=>{if(f.isConnected)f.classList.add("jston")},900);
+  setTimeout(()=>{if(!f.isConnected)return;if(y){y.classList.remove("jpress");void y.offsetWidth;y.classList.add("jpress")}f.classList.add("jfly")},1500);
+  setTimeout(()=>{if(f.isConnected)jaRot((JA.rot+1)%3)},2150);return true}
+function jaGate(){if(jaIsIn()){const g=$("jaGate");if(g)g.remove();jaClose();return}
+  let g=$("jaGate");if(!g){g=document.createElement("div");g.id="jaGate";document.body.appendChild(g)}
+  const logo=document.querySelector(".logo")?document.querySelector(".logo").outerHTML:"";
+  const ic=k=>{const el=document.querySelector(`#onb [data-pick="${k}"] .ci`);return el?el.innerHTML:""};
+  const modes=[["mojster","modePro","onbPro"],["zap","modeZap","onbZap"],["stud","modeStud","onbStud"]];
+  g.innerHTML=`<div class="jtop"><div class="jw"><div class="jbrand">${logo}<span>Job<b>Nod</b></span></div>
+    <div class="jtopr"><button type="button" class="ghost jlg" id="jaLg">${lang==="sl"?"EN":"SL"}</button><button type="button" class="primary jsign" id="jaSign">${t("jlSign")}</button></div></div></div>
+   <main class="jw"><section class="jhero"><div><span class="jpill">🧪 ${t("jlPill")}</span><h1>${t("jlH").replace(/(dlani|fingertips)/,"<em>$1</em>")}</h1><div class="jchips">${modes.map(([k,a])=>`<span><i>${ic(k)}</i>${t(a)}</span>`).join("")}</div><p class="jsub">${t("jlSub")}</p>
+     <div class="jcta"><button type="button" class="primary jget" id="jaGet">⬇ ${t("jlGet")}</button><button type="button" class="ghost" id="jaSign2">${t("jlSign")}</button></div><p class="jfree">${t("jlFree")}</p></div>
+    <div class="jphone" aria-hidden="true"><div class="jscreen"><div class="jseg"><span class="on">${t("modePro")}</span><span>${t("modeZap")}</span><span>${t("modeStud").split(" ")[0]}</span></div>
+     <div class="jstack"><div class="jcard jback" id="jaCard2"></div><div class="jcard" id="jaCard"></div></div>
+     <div class="jbtns"><i class="n">✕</i><i class="y" id="jaYes">✓</i></div></div></div></div></section>
+   <section class="jsec"><div class="jmodes">${modes.map(([k,a,b])=>`<div class="jmode"><span class="ci">${ic(k)}</span><div><h3>${t(a)}</h3><p>${t(b)}</p></div></div>`).join("")}</div></section>
+   <section class="jsec"><h2>${t("jlHow")}</h2><div class="jsteps"><div class="jstep"><div><b>${t("jlS1")}</b><span>${t("jlS1d")}</span></div></div><div class="jstep"><div><b>${t("jlS2")}</b><span>${t("jlS2d")}</span></div></div><div class="jstep"><div><b>${t("jlS3")}</b><span>${t("jlS3d")}</span></div></div></div></section>
+   <div class="jband jget"><h2>${t("jlGet")}</h2><button type="button" id="jaGet2">⬇ ${t("jlGet")}</button></div></main>
+   <div class="jfoot jw"><a data-lg="terms">${t("lgTerms")}</a><a data-lg="privacy">${t("lgPrivacy")}</a><span>${JN_CONTACT||""}</span><span>© 2026 JobNod · ${t("jlRights")}</span></div>`;
+  jaRot(0);clearInterval(window.jaRotT);if(!matchMedia("(prefers-reduced-motion: reduce)").matches){window.jaRotT=setInterval(()=>{if(!jaCycle())clearInterval(window.jaRotT)},3300)}else{window.jaRotT=setInterval(()=>{if(!$("jaCard"))clearInterval(window.jaRotT);else jaRot((JA.rot+1)%3)},3300)}
+  $("jaLg").onclick=()=>{try{setLang(lang==="sl"?"en":"sl")}catch(_){}jaGate()};
+  ["jaSign","jaSign2"].forEach(id=>$(id).onclick=jaLogin);["jaGet","jaGet2"].forEach(id=>$(id).onclick=jaInstall);
+  g.querySelectorAll(".jfoot [data-lg]").forEach(a=>a.onclick=()=>openLegal(a.dataset.lg))}
+
+{const css=document.createElement("style");css.textContent=`#jaDel .danger,#jaDel .ghost{margin:0}html.jain #setCard .danger-zone{display:none}#jaDel .two{display:flex;gap:8px}#jaDel .two button{flex:1}`;document.head.appendChild(css)}
 /* legal sheets must open above the gate */
-{const css=document.createElement("style");css.textContent=`body:has(#jaGate) #sheetWrap:not([hidden]){z-index:10000}`;document.head.appendChild(css)}
+{const css=document.createElement("style");css.textContent=`body:has(#jaGate) #sheetWrap:not([hidden]){z-index:10002}`;document.head.appendChild(css)}
 if(JN_CLOSED){jaGate();if(st.auth)jaRefresh();if(st.auth&&st.member)document.documentElement.classList.add("jain")}
 if(st.jaHello){const h=st.jaHello;st.jaHello=null;save();setTimeout(()=>toast(t(h==="admin"?"jaAdmin":"jaWelcome")),600)}
 /* settings: report a problem + delete my account (in the database) */
@@ -6878,6 +6984,7 @@ Object.assign(LANGS.en,{lgPrivacy:"Privacy notice",lgTerms:"Terms of use",lgDraf
   lgT5:"During the test JobNod doesn't process payments. Clients and pros agree on payment directly."});
 LEGAL.privacy[1]=["lgQ1","lgQ2","lgQ3","lgQ4","lgQ5","lgQ6","lgQ7"];
 LEGAL.terms[1]=["lgT1","lgT2","lgT3","lgT4","lgT5","lgT6","lgT7"];}
+try{if(JN_CLOSED&&!jaIsIn())jaGate()}catch(_){}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
