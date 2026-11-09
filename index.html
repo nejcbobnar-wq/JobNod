@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="111";
+const APP_VER="112";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -4861,7 +4861,7 @@ renderPeople=function(){const el=$("people");if(!el)return;const V=$("v-people")
     <select id="plSort"><option value="pro">${t("plSortPro")}</option><option value="rate">${t("plSortRate")}</option><option value="near">${t("plSortNear")}</option><option value="cheap">${t("plSortCheap")}</option></select></div><p class="plcount" id="plN"></p></div>`);
   const q=$("plQ"),c=$("plCat"),s=$("plSort");q.value=PL.q;c.value=PL.cat;s.value=PL.sort;
   q.oninput=()=>{PL.q=q.value;draw()};c.onchange=()=>{PL.cat=c.value;draw()};s.onchange=()=>{PL.sort=s.value;draw()};
-  function draw(){const nq=pkNorm(PL.q.trim());let list=PEOPLE.filter(p=>p.role==="mojster"&&p.id!=="me"&&(!p.live||p.livePro)&&!isBlocked(p.id)).map(p=>({p,rt:rating(p.id),d:distP(p),pro:proBadgeKeys(p.id).includes("pro")}));
+  function draw(){const nq=pkNorm(PL.q.trim());let list=PEOPLE.filter(p=>p.role==="mojster"&&p.id!=="me"&&(st.pilot===false?(!p.live||p.livePro):p.livePro)&&!isBlocked(p.id)).map(p=>({p,rt:rating(p.id),d:distP(p),pro:proBadgeKeys(p.id).includes("pro")}));
     if(PL.cat)list=list.filter(x=>x.p.cats.includes(PL.cat));
     if(nq)list=list.filter(x=>pkNorm([x.p.name,x.p.loc,...x.p.cats.map(catName),...(x.p.skills||[]).map(k=>SKILLS[k]?L(SKILLS[k]):"")].join(" ")).includes(nq));
     const byR=(a,b)=>b.rt.avg-a.rt.avg||b.rt.n-a.rt.n,byD=(a,b)=>(a.d??999)-(b.d??999),byC=(a,b)=>(a.p.rate||99)-(b.p.rate||99);
@@ -4987,7 +4987,7 @@ Object.assign(LANGS.en,{ccStudP:"1 student per month free, each further student 
 const ssMonth=ts=>{const d=new Date(ts);return d.getFullYear()*12+d.getMonth()};
 const ssUsed=()=>{const m=ssMonth(Date.now());return (st.myAds||[]).filter(a=>a.kind==="stud"&&ssMonth(a.ts||0)===m).reduce((s,a)=>s+(+a.open||1),0)};
 const ssFreeLeft=()=>Math.max(0,1-ssUsed());
-const ssPriceTxt=n=>{n=Math.max(1,+n||1);if(st.coPro)return t("ssPro");const fr=ssFreeLeft(),pay=Math.max(0,n-fr);
+const ssPriceTxt=n=>{n=Math.max(1,+n||1);if(st.coPro||st.pilot!==false)return t("ssPro");const fr=ssFreeLeft(),pay=Math.max(0,n-fr);
   if(!pay)return t("ssFree");return t("ssPrice",{f:fr?t("ssFreePart"):"",n:pay,x:money(pay*5)})+" · "+t("ssDemo")};
 const ssInv=a=>Object.values(a.apSt||{}).filter(s=>s==="inv").length;
 {const _rc=renderCoAds;renderCoAds=function(...r){const x=_rc(...r);const f=coForm;
@@ -4998,7 +4998,7 @@ const ssInv=a=>Object.values(a.apSt||{}).filter(s=>s==="inv").length;
   return x}}
 /* invite limited to the places paid for */
 let SS_LAST="";addEventListener("pointerdown",e=>{const b=e.target.closest&&e.target.closest("[data-cainv]");SS_LAST=b?b.dataset.cainv:""},true);
-const ssFull=a=>a&&a.kind==="stud"&&!st.coPro&&ssInv(a)>=(+a.open||1);
+const ssFull=a=>a&&a.kind==="stud"&&!st.coPro&&st.pilot===false&&ssInv(a)>=(+a.open||1);
 function ssAsk(a,go){const n=+a.open||1,k=ssInv(a);sheetOpts={ssfull:1};$("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button><h2 class="section-title" style="margin-top:4px">${t("ssFullT")}</h2>
    <p>${t("ssFull",{n,k,w:pl(n,LANGS.sl.ssW,LANGS.en.ssW)})}</p><p class="hint">${t("ssDemo")}</p><button class="primary" id="ssAddB" style="width:100%">${t("ssAdd")}</button>`;
   $("cls").onclick=closeSheet;$("ssAddB").onclick=()=>{a.open=n+1;save();try{syncMyAds()}catch(_){}closeSheet();toast(t("ssAdded",{n:a.open}));setTimeout(go,250)};openSheet(t("ssFullT"))}
@@ -6570,6 +6570,93 @@ qfOpen=function(url0,co0){const url=url0||qfUrl(),co=co0!==undefined?co0:((myCo(
   $("qfCopy").onclick=async()=>{try{await navigator.clipboard.writeText(url);toast(t("qfCopied"))}catch(_){const r=document.createRange();r.selectNodeContents($("qfLink"));const s=getSelection();s.removeAllRanges();s.addRange(r)}};
   $("qfPng").onclick=()=>{const cv=document.createElement("canvas");cv.width=cv.height=1200;qfDraw(cv.getContext("2d"),url,0,0,1200);qfSave(cv,"JobNod-QR-"+(qfSlug(co)||"podjetje")+".png")};
   openSheet(t("qfTitle"))};
+
+/* ================= TIDY PROFILE: compact head, roles as tiles, each part folds open, settings + legal at the bottom ================= */
+Object.assign(LANGS.sl,{pcOk:"izpolnjeno",pcMiss:"manjka {n}",pcErr:"preveri",pcRoles:"Kaj želite v aplikaciji?",pcRolesH:"Izberete lahko več.",secPro:"Mojster – moje storitve",secSeeker:"Iščem zaposlitev"});
+Object.assign(LANGS.en,{pcOk:"complete",pcMiss:"{n} missing",pcErr:"check",pcRoles:"What do you want to do here?",pcRolesH:"You can pick several.",secPro:"Pro – my services",secSeeker:"Looking for a job"});
+const PCO={};
+{const css=document.createElement("style");css.textContent=`
+#profile .phero .camrow{gap:8px}#profile .phero .camrow .cambtn{flex:0 1 auto;min-height:0;padding:8px 14px;font-size:14px;background:var(--soft);color:var(--ink);box-shadow:none}
+#profile .phero .camrow .cambtn svg{width:17px;height:17px}
+#p-roles{gap:6px}#p-roles h3{margin:0}#p-roles>.hint{margin:0 0 4px}#p-roles .rolenote{display:none!important}
+#p-roles .roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#p-roles .rolebox{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;min-height:58px;padding:8px 6px;margin:0;border:1.5px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer}
+#p-roles .rolebox input{position:absolute;opacity:0;pointer-events:none}#p-roles .rolebox small{display:none}
+#p-roles .rolebox b{font-size:13.5px;line-height:1.2}
+#p-roles .rolebox:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+#p-roles .rolebox:has(input:checked) b::before{content:"✓ ";color:var(--accent)}
+#p-roles .rolebox:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+#profile details.acc{display:block;padding:0;overflow:hidden}
+#profile details.acc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:16px 18px}
+#profile details.acc>summary::-webkit-details-marker{display:none}
+#profile details.acc>summary b{flex:1;min-width:0;font-size:17px}
+#profile details.acc>summary em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+#profile details.acc>summary em.ok{color:#16A34A}#profile details.acc>summary em.miss{color:var(--accent)}
+#profile details.acc>summary i{font-style:normal;color:var(--muted);font-size:20px;transition:transform .2s}#profile details.acc[open]>summary i{transform:rotate(90deg)}
+#profile details.acc>.accin{display:flex;flex-direction:column;gap:12px;padding:0 18px 18px}#profile details.acc>.accin>h3:first-child{display:none}
+#setCard .setin>.danger-zone{background:none}
+`;document.head.appendChild(css)}
+function pcStatus(sec){const keys=new Set([...sec.querySelectorAll("[data-k],[data-arr],[data-tog]")].map(e=>e.dataset.k||e.dataset.arr||e.dataset.tog));if(sec.id==="cvSec")keys.add("cv");
+  if([...keys].some(k=>pdErrs[k]))return ["miss",t("pcErr")];
+  let v={};try{v=prValidate(pd)||{}}catch(_){}const n=[...keys].filter(k=>k!=="roles"&&v[k]).length;
+  return n?["miss",t("pcMiss",{n})]:["ok","✓ "+t("pcOk")]}
+function pcFold(sec){const h=sec.querySelector("h3");if(!h)return;const key=sec.id||sec.dataset.show||h.textContent.trim();
+  const d=document.createElement("details");d.className=sec.className+" acc";if(sec.id)d.id=sec.id;if(sec.dataset.show)d.dataset.show=sec.dataset.show;d.hidden=sec.hidden;d.dataset.pc=key;
+  const [cls,txt]=pcStatus(sec);
+  d.innerHTML=`<summary><b></b><em class="${cls}"></em><i aria-hidden="true">›</i></summary><div class="accin"></div>`;d.querySelector("summary b").textContent=h.textContent.trim();d.querySelector("summary em").textContent=txt;
+  const inn=d.querySelector(".accin");while(sec.firstChild)inn.appendChild(sec.firstChild);
+  if(PCO[key]||cls==="miss"&&txt===t("pcErr"))d.open=true;
+  d.addEventListener("toggle",()=>{PCO[key]=d.open});
+  const upd=()=>{const [c,x]=pcStatus(d);const em=d.querySelector("summary em");em.className=c;em.textContent=x};d.addEventListener("input",upd);d.addEventListener("change",upd);
+  sec.replaceWith(d)}
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const P=$("profile");if(!P)return x;
+  /* 1) out: feedback card (the side "Mnenje" tab stays), demo social sign-in */
+  P.querySelectorAll(":scope>.fbcard").forEach(e=>e.remove());
+  P.querySelectorAll(":scope>section").forEach(s=>{if(s.querySelector(".sso")||s.classList.contains("ssolinked"))s.remove()});
+  /* 2) roles right under the photo, as three tiles */
+  const roles=$("p-roles"),hero=P.querySelector(":scope>.phero");if(roles&&hero){hero.after(roles);const h=roles.querySelector("h3"),hn=roles.querySelector(":scope>.hint");if(h)h.textContent=t("pcRoles");if(hn)hn.textContent=t("pcRolesH")}
+  /* 3) legal + delete go into settings; every other part folds */
+  const legal=[...P.querySelectorAll(":scope>section.pcard")].find(s=>{const h=s.querySelector("h3");return h&&h.textContent.trim()===t("legalTitle")}),dz=P.querySelector(":scope>.danger-zone");
+  [...P.querySelectorAll(":scope>section.pcard")].forEach(s=>{if(s===legal||s===dz||s.classList.contains("phero")||s.id==="p-roles")return;pcFold(s)});
+  /* 4) settings at the bottom */
+  const sc=$("setCard"),bar=P.querySelector(":scope>.savebar");if(sc&&bar){bar.before(sc);const inn=sc.querySelector(".setin")||sc;if(legal)inn.appendChild(legal);if(dz)inn.appendChild(dz)}
+  /* a role switched on opens its part */
+  P.querySelectorAll('[data-arr="roles"]').forEach(cb=>cb.addEventListener("change",()=>{if(!cb.checked)return;const k=cb.value==="client"?"":cb.value==="pro"?"pro":"seeker";
+    if(k)PCO[k]=true;else{const f=$("p-first"),d=f&&f.closest("details.acc");if(d)PCO[d.dataset.pc]=true}}));
+  }catch(e){console.warn("profclean",e)}return x}}
+/* saving with errors opens the parts that need fixing */
+{const _sp=saveProfile;saveProfile=function(...r){const x=_sp(...r);try{const P=$("profile");P&&P.querySelectorAll("details.acc").forEach(d=>{const [c,tx]=pcStatus(d);if(tx===t("pcErr")){d.open=true;PCO[d.dataset.pc]=true}})}catch(_){}return x}}
+
+/* ================= PILOT MODE: one switch hides what is not real yet (globe, other languages, prices/PRO, in-app payment, most badges, demo content, fake sign-in) ================= */
+Object.assign(LANGS.sl,{pmTitle:"🧪 Pilotni način",pmLead:"Za pilot v Sloveniji skrije: globus in tuje jezike, cenike in PRO, plačilo preko aplikacije, večino značk, demo vsebino in lažne prijave. Nič se ne izbriše.",pmOn:"Pilotni način",pmFree:"Brezplačno v pilotni fazi"});
+Object.assign(LANGS.en,{pmTitle:"🧪 Pilot mode",pmLead:"For the pilot in Slovenia it hides: the globe and other languages, prices and PRO, in-app payment, most badges, demo content and fake sign-in. Nothing is deleted.",pmOn:"Pilot mode",pmFree:"Free during the pilot"});
+const PILOT=()=>st.pilot!==false;
+if(PILOT()){
+  document.documentElement.classList.add("pilot");
+  if(typeof lang!=="undefined"&&lang!=="sl"){try{setLang("sl")}catch(_){}}
+  st.noDemo=true;st.pro=false;st.coPro=false;try{save()}catch(_){}
+  Object.assign(LANGS.sl,{chatSafety:"Ne delite podatkov kartice v klepetu.",confirmDone:"Potrdi, da je delo opravljeno",
+    lgT5:"V pilotni fazi JobNod ne obdeluje plačil. Plačilo za delo se dogovorita stranka in izvajalec neposredno.",lgR4:"Ne pošiljajte podatkov kartice v klepetu.",
+    setSub:"Videz, zvoki, zasebnost, preverjanje računa, blokirani",noJobsRadius:"Tu še ni objavljenih del",moreOutside:"Ko bo kdo v tvojem radiju objavil delo, ga vidiš tukaj. Lahko pa povečaš radius.",noAdsRadius:"Tu še ni oglasov",plSortPro:"Priporočeni",widenOrCat:"Ko bo podjetje objavilo oglas, ga vidiš tukaj. Lahko pa povečaš radius.",ssPro:LANGS.sl.pmFree});
+  {const _pj=passJob;passJob=function(j,...r){if(j&&!j.live&&j.client!=="me")return false;return _pj(j,...r)}}
+  {const _pa=passAd;passAd=function(a,...r){if(a&&!a.live&&a.co!=="me")return false;return _pa(a,...r)}}
+  if(!st.removedMy1){st.removedMy1=true;st.plMy1=true}
+  {const _om=openMap;openMap=function(v,...r){return _om("local",...r)}}
+  try{brUpd()}catch(_){}
+}
+{const css=document.createElement("style");css.textContent=`
+html.pilot #langBtn,html.pilot #onbLang,html.pilot #onbMoreLang,html.pilot .maptabs,html.pilot #mtWorld,
+html.pilot #cnCard,html.pilot #ccCard,html.pilot .brpro,html.pilot #ndCard,
+html.pilot #sheet [data-act="pay"],html.pilot .bdg:not(.ver),html.pilot .vrow:has(#vIdFile),
+html.pilot .demo-note,html.pilot .empty p:has(a[href*="mojedelo"]),html.pilot .sso,html.pilot .ssobtn,html.pilot #profile section:has(.sso){display:none!important}
+#plCard .tog{margin-top:6px}`;document.head.appendChild(css)}
+/* the switch, at the bottom of Nastavitve */
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const sc=$("setCard"),inn=sc&&(sc.querySelector(".setin")||sc);if(inn&&!$("plCard")){
+  const dz=inn.querySelector(":scope>.danger-zone");const h=`<div class="pcard" id="plCard"><h3 style="margin:0 0 4px">${t("pmTitle")}</h3><p class="hint" style="margin:0 0 6px">${t("pmLead")}</p>
+   <label class="tog"><span><b>${t("pmOn")}</b></span><input type="checkbox" role="switch" id="plSw"${PILOT()?" checked":""}><i aria-hidden="true"></i></label></div>`;
+  if(dz)dz.insertAdjacentHTML("beforebegin",h);else inn.insertAdjacentHTML("beforeend",h);
+  $("plSw").onchange=e=>{st.pilot=e.target.checked;if(!st.pilot){st.noDemo=false;if(st.plMy1){st.removedMy1=false;st.plMy1=false}}save();setTimeout(()=>location.reload(),150)}}
+  const av=$("profile")&&$("profile").querySelector(".appver");if(av&&PILOT())av.textContent=av.textContent.replace("JobNod demo","JobNod pilot")}catch(_){}return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
