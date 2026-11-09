@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="114";
+const APP_VER="115";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6710,6 +6710,10 @@ if(!st.fresh113){
   st.fresh113=true;
   [DEMO_JOBS,ADS,STUD].forEach(arr=>{for(let i=arr.length-1;i>=0;i--)if(arr[i]&&arr[i].live)arr.splice(i,1)});
   try{save()}catch(_){}setTimeout(()=>{try{renderAll();updBell()}catch(_){}},0)}
+/* top tab "Dela" -> "Povpraševanja" (client requests that pros take) */
+Object.assign(LANGS.sl,{modePro:"Povpraševanja",onbPro:"Objavim, kaj potrebujem, ali kot mojster prevzemam povpraševanja drugih."});
+Object.assign(LANGS.en,{modePro:"Requests",onbPro:"I post what I need, or as a pro I take on other people's requests."});
+try{applyStatic()}catch(_){}
 
 /* ================= AD FORM: "Panoga" (and so the ad's icon) follows the position name until the company picks it by hand ================= */
 const SECKW={
