@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="122";
+const APP_VER="123";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -7005,19 +7005,21 @@ Object.assign(LANGS.sl,{dmBtn:"💬 Pošlji sporočilo",dmTitle:"Sporočila",dmS
 Object.assign(LANGS.en,{dmBtn:"💬 Send a message",dmTitle:"Messages",dmSec:"💬 Direct messages",dmNote:"💬 New message: {x}",dmEmpty:"Write the first message.",dmFail:"⚠️ The message wasn't sent. Try again.",dmTag:"direct"});
 const DM_START=()=>!!st.isAdmin;           /* who may START a conversation (anyone may reply) */
 if(!st.dm||typeof st.dm!=="object")st.dm={};   /* uid -> {name, msgs:[{id,me,text,ts}], unread} */
-const DMS={busy:false,ok:true};
+const DMS={busy:false,ok:true,init:false};
 function dmThread(uid,name){const T=st.dm[uid]=st.dm[uid]||{name:name||"Tester",msgs:[],unread:0};if(name)T.name=name;return T}
 function dmUnread(){return Object.values(st.dm).reduce((a,T)=>a+(T.unread||0),0)}
 function dmAv(uid){const p=person("lv_"+uid),nm=(st.dm[uid]||{}).name||(p&&p.name)||"?";return av(p&&p.photo?p:{id:"dm_"+uid,name:nm},"sm")}
 async function dmSync(){if(DMS.busy||!st.liveId||!jaIsIn())return;DMS.busy=true;
   try{const me=encodeURIComponent(st.liveId);
     const rows=await sb(`dms?or=(to_id.eq.${me},from_id.eq.${me})&order=created_at.asc&limit=500&select=*`);DMS.ok=true;
-    let fresh=0,chg=0;(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
+    let fresh=0,chg=0;const inc=[];(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
       const T=dmThread(other,mine?(r.to_name||""):(r.from_name||""));if(T.msgs.some(m=>m.id===r.id))return;
       const tmp=mine&&T.msgs.find(m=>String(m.id).startsWith("tmp")&&m.text===(r.body||""));if(tmp){tmp.id=r.id;return}
-      T.msgs.push({id:r.id,me:mine,text:r.body||"",ts:Date.parse(r.created_at)||now()});chg++;
+      T.msgs.push({id:r.id,me:mine,text:r.body||"",ts:Date.parse(r.created_at)||now()});chg++;if(!mine&&DMS.init)inc.push([T.name,r.body||""]);
       if(!mine&&!(sheetOpts&&sheetOpts.dm===other)){T.unread=(T.unread||0)+1;fresh++;notify("dmNote",{x:T.name},{dm:other})}});
     Object.values(st.dm).forEach(T=>{T.msgs.sort((a,b)=>a.ts-b.ts);T.msgs=T.msgs.slice(-200)});
+    const first=!DMS.init;DMS.init=true;
+    if(inc.length&&!first){try{if(st.msgSound!==false&&typeof msBlop==="function")msBlop();const l=inc.at(-1);if(!(sheetOpts&&sheetOpts.dm))toast("💬 "+l[0]+": "+l[1].slice(0,60))}catch(_){}}
     if(!chg)return;save();updBell();if(sheetOpts&&sheetOpts.dm)dmBox(sheetOpts.dm);if(!$("v-msgs").hidden)renderMsgs()}
   catch(e){console.warn("dm sync",e);if(/404|PGRST205|relation/.test(String(e)))DMS.ok=false}finally{DMS.busy=false}}
 function dmMsgs(T){return T.msgs.map(m=>`<div class="mb ${m.me?"me":"them"}"><p>${esc(m.text)}</p><small>${hhmm(m.ts)}</small></div>`).join("")||`<div class="msys">${t("dmEmpty")}</div>`}
