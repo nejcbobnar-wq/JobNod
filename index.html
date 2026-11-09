@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="115";
+const APP_VER="116";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6749,6 +6749,124 @@ function secGuess(title,opts){const s=" "+String(title||"").toLowerCase()+" ";le
   se.addEventListener("change",()=>{se.dataset.man="1";if(coForm)coForm.secManual=true});
   const go=()=>{if(se.dataset.man)return;const opts=[...se.options].map(o=>o.value);const k=secGuess(ti.value,opts);if(k&&se.value!==k){se.value=k;if(coForm)coForm.sec=k;const ow=$("ca-secOw");if(ow)ow.hidden=k!=="drugo"}};
   ti.addEventListener("input",go);go()}}catch(_){}return x}}
+
+/* ================= CLOSED TEST: entry with invite code, own secure key per phone (Supabase anonymous sign-in), every request carries it ================= */
+const JN_CLOSED=true;
+const JN_CONTACT="";
+Object.assign(LANGS.sl,{jaTitle:"JobNod je v zaprtem testu",jaLead:"Vstopiš lahko s povabilno kodo, ki si jo dobil od nas.",jaCode:"Povabilna koda",jaCodePh:"npr. ABC123",
+  jaAgree:"Strinjam se s {t} in {p}.",jaTerms:"pogoji uporabe",jaPriv:"izjavo o varstvu podatkov",jaGo:"Vstopi",jaBusy:"Povezujem …",jaBad:"Koda ni pravilna. Preveri jo in poskusi znova.",
+  jaNeedAgree:"Za vstop potrdi pogoje in izjavo o varstvu podatkov.",jaNeedCode:"Vpiši povabilno kodo.",jaOff:"Prijava trenutno ni mogoča (vklopljena mora biti anonimna prijava v Supabase). Poskusi kasneje.",
+  jaNet:"Ni povezave. Preveri internet in poskusi znova.",jaWait:"Nimaš kode? Pusti e-mail in te obvestimo ob zagonu.",jaWaitPh:"tvoj@email.si",jaWaitBtn:"Obvesti me",jaWaitOk:"Hvala! Obvestili te bomo.",
+  jaWaitBad:"Vpiši veljaven e-mail.",jaAdmin:"Vstopil si kot skrbnik.",jaWelcome:"Dobrodošel v testu JobNod!",
+  jaDelTitle:"Izbriši moj račun",jaDelLead:"Iz baze se izbrišejo tvoje objave, ponudbe, prijave, sporočila, CV in profil mojstra. Tega ni mogoče razveljaviti.",jaDelBtn:"Izbriši račun in podatke",
+  jaDelSure:"Res izbrišem vse?",jaDelYes:"Da, izbriši",jaDelNo:"Prekliči",jaDelDone:"Račun je izbrisan.",jaBug:"🐞 Prijavi napako",jaBugLead:"Nekaj ne dela? Opiši, kaj si kliknil – verzijo in telefon dodamo sami.",
+  delConfirmD:"Izbriše se profil na tem telefonu. Za izbris vseh podatkov iz baze uporabi »Izbriši moj račun« zgoraj."});
+Object.assign(LANGS.en,{jaTitle:"JobNod is in a closed test",jaLead:"You can enter with the invite code you got from us.",jaCode:"Invite code",jaCodePh:"e.g. ABC123",
+  jaAgree:"I agree to the {t} and the {p}.",jaTerms:"terms of use",jaPriv:"privacy notice",jaGo:"Enter",jaBusy:"Connecting …",jaBad:"That code isn't right. Check it and try again.",
+  jaNeedAgree:"To enter, accept the terms and the privacy notice.",jaNeedCode:"Enter the invite code.",jaOff:"Sign-in isn't possible right now (anonymous sign-in must be on in Supabase). Try again later.",
+  jaNet:"No connection. Check your internet and try again.",jaWait:"No code? Leave your email and we'll let you know at launch.",jaWaitPh:"you@email.com",jaWaitBtn:"Notify me",jaWaitOk:"Thanks! We'll let you know.",
+  jaWaitBad:"Enter a valid email.",jaAdmin:"You're in as admin.",jaWelcome:"Welcome to the JobNod test!",
+  jaDelTitle:"Delete my account",jaDelLead:"Your posts, offers, applications, messages, CV and pro profile are deleted from the database. This can't be undone.",jaDelBtn:"Delete account and data",
+  jaDelSure:"Really delete everything?",jaDelYes:"Yes, delete",jaDelNo:"Cancel",jaDelDone:"Your account is deleted.",jaBug:"🐞 Report a problem",jaBugLead:"Something not working? Describe what you tapped – we add the version and phone ourselves.",
+  delConfirmD:"Deletes the profile on this phone. To delete all data from the database use “Delete my account” above."});
+const JA={ref:null};
+function jaSet(j){if(!j||!j.access_token)return false;st.auth={at:j.access_token,rt:j.refresh_token,exp:Date.now()+((+j.expires_in||3600)*1000),uid:j.user&&j.user.id||(st.auth&&st.auth.uid)};save();return true}
+async function jaRefresh(force){if(!st.auth||!st.auth.rt)return;if(!force&&Date.now()<st.auth.exp-90e3)return;if(JA.ref)return JA.ref;
+  JA.ref=(async()=>{try{const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:st.auth.rt})});
+    if(r.ok){jaSet(await r.json())}else if(r.status===400||r.status===401||r.status===403){st.auth=null;st.member=false;save();jaGate()}}catch(_){}})().finally(()=>{JA.ref=null});return JA.ref}
+/* every database call now carries this phone's key */
+sb=async function(path,opt={}){await jaRefresh();const h={apikey:SB_KEY,"Content-Type":"application/json"};if(st.auth&&st.auth.at)h.Authorization="Bearer "+st.auth.at;if(opt.prefer)h.Prefer=opt.prefer;
+  let r=await fetch(`${SB_URL}/rest/v1/${path}`,{method:opt.method||"GET",headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
+  if(r.status===401&&st.auth){await jaRefresh(true);if(st.auth){h.Authorization="Bearer "+st.auth.at;r=await fetch(`${SB_URL}/rest/v1/${path}`,{method:opt.method||"GET",headers:h,body:opt.body?JSON.stringify(opt.body):undefined})}}
+  if(!r.ok)throw new Error(r.status+" "+(await r.text()).slice(0,200));const tx=await r.text();return tx?JSON.parse(tx):null};
+async function jaSignIn(){if(st.auth&&st.auth.rt){await jaRefresh();if(st.auth)return "ok"}
+  const r=await fetch(`${SB_URL}/auth/v1/signup`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({data:{}})});
+  if(!r.ok){const tx=(await r.text()).toLowerCase();return tx.includes("anonymous")||tx.includes("disabled")?"off":"err"}
+  return jaSet(await r.json())?"ok":"err"}
+const jaIsIn=()=>!JN_CLOSED||!!(st.auth&&st.member);
+{const css=document.createElement("style");css.textContent=`
+#jaGate{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow:auto;display:flex;justify-content:center;padding:max(28px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 28px max(18px,env(safe-area-inset-left))}
+#jaGate .jin{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;margin:auto 0}
+#jaGate .jlogo{width:84px;height:84px;margin:0 auto}#jaGate .jlogo svg{width:100%;height:100%}
+#jaGate h1{margin:0;font-size:26px;line-height:1.15;color:var(--ink);text-wrap:balance}#jaGate p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+#jaGate .jcard{background:var(--surface);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;text-align:left;box-shadow:0 8px 24px -14px rgba(40,20,60,.35)}
+#jaGate label.jf{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--muted)}
+#jaGate input[type=text],#jaGate input[type=email]{font-size:18px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);letter-spacing:.04em}
+#jaGate label.jagree{flex-direction:row!important;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.4;font-weight:500}#jaGate .jagree input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--accent)}
+#jaGate .jagree a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+#jaGate .jerr{color:var(--bad,#E11D48);font-size:14px;font-weight:600;min-height:0}#jaGate .jerr:empty{display:none}
+#jaGate .jok{color:var(--good,#16A34A);font-size:14px;font-weight:600}#jaGate .jok:empty{display:none}
+#jaGate .jwait{display:flex;gap:8px}#jaGate .jwait input{flex:1;min-width:0;font-size:16px;letter-spacing:0}#jaGate .jwait button{margin:0;white-space:nowrap}
+#jaGate .jlang{display:flex;justify-content:center;gap:6px}#jaGate .jlang button{margin:0;padding:6px 12px;font-size:13px}
+#jaDel .danger,#jaDel .ghost{margin:0}html.jain #setCard .danger-zone{display:none}#jaDel .two{display:flex;gap:8px}#jaDel .two button{flex:1}`;document.head.appendChild(css)}
+function jaGate(){if(jaIsIn()){const g=$("jaGate");if(g)g.remove();return}
+  let g=$("jaGate");if(!g){g=document.createElement("div");g.id="jaGate";g.setAttribute("role","dialog");g.setAttribute("aria-modal","true");document.body.appendChild(g)}
+  const logo=document.querySelector(".logo")?document.querySelector(".logo").outerHTML:"";
+  const ag=t("jaAgree",{t:`<a data-lg="terms">${t("jaTerms")}</a>`,p:`<a data-lg="privacy">${t("jaPriv")}</a>`});
+  g.innerHTML=`<div class="jin"><div class="jlang">${["sl","en"].map(k=>`<button type="button" class="${lang===k?"primary":"ghost"} sm" data-jl="${k}">${k==="sl"?"Slovenščina":"English"}</button>`).join("")}</div>
+   <div class="jlogo">${logo}</div><h1>${t("jaTitle")}</h1><p>${t("jaLead")}</p>
+   <form class="jcard" id="jaF" novalidate><label class="jf">${t("jaCode")}<input type="text" id="jaCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="${esc(t("jaCodePh"))}"></label>
+    <label class="jagree"><input type="checkbox" id="jaOk"><span>${ag}</span></label><div class="jerr" id="jaErr" role="alert"></div>
+    <button class="primary" type="submit" id="jaGo">${t("jaGo")}</button></form>
+   <div class="jcard"><p style="text-align:left">${t("jaWait")}</p><form class="jwait" id="jaWF" novalidate><input type="email" id="jaMail" autocomplete="email" placeholder="${esc(t("jaWaitPh"))}"><button class="ghost" type="submit">${t("jaWaitBtn")}</button></form>
+    <div class="jok" id="jaWOk"></div><div class="jerr" id="jaWErr"></div></div></div>`;
+  g.querySelectorAll("[data-jl]").forEach(b=>b.onclick=()=>{try{setLang(b.dataset.jl)}catch(_){}jaGate()});
+  g.querySelectorAll("[data-lg]").forEach(a=>a.onclick=e=>{e.preventDefault();openLegal(a.dataset.lg)});
+  $("jaF").onsubmit=async e=>{e.preventDefault();const code=$("jaCode").value.trim(),err=$("jaErr"),btn=$("jaGo");err.textContent="";
+    if(!code){err.textContent=t("jaNeedCode");$("jaCode").focus();return}if(!$("jaOk").checked){err.textContent=t("jaNeedAgree");return}
+    btn.disabled=true;btn.textContent=t("jaBusy");
+    try{const s=await jaSignIn();if(s!=="ok"){err.textContent=t(s==="off"?"jaOff":"jaNet");return}
+      const res=await sb("rpc/jn_join",{method:"POST",body:{code}});
+      if(res==="ok"||res==="admin"){const old=st.liveId;st.member=true;st.isAdmin=res==="admin";st.consent={at:new Date().toISOString(),v:1};
+        if(st.auth.uid&&st.liveId!==st.auth.uid){st.liveId=st.auth.uid;st.oldLiveId=old;st.cvUp=null;st.lpPub=false;st.invSeen=[]}
+        st.jaHello=res;save();setTimeout(()=>location.reload(),80)}
+      else err.textContent=t("jaBad")}
+    catch(x){err.textContent=t("jaNet")}finally{btn.disabled=false;btn.textContent=t("jaGo")}};
+  $("jaWF").onsubmit=async e=>{e.preventDefault();const m=$("jaMail").value.trim();$("jaWErr").textContent="";$("jaWOk").textContent="";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$("jaWErr").textContent=t("jaWaitBad");return}
+    try{await fetch(`${SB_URL}/rest/v1/jn_waitlist`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:m.slice(0,200)})}).then(r=>{if(!r.ok)throw 0});$("jaWOk").textContent=t("jaWaitOk");$("jaMail").value=""}
+    catch(_){$("jaWErr").textContent=t("jaNet")}}}
+/* legal sheets must open above the gate */
+{const css=document.createElement("style");css.textContent=`body:has(#jaGate) #sheetWrap:not([hidden]){z-index:10000}`;document.head.appendChild(css)}
+if(JN_CLOSED){jaGate();if(st.auth)jaRefresh();if(st.auth&&st.member)document.documentElement.classList.add("jain")}
+if(st.jaHello){const h=st.jaHello;st.jaHello=null;save();setTimeout(()=>toast(t(h==="admin"?"jaAdmin":"jaWelcome")),600)}
+/* settings: report a problem + delete my account (in the database) */
+async function jaDeleteMe(){try{await sb("rpc/jn_delete_me",{method:"POST",body:{}})}catch(e){toast("⚠️ "+e);return false}
+  try{await IDB.del("cv")}catch(_){}
+  const keep={lang:st.lang,v:st.v,pilot:st.pilot};Object.keys(st).forEach(k=>delete st[k]);Object.assign(st,keep);save();toast(t("jaDelDone"));setTimeout(()=>location.reload(),700);return true}
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const sc=$("setCard"),inn=sc&&(sc.querySelector(".setin")||sc);if(inn&&!$("jaBugCard")){
+  const dz=inn.querySelector(":scope>.danger-zone");
+  const html=`<div class="pcard" id="jaBugCard"><h3 style="margin:0 0 4px">${t("jaBug")}</h3><p class="hint" style="margin:0 0 8px">${t("jaBugLead")}</p><button type="button" class="ghost" id="jaBugBtn" style="margin:0">${t("jaBug")}</button></div>
+   ${JN_CLOSED&&st.auth?`<div class="pcard" id="jaDel"><h3 style="margin:0 0 4px">${t("jaDelTitle")}</h3><p class="hint" style="margin:0 0 8px">${t("jaDelLead")}</p><div id="jaDelBox"><button type="button" class="ghost" id="jaDelBtn" style="margin:0;color:var(--bad,#E11D48)">${t("jaDelBtn")}</button></div></div>`:""}`;
+  if(dz)dz.insertAdjacentHTML("beforebegin",html);else inn.insertAdjacentHTML("beforeend",html);
+  $("jaBugBtn").onclick=()=>{try{fbState.kind="bug"}catch(_){}openFeedback()};
+  const db=$("jaDelBtn");if(db)db.onclick=()=>{$("jaDelBox").innerHTML=`<p style="margin:0 0 8px"><b>${t("jaDelSure")}</b></p><div class="two"><button type="button" class="ghost" id="jaDelNo">${t("jaDelNo")}</button><button type="button" class="danger" id="jaDelYes">${t("jaDelYes")}</button></div>`;
+    $("jaDelNo").onclick=()=>{setOpen=true;renderProfile()};$("jaDelYes").onclick=async()=>{$("jaDelYes").disabled=true;if(!await jaDeleteMe())$("jaDelYes").disabled=false}}}}catch(_){}return x}}
+
+/* ================= LEGAL FOR THE CLOSED TEST: privacy notice (GDPR) + terms ================= */
+{const contact=JN_CONTACT?JN_CONTACT:"gumb »Mnenje« v aplikaciji",contactEn=JN_CONTACT?JN_CONTACT:"the “Feedback” button in the app";
+Object.assign(LANGS.sl,{lgPrivacy:"Varstvo osebnih podatkov",lgTerms:"Pogoji uporabe",lgDraft:"Zaprta testna različica JobNod · velja od 9. 11. 2026",
+  lgQ1h:"Kdo upravlja podatke",lgQ1:`JobNod je v zaprti testni fazi, v katero vstopijo le povabljeni. Za vsa vprašanja o tvojih podatkih, popravke ali izbris nam piši: ${contact}.`,
+  lgQ2h:"Katere podatke zbiramo",lgQ2:"Samo tiste, ki jih vpišeš sam: podatke profila (ime, kraj, telefon, e-pošta, opis, fotografija, podatki podjetja), objave, ponudbe, prijave in sporočila ter življenjepis (CV), če ga naložiš. Za odpravljanje napak shranimo še različico aplikacije in vrsto naprave. Lokacije telefona ne shranjujemo, kraj izbereš sam.",
+  lgQ3h:"Zakaj jih uporabljamo",lgQ3:"Da aplikacija deluje: povezuje stranke z mojstri ter podjetja s kandidati, in da v testu najdemo in popravimo napake. Pravna podlaga je tvoje soglasje ob vstopu in izvajanje storitve, ki jo uporabljaš. Soglasje lahko kadar koli umakneš z izbrisom računa.",
+  lgQ4h:"Kdo jih vidi",lgQ4:"Drugi povabljeni testerji vidijo tvoje objave in tvoj profil mojstra. Tvoj CV vidi samo podjetje, na katerega oglas se prijaviš. Sporočila vidita samo udeleženca pogovora. Podatki so shranjeni pri ponudniku baze Supabase, aplikacija pa gostuje na GitHubu. Podatkov ne prodajamo in jih ne uporabljamo za oglaševanje.",
+  lgQ5h:"Kako jih varujemo",lgQ5:"Vsak telefon ima svoj varen ključ. Baza je zaklenjena tako, da vsak lahko ureja samo svoje podatke in vidi samo tisto, kar mu pripada. Kdor ni povabljen, ne vidi ničesar.",
+  lgQ6h:"Kako dolgo jih hranimo",lgQ6:"Do konca testne faze ali dokler ne izbrišeš računa. Ob koncu testa testne podatke izbrišemo ali te vprašamo, ali jih želiš obdržati.",
+  lgQ7h:"Tvoje pravice",lgQ7:"Podatke lahko pogledaš (Profil → Nastavitve → Moji podatki), popraviš (Profil) in izbrišeš (Profil → Nastavitve → Izbriši moj račun). Imaš pravico do ugovora in pritožbe pri Informacijskem pooblaščencu RS (www.ip-rs.si).",
+  lgT7h:"Testna faza",lgT7:"JobNod je v zaprtem testu. Aplikacija lahko vsebuje napake, objave in podatki se lahko med testom ponastavijo. Prosimo, da napake sporočiš z gumbom »Prijavi napako«.",
+  lgT5:"V testni fazi JobNod ne obdeluje plačil. Plačilo za delo se dogovorita stranka in izvajalec neposredno."});
+Object.assign(LANGS.en,{lgPrivacy:"Privacy notice",lgTerms:"Terms of use",lgDraft:"JobNod closed test version · valid from 9 Nov 2026",
+  lgQ1h:"Who is responsible",lgQ1:`JobNod is in a closed test for invited people only. For any question about your data, corrections or deletion, contact us via ${contactEn}.`,
+  lgQ2h:"What we collect",lgQ2:"Only what you enter yourself: profile details (name, town, phone, email, description, photo, company details), posts, offers, applications and messages, and your CV if you upload one. To fix bugs we also keep the app version and device type. We don't store your phone's location; you pick your town yourself.",
+  lgQ3h:"Why we use it",lgQ3:"To make the app work – connecting clients with pros and companies with candidates – and to find and fix bugs during the test. The legal basis is the consent you give when entering and providing the service you use. You can withdraw consent at any time by deleting your account.",
+  lgQ4h:"Who sees it",lgQ4:"Other invited testers see your posts and your pro profile. Your CV is seen only by the company whose ad you apply to. Messages are seen only by the two people in the conversation. Data is stored with the database provider Supabase, and the app is hosted on GitHub. We don't sell your data or use it for advertising.",
+  lgQ5h:"How we protect it",lgQ5:"Each phone has its own secure key. The database is locked so everyone can only edit their own data and see only what belongs to them. People who aren't invited see nothing.",
+  lgQ6h:"How long we keep it",lgQ6:"Until the end of the test or until you delete your account. At the end of the test we delete test data or ask whether you want to keep it.",
+  lgQ7h:"Your rights",lgQ7:"You can view your data (Profile → Settings → My data), correct it (Profile) and delete it (Profile → Settings → Delete my account). You can object and complain to the Slovenian Information Commissioner (www.ip-rs.si).",
+  lgT7h:"Test phase",lgT7:"JobNod is in a closed test. The app may contain bugs, and posts and data may be reset during the test. Please report problems with the “Report a problem” button.",
+  lgT5:"During the test JobNod doesn't process payments. Clients and pros agree on payment directly."});
+LEGAL.privacy[1]=["lgQ1","lgQ2","lgQ3","lgQ4","lgQ5","lgQ6","lgQ7"];
+LEGAL.terms[1]=["lgT1","lgT2","lgT3","lgT4","lgT5","lgT6","lgT7"];}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
