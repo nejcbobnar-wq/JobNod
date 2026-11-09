@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="124";
+const APP_VER="125";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -7117,7 +7117,8 @@ function renderPuCard(){const c=$("puCard");if(!c)return;const perm=puPerm(),on=
 {const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const sc=$("setCard"),inn=sc&&(sc.querySelector(".setin")||sc);if(inn&&!$("puCard")){
   const lg=$("lgCard");const h=`<div class="pcard" id="puCard"></div>`;if(lg)lg.insertAdjacentHTML("afterend",h);else inn.insertAdjacentHTML("afterbegin",h);renderPuCard()}}catch(e){console.warn("pu card",e)}return x}}
 /* tapping an alert opens the right place */
-function puRoute(url){try{const u=new URL(url,location.href),q=u.searchParams;const dm=q.get("dm"),v=q.get("v"),m=q.get("m");if(!dm&&!v)return false;
+let PU_LAST="",PU_T=0;
+function puRoute(url){try{if(url===PU_LAST&&Date.now()-PU_T<3000)return true;PU_LAST=url;PU_T=Date.now();const u=new URL(url,location.href),q=u.searchParams;const dm=q.get("dm"),v=q.get("v"),m=q.get("m");if(!dm&&!v)return false;
   setTimeout(()=>{try{if(dm){dmSync();dmOpen(dm);return}
     if(m==="job"&&st.mode!=="mojster")setMode("mojster");if(m==="app"&&st.mode==="mojster")setMode("zap");if(v==="swipe"&&st.mode!=="mojster")setMode("mojster");
     closeSheet();show(v==="swipe"?"swipe":v);try{liveTick&&liveTick()}catch(_){}}catch(e){console.warn("push open",e)}},900);return true}catch(_){return false}}

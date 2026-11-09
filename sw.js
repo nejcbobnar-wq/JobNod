@@ -1,5 +1,5 @@
 /* JobNod service worker: keeps the app working offline after the first visit */
-const CACHE = "jobnod-v124";
+const CACHE = "jobnod-v125";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
@@ -28,11 +28,24 @@ function jnPush(d) {
 }
 self.addEventListener("push", e => { let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data ? e.data.text() : "" }; } e.waitUntil(jnPush(d)); });
 
-/* tapping an alert opens the app (and the right conversation) */
+/* tapping an alert opens the app (and the right conversation); if the open app can't be woken up, it opens fresh at that place */
+async function jnOpen(url, tag) {
+  const target = url ? new URL(url, self.registration.scope).href : new URL("./?note=" + encodeURIComponent(tag || ""), self.registration.scope).href;
+  const msg = url ? { type: "jn-open", url: target } : { type: "jn-note", tag };
+  const cs = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const c of cs) {
+    try {
+      const w = (await c.focus()) || c;
+      w.postMessage(msg);
+      await new Promise(r => setTimeout(r, 700));
+      try { w.postMessage(msg); } catch (_) {}
+      return "focused";
+    } catch (_) {}
+  }
+  await self.clients.openWindow(target);
+  return "opened";
+}
 self.addEventListener("notificationclick", e => {
   const url = e.notification.data && e.notification.data.url, tag = e.notification.tag || ""; e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(cs => {
-    for (const c of cs) { if ("focus" in c) { c.postMessage(url ? { type: "jn-open", url } : { type: "jn-note", tag }); return c.focus(); } }
-    return self.clients.openWindow(url ? url : "./?note=" + encodeURIComponent(tag));
-  }));
+  e.waitUntil(jnOpen(url, tag));
 });
