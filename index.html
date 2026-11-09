@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="126";
+const APP_VER="127";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -7068,6 +7068,8 @@ setInterval(()=>{if(!document.hidden&&DMS.ok&&sheetOpts&&sheetOpts.dm&&!$("sheet
 /* keep the keyboard and the typed text when a chat redraws (new message arriving, sending) */
 {const _dc=drawChat;drawChat=function(id,...r){const a=document.activeElement,foc=a&&a.id==="chatTxt",val=$("chatTxt")?$("chatTxt").value:"";
   const x=_dc(id,...r);try{const i=$("chatTxt");if(i&&val&&!i.value)i.value=val;if(i&&foc){i.focus({preventScroll:true});try{i.setSelectionRange(i.value.length,i.value.length)}catch(_){}}}catch(_){}return x}}
+/* tapping a message alert in the bell list opens that conversation (all alert taps go through goNote) */
+{const _g=goNote;goNote=function(n,...r){const ln=(n&&n.link)||{};if(ln.dm){try{n.read=true;save();updBell();closeSheet();setTimeout(()=>dmOpen(ln.dm),60)}catch(e){console.warn("dm note",e)}return}return _g(n,...r)}}
 
 /* ================= PUSH ALERTS (v121): on by default, the phone shows messages even when the app is closed; switch off in Nastavitve ================= */
 const PUSH_PUB="BMGe3Khks8X2feSjhqt8HG4pxqz9OuauPq3kToQjBJdjyYCp8OEE2OFvIrvRCCErgRPXM_AAXi5B8m1CjpKbIGA";
