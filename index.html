@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="125";
+const APP_VER="126";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -7009,7 +7009,7 @@ const DMS={busy:false,ok:true,init:false};
 function dmThread(uid,name){const T=st.dm[uid]=st.dm[uid]||{name:name||"Tester",msgs:[],unread:0};if(name)T.name=name;return T}
 function dmUnread(){return Object.values(st.dm).reduce((a,T)=>a+(T.unread||0),0)}
 function dmAv(uid){const p=person("lv_"+uid),nm=(st.dm[uid]||{}).name||(p&&p.name)||"?";return av(p&&p.photo?p:{id:"dm_"+uid,name:nm},"sm")}
-async function dmSync(){if(DMS.busy||!st.liveId||!jaIsIn())return;DMS.busy=true;
+async function dmSync(){if(!st.liveId||!jaIsIn())return;if(DMS.busy){DMS.again=true;return}DMS.busy=true;DMS.again=false;
   try{const me=encodeURIComponent(st.liveId);
     const rows=await sb(`dms?or=(to_id.eq.${me},from_id.eq.${me})&order=created_at.asc&limit=500&select=*`);DMS.ok=true;
     let fresh=0,chg=0;const inc=[];(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
@@ -7021,7 +7021,7 @@ async function dmSync(){if(DMS.busy||!st.liveId||!jaIsIn())return;DMS.busy=true;
     const first=!DMS.init;DMS.init=true;
     if(inc.length&&!first){try{if(st.msgSound!==false&&typeof msBlop==="function")msBlop();const l=inc.at(-1);if(!(sheetOpts&&sheetOpts.dm))toast("💬 "+l[0]+": "+l[1].slice(0,60))}catch(_){}}
     if(!chg)return;save();updBell();if(sheetOpts&&sheetOpts.dm)dmBox(sheetOpts.dm);if(!$("v-msgs").hidden)renderMsgs()}
-  catch(e){console.warn("dm sync",e);if(/404|PGRST205|relation/.test(String(e)))DMS.ok=false}finally{DMS.busy=false}}
+  catch(e){console.warn("dm sync",e);if(/404|PGRST205|relation/.test(String(e))){DMS.ok=false;DMS.okAt=Date.now()}}finally{DMS.busy=false;if(DMS.again)setTimeout(dmSync,300)}}
 function dmMsgs(T){return T.msgs.map(m=>`<div class="mb ${m.me?"me":"them"}"><p>${esc(m.text)}</p><small>${hhmm(m.ts)}</small></div>`).join("")||`<div class="msys">${t("dmEmpty")}</div>`}
 function dmBox(uid){const b=$("chatBox");if(!b||!$("dmForm")){dmDraw(uid);return}const end=b.scrollHeight-b.scrollTop-b.clientHeight<60;b.innerHTML=dmMsgs(dmThread(uid));if(end)b.scrollTop=b.scrollHeight}
 function dmDraw(uid){const T=dmThread(uid);const keep=$("dmTxt")?$("dmTxt").value:"";
@@ -7060,7 +7060,10 @@ function dmOpen(uid,name){const T=dmThread(uid,name);T.unread=0;save();updBell()
 /* a notification about a message opens that conversation */
 {const _on=openNotes;openNotes=function(...r){const x=_on(...r);try{$("sheet").querySelectorAll("[data-n]").forEach(b=>{const n=st.notes.find(z=>z.id===b.dataset.n);
   if(n&&n.link&&n.link.dm){b.onclick=()=>{n.read=true;save();dmOpen(n.link.dm)}}})}catch(_){}return x}}
-setTimeout(dmSync,3000);setInterval(()=>{if(!document.hidden&&DMS.ok)dmSync()},20000);
+setTimeout(dmSync,3000);setInterval(()=>{if(!DMS.ok&&Date.now()-(DMS.okAt||0)>120000)DMS.ok=true;if(!document.hidden&&DMS.ok)dmSync()},20000);
+/* check at once when the app comes back on screen (e.g. after tapping an alert) and when "Sporočila" opens */
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){DMS.ok=true;dmSync()}});addEventListener("focus",()=>{DMS.ok=true;dmSync()});
+{const _s=show;show=function(v,...r){const x=_s(v,...r);if(v==="msgs"){DMS.ok=true;dmSync()}return x}}
 setInterval(()=>{if(!document.hidden&&DMS.ok&&sheetOpts&&sheetOpts.dm&&!$("sheetWrap").hidden)dmSync()},6000);
 /* keep the keyboard and the typed text when a chat redraws (new message arriving, sending) */
 {const _dc=drawChat;drawChat=function(id,...r){const a=document.activeElement,foc=a&&a.id==="chatTxt",val=$("chatTxt")?$("chatTxt").value:"";
