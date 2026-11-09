@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="118";
+const APP_VER="121";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6985,6 +6985,138 @@ Object.assign(LANGS.en,{lgPrivacy:"Privacy notice",lgTerms:"Terms of use",lgDraf
 LEGAL.privacy[1]=["lgQ1","lgQ2","lgQ3","lgQ4","lgQ5","lgQ6","lgQ7"];
 LEGAL.terms[1]=["lgT1","lgT2","lgT3","lgT4","lgT5","lgT6","lgT7"];}
 try{if(JN_CLOSED&&!jaIsIn())jaGate()}catch(_){}
+
+/* ================= PRO PHOTOS: other people's photos show in lists, and the photo is sent small enough to be published ================= */
+{const _av=av;av=function(p,cls="",...r){try{if(p&&p.id!=="me"&&p.photo&&/^(data:image\/|https:)/.test(p.photo))return `<span class="av ${cls} img"><img src="${esc(p.photo)}" alt="" loading="lazy"></span>`}catch(_){}return _av(p,cls,...r)}}
+function phSmall(src,cb){try{const im=new Image();im.onload=()=>{const m=160,k=Math.min(1,m/Math.max(im.width,im.height)),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k));
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);cb(cv.toDataURL("image/jpeg",.72))};im.onerror=()=>cb(null);im.src=src}catch(_){cb(null)}}
+const phSig=s=>s?String(s.length)+":"+s.slice(-40):"";
+function phEnsure(){const p=st.profile||{};const sig=phSig(p.photo);if(!p.photo){if(st.photoSm){st.photoSm=null;st.photoSig="";save()}return Promise.resolve(null)}
+  if(st.photoSig===sig&&st.photoSm)return Promise.resolve(st.photoSm);return new Promise(res=>phSmall(p.photo,d=>{st.photoSm=d;st.photoSig=sig;save();res(d)}))}
+lpPublish=async function(force){if(!st.liveId||LP.ok===false)return;const pr=st.profile||{},on=lpIsPro();
+  if(!on&&!st.lpPub)return;const photo=await phEnsure();
+  const row={id:st.liveId,name:liveName(),town:pr.town||st.home||"",cats:on?(pr.cats||[]):[],skills:on?(pr.skills||[]):[],rate:+pr.rate||0,years:+pr.exp||0,bio:(pr.bio||"").slice(0,400),
+    photo:photo&&photo.length<60000?photo:null,badges:on?proBadgeKeys("me").filter(k=>k!=="pro"):[],is_pro:!!st.pro,active:on,updated_at:new Date().toISOString()};
+  const sig=JSON.stringify(Object.assign({},row,{updated_at:0}));if(!force&&sig===LP.sig&&Date.now()-LP.at<10*60000)return;
+  try{await sb("pros?on_conflict=id",{method:"POST",prefer:"resolution=merge-duplicates",body:row});LP.sig=sig;LP.at=Date.now();st.lpPub=on;save()}catch(e){console.warn("pros",e);if(String(e).includes("404")||String(e).includes("PGRST"))LP.ok=false}};
+
+/* ================= DIRECT MESSAGES (v120): the admin can write to any real pro from his profile; the pro gets a notification and can reply ================= */
+Object.assign(LANGS.sl,{dmBtn:"💬 Pošlji sporočilo",dmTitle:"Sporočila",dmSec:"💬 Neposredna sporočila",dmNote:"💬 Novo sporočilo: {x}",dmEmpty:"Napiši prvo sporočilo.",dmFail:"⚠️ Sporočilo ni bilo poslano. Poskusi znova.",dmTag:"neposredno"});
+Object.assign(LANGS.en,{dmBtn:"💬 Send a message",dmTitle:"Messages",dmSec:"💬 Direct messages",dmNote:"💬 New message: {x}",dmEmpty:"Write the first message.",dmFail:"⚠️ The message wasn't sent. Try again.",dmTag:"direct"});
+const DM_START=()=>!!st.isAdmin;           /* who may START a conversation (anyone may reply) */
+if(!st.dm||typeof st.dm!=="object")st.dm={};   /* uid -> {name, msgs:[{id,me,text,ts}], unread} */
+const DMS={busy:false,ok:true};
+function dmThread(uid,name){const T=st.dm[uid]=st.dm[uid]||{name:name||"Tester",msgs:[],unread:0};if(name)T.name=name;return T}
+function dmUnread(){return Object.values(st.dm).reduce((a,T)=>a+(T.unread||0),0)}
+function dmAv(uid){const p=person("lv_"+uid),nm=(st.dm[uid]||{}).name||(p&&p.name)||"?";return av(p&&p.photo?p:{id:"dm_"+uid,name:nm},"sm")}
+async function dmSync(){if(DMS.busy||!st.liveId||!jaIsIn())return;DMS.busy=true;
+  try{const me=encodeURIComponent(st.liveId);
+    const rows=await sb(`dms?or=(to_id.eq.${me},from_id.eq.${me})&order=created_at.asc&limit=500&select=*`);DMS.ok=true;
+    let fresh=0;(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
+      const T=dmThread(other,mine?(r.to_name||""):(r.from_name||""));if(T.msgs.some(m=>m.id===r.id))return;
+      T.msgs.push({id:r.id,me:mine,text:r.body||"",ts:Date.parse(r.created_at)||now()});
+      if(!mine&&!(sheetOpts&&sheetOpts.dm===other)){T.unread=(T.unread||0)+1;fresh++;notify("dmNote",{x:T.name},{dm:other})}});
+    Object.values(st.dm).forEach(T=>{T.msgs.sort((a,b)=>a.ts-b.ts);T.msgs=T.msgs.slice(-200)});
+    save();updBell();if(sheetOpts&&sheetOpts.dm)dmDraw(sheetOpts.dm);if(!$("v-msgs").hidden)renderMsgs()}
+  catch(e){console.warn("dm sync",e);if(/404|PGRST205|relation/.test(String(e)))DMS.ok=false}finally{DMS.busy=false}}
+function dmDraw(uid){const T=dmThread(uid);const keep=$("dmTxt")?$("dmTxt").value:"";
+  const msgs=T.msgs.map(m=>`<div class="mb ${m.me?"me":"them"}"><p>${esc(m.text)}</p><small>${hhmm(m.ts)}</small></div>`).join("")||`<div class="msys">${t("dmEmpty")}</div>`;
+  $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
+  <div class="chathead">${dmAv(uid)}<div><b>${esc(T.name)}</b><small>${t("dmTag")}</small></div></div>
+  <div class="chatbox" id="chatBox">${msgs}</div>
+  <form class="chatin" id="dmForm"><input id="dmTxt" autocomplete="off" maxlength="1000" placeholder="${esc(t("typeMsg"))}" aria-label="${esc(t("typeMsg"))}"><button class="primary" aria-label="${t("send")}">➤</button></form>
+  <p class="hint safety">${t("chatSafety")}</p>`;
+  $("cls").onclick=closeSheet;$("dmTxt").value=keep;
+  $("dmForm").onsubmit=async e=>{e.preventDefault();const inp=$("dmTxt"),txt=inp.value.trim();if(!txt)return;inp.value="";
+    const tmp={id:"tmp"+now(),me:true,text:txt,ts:now()};T.msgs.push(tmp);save();dmDraw(uid);
+    try{const r=await sb("dms",{method:"POST",prefer:"return=representation",body:{from_id:st.liveId,from_name:liveName(),to_id:uid,to_name:T.name,body:txt}});
+      const row=Array.isArray(r)?r[0]:r;if(row&&row.id)tmp.id=row.id;save()}
+    catch(err){console.warn("dm send",err);T.msgs=T.msgs.filter(m=>m!==tmp);save();toast(t("dmFail"));if(sheetOpts.dm===uid){dmDraw(uid);$("dmTxt").value=txt}}};
+  setTimeout(()=>{const b=$("chatBox");if(b)b.scrollTop=b.scrollHeight},20)}
+function dmOpen(uid,name){const T=dmThread(uid,name);T.unread=0;save();updBell();sheetOpts={dm:uid};dmDraw(uid);openSheet(t("dmTitle"));
+  if(!$("v-msgs").hidden)renderMsgs();dmSync()}
+/* button on a real pro's profile */
+{const _dp=drawProfile;drawProfile=function(...r){const x=_dp(...r);try{const p=person(sheetOpts.id);
+  if(p&&String(p.id).startsWith("lv_")&&(DM_START()||st.dm[p.id.slice(3)])&&!$("dmGo")){const head=$("sheet").querySelector(".phead");
+    if(head){head.insertAdjacentHTML("beforeend",`<button class="primary" id="dmGo" style="margin-top:12px;width:100%">${t("dmBtn")}</button>`);
+      $("dmGo").onclick=()=>dmOpen(p.id.slice(3),pName(p))}}}catch(e){console.warn("dm btn",e)}return x}}
+/* the conversations on top of "Sporočila" */
+{const _rm=renderMsgs;renderMsgs=function(...r){const x=_rm(...r);try{const el=$("msgs"),ids=Object.keys(st.dm).filter(u=>st.dm[u].msgs.length);
+  if(el&&ids.length){ids.sort((a,b)=>((st.dm[b].msgs.at(-1)||{}).ts||0)-((st.dm[a].msgs.at(-1)||{}).ts||0));
+    const h=`<div class="h3" id="dmHead">${t("dmSec")}</div><div class="list" id="dmList">${ids.map(u=>{const T=st.dm[u],m=T.msgs.at(-1);
+      return `<button class="crow${T.unread?" unread":""}" data-dm="${esc(u)}">${dmAv(u)}<div><b>${esc(T.name)}</b><small>${t("dmTag")}</small><p>${esc((m.me?"✓ ":"")+m.text)}</p></div>
+       <span class="cmeta">${hhmm(m.ts)}${T.unread?`<i>${T.unread}</i>`:""}</span></button>`}).join("")}</div>`;
+    const h2=el.querySelector("h2.section-title");if(h2)h2.insertAdjacentHTML("afterend",h);else el.insertAdjacentHTML("afterbegin",h);
+    const eb=el.querySelector(".emptybox");if(eb)eb.closest(".list").hidden=true;
+    el.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>dmOpen(b.dataset.dm))}}catch(e){console.warn("dm list",e)}return x}}
+/* badge on "Sporočila" counts direct messages too */
+{const _ub=updBell;updBell=function(...r){const x=_ub(...r);try{const n=dmUnread();if(n){const mb=document.querySelector('nav [data-v="msgs"] .badge');
+  if(mb){const m=st.deals.reduce((a,d)=>a+(d.unread||0),0)+n;mb.textContent=m;mb.hidden=false}}}catch(_){}return x}}
+/* a notification about a message opens that conversation */
+{const _on=openNotes;openNotes=function(...r){const x=_on(...r);try{$("sheet").querySelectorAll("[data-n]").forEach(b=>{const n=st.notes.find(z=>z.id===b.dataset.n);
+  if(n&&n.link&&n.link.dm){b.onclick=()=>{n.read=true;save();dmOpen(n.link.dm)}}})}catch(_){}return x}}
+setTimeout(dmSync,3000);setInterval(()=>{if(!document.hidden&&DMS.ok)dmSync()},20000);
+setInterval(()=>{if(!document.hidden&&DMS.ok&&sheetOpts&&sheetOpts.dm&&!$("sheetWrap").hidden)dmSync()},6000);
+
+/* ================= PUSH ALERTS (v121): on by default, the phone shows messages even when the app is closed; switch off in Nastavitve ================= */
+const PUSH_PUB="BMGe3Khks8X2feSjhqt8HG4pxqz9OuauPq3kToQjBJdjyYCp8OEE2OFvIrvRCCErgRPXM_AAXi5B8m1CjpKbIGA";
+Object.assign(LANGS.sl,{puTitle:"🔔 Obvestila na telefon",puLead:"Sporočila, ponudbe, prijave in povabila se pokažejo na telefonu, tudi ko je aplikacija zaprta.",puOn:"Obvestila",
+  puDenied:"Obvestila so blokirana v nastavitvah telefona. Odpri nastavitve brskalnika ali aplikacije in dovoli obvestila za jobnodapp.com.",
+  puIos:"Na iPhonu obvestila delujejo, ko JobNod dodaš na začetni zaslon: v Safariju tapni Deli (□↑) → Dodaj na začetni zaslon, nato JobNod odpri z ikone.",
+  puNo:"Ta naprava ali brskalnik ne podpira obvestil.",puOk:"🔔 Obvestila vklopljena",puOff:"Obvestila izklopljena",puFail:"⚠️ Obvestil ni bilo mogoče vklopiti. Poskusi znova kasneje."});
+Object.assign(LANGS.en,{puTitle:"🔔 Phone alerts",puLead:"Messages, offers, applications and invites appear on your phone, even when the app is closed.",puOn:"Alerts",
+  puDenied:"Alerts are blocked in the phone settings. Open the browser or app settings and allow notifications for jobnodapp.com.",
+  puIos:"On iPhone, alerts work once JobNod is on the home screen: in Safari tap Share (□↑) → Add to Home Screen, then open JobNod from the icon.",
+  puNo:"This device or browser doesn't support alerts.",puOk:"🔔 Alerts on",puOff:"Alerts off",puFail:"⚠️ Couldn't turn alerts on. Please try again later."});
+/* privacy notice: mention the alert address */
+Object.assign(LANGS.sl,{lgQ2:LANGS.sl.lgQ2+" Če so obvestila vklopljena, shranimo še naslov telefona za obvestila, ki ga ustvari brskalnik.",
+  lgQ4:LANGS.sl.lgQ4+" Obvestila na telefon dostavi Googlova ali Applova storitev za obvestila, ki dobi le šifrirano vsebino."});
+Object.assign(LANGS.en,{lgQ2:LANGS.en.lgQ2+" If alerts are on, we also keep the phone's alert address created by the browser.",
+  lgQ4:LANGS.en.lgQ4+" Phone alerts are delivered by Google's or Apple's push service, which only receives encrypted content."});
+const PU={busy:false};
+const puIos=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const puStandalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const puOk=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+const puPerm=()=>("Notification" in window)?Notification.permission:"unsupported";
+function puKey(){const s=PUSH_PUB.replace(/-/g,"+").replace(/_/g,"/");const r=atob(s+"=".repeat((4-s.length%4)%4));return Uint8Array.from(r,c=>c.charCodeAt(0))}
+async function puReg(){const r=await Promise.race([navigator.serviceWorker.ready,new Promise(res=>setTimeout(()=>res(null),8000))]);return r}
+/* turn on (or refresh) the subscription; asks the phone only when called from a tap */
+async function puEnsure(fromTap){if(PU.busy||!puOk()||st.puOff||typeof jaIsIn!=="function"||!jaIsIn()||!st.liveId)return false;
+  let perm=puPerm();if(perm==="denied")return false;
+  if(perm==="default"){if(!fromTap)return false;PU.busy=true;try{perm=await Notification.requestPermission()}catch(_){perm=puPerm()}PU.busy=false;if(perm!=="granted"){renderPuCard();return false}}
+  PU.busy=true;try{const reg=await puReg();if(!reg)return false;
+    let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:puKey()});
+    const j=sub.toJSON();if(st.puEp!==j.endpoint||!st.puAt||Date.now()-st.puAt>7*864e5){
+      const r=await sb("rpc/jn_push_save",{method:"POST",body:{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth}});
+      if(r==="ok"){st.puEp=j.endpoint;st.puAt=Date.now();save()}}
+    return true}
+  catch(e){console.warn("push on",e);if(fromTap)toast(t("puFail"));return false}finally{PU.busy=false;renderPuCard()}}
+async function puDisable(){try{const reg=await puReg();const sub=reg&&await reg.pushManager.getSubscription();
+  const ep=(sub&&sub.endpoint)||st.puEp;if(sub)await sub.unsubscribe();if(ep)await sb("rpc/jn_push_drop",{method:"POST",body:{p_endpoint:ep}})}catch(e){console.warn("push off",e)}
+  st.puEp="";st.puAt=0;save()}
+/* on by default: the first tap anywhere in the app asks the phone once */
+{const first=()=>{if(st.puOff||puPerm()!=="default"||!jaIsIn())return;removeEventListener("click",first,true);puEnsure(true)};
+  addEventListener("click",first,true)}
+setTimeout(()=>puEnsure(false),3500);
+/* card in Nastavitve */
+function renderPuCard(){const c=$("puCard");if(!c)return;const perm=puPerm(),on=!st.puOff&&perm!=="denied"&&puOk();
+  const note=!puOk()?(puIos()&&!puStandalone()?t("puIos"):t("puNo")):perm==="denied"?t("puDenied"):"";
+  c.innerHTML=`<h3 style="margin:0 0 4px">${t("puTitle")}</h3><p class="hint" style="margin:0 0 6px">${t("puLead")}</p>
+   <label class="tog"><span><b>${t("puOn")}</b></span><input type="checkbox" role="switch" id="puSw"${on?" checked":""}${puOk()&&perm!=="denied"?"":" disabled"}><i aria-hidden="true"></i></label>
+   ${note?`<p class="hint" style="margin:8px 0 0">${esc(note)}</p>`:""}`;
+  const sw=$("puSw");if(sw)sw.onchange=async e=>{if(e.target.checked){st.puOff=false;save();const ok=await puEnsure(true);if(ok)toast(t("puOk"))}
+    else{st.puOff=true;save();await puDisable();toast(t("puOff"))}renderPuCard()}}
+{const _rp=renderProfile;renderProfile=function(...r){const x=_rp(...r);try{const sc=$("setCard"),inn=sc&&(sc.querySelector(".setin")||sc);if(inn&&!$("puCard")){
+  const lg=$("lgCard");const h=`<div class="pcard" id="puCard"></div>`;if(lg)lg.insertAdjacentHTML("afterend",h);else inn.insertAdjacentHTML("afterbegin",h);renderPuCard()}}catch(e){console.warn("pu card",e)}return x}}
+/* tapping an alert opens the right place */
+function puRoute(url){try{const u=new URL(url,location.href),q=u.searchParams;const dm=q.get("dm"),v=q.get("v"),m=q.get("m");if(!dm&&!v)return false;
+  setTimeout(()=>{try{if(dm){dmSync();dmOpen(dm);return}
+    if(m==="job"&&st.mode!=="mojster")setMode("mojster");if(m==="app"&&st.mode==="mojster")setMode("zap");if(v==="swipe"&&st.mode!=="mojster")setMode("mojster");
+    closeSheet();show(v==="swipe"?"swipe":v);try{liveTick&&liveTick()}catch(_){}}catch(e){console.warn("push open",e)}},900);return true}catch(_){return false}}
+if(puRoute(location.href))history.replaceState(null,"",location.pathname+location.hash);
+if(navigator.serviceWorker)navigator.serviceWorker.addEventListener("message",e=>{const m=e.data||{};
+  if(m.type==="jn-open"&&m.url)puRoute(m.url);
+  if(m.type==="jn-push"){try{dmSync()}catch(_){}}});
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
