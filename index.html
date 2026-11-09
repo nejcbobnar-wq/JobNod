@@ -1081,7 +1081,7 @@ const fmtQty=j=>{const u=UNITS[unitKey(j.unit)];return num(j.qty)+" "+(lang==="s
 const whenTxt=w=>L(WHEN[WHEN[w]?w:(WHEN_LEGACY[w]||"deal")]);
 const catName=k=>L((CATS[k]||CATS.vodovod).name);
 const fdate=d=>{const [y,m,dd]=d.split("-");return lang!=="sl"?new Date(+y,+m-1,+dd).toLocaleDateString(loc(),{day:"numeric",month:"short",year:"numeric"}):`${+dd}. ${+m}. ${y}`};
-const townList=()=>Object.keys(TOWNS).filter(x=>!x.includes("–")).sort((a,b)=>{const ia=INTL&&INTL[a]?1:0,ib=INTL&&INTL[b]?1:0;return ia-ib||(ia?INTL[a][2].localeCompare(INTL[b][2])||a.localeCompare(b):a.localeCompare(b,"sl"))});
+const townList=()=>Object.keys(TOWNS).filter(x=>!x.includes("–")&&!(st.pilot!==false&&typeof INTL!=="undefined"&&INTL&&INTL[x]&&x!==st.home)).sort((a,b)=>{const ia=INTL&&INTL[a]?1:0,ib=INTL&&INTL[b]?1:0;return ia-ib||(ia?INTL[a][2].localeCompare(INTL[b][2])||a.localeCompare(b):a.localeCompare(b,"sl"))});
 
 const allJobs=()=>[...DEMO_JOBS,...(st.removedMy1?[]:[MY_SAMPLE]),...st.userJobs];
 const jobById=id=>allJobs().find(j=>j.id===id);
@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="127";
+const APP_VER="129";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6722,8 +6722,8 @@ if(!st.fresh113){
   [DEMO_JOBS,ADS,STUD].forEach(arr=>{for(let i=arr.length-1;i>=0;i--)if(arr[i]&&arr[i].live)arr.splice(i,1)});
   try{save()}catch(_){}setTimeout(()=>{try{renderAll();updBell()}catch(_){}},0)}
 /* top tab "Dela" -> "Povpraševanja" (client requests that pros take) */
-Object.assign(LANGS.sl,{modePro:"Povpraševanja",onbPro:"Objavim, kaj potrebujem, ali kot mojster prevzemam povpraševanja drugih."});
-Object.assign(LANGS.en,{modePro:"Requests",onbPro:"I post what I need, or as a pro I take on other people's requests."});
+Object.assign(LANGS.sl,{modePro:"Iščem mojstra",onbPro:"Objavim, kaj potrebujem, ali kot mojster prevzemam povpraševanja drugih."});
+Object.assign(LANGS.en,{modePro:"Find a pro",onbPro:"I post what I need, or as a pro I take on other people's requests."});
 try{applyStatic()}catch(_){}
 
 /* ================= AD FORM: "Panoga" (and so the ad's icon) follows the position name until the company picks it by hand ================= */
