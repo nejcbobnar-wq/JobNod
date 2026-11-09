@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="113";
+const APP_VER="114";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6711,6 +6711,41 @@ if(!st.fresh113){
   st.fresh113=true;
   [DEMO_JOBS,ADS,STUD].forEach(arr=>{for(let i=arr.length-1;i>=0;i--)if(arr[i]&&arr[i].live)arr.splice(i,1)});
   try{save()}catch(_){}setTimeout(()=>{try{renderAll();updBell()}catch(_){}},0)}
+
+/* ================= AD FORM: "Panoga" (and so the ad's icon) follows the position name until the company picks it by hand ================= */
+const SECKW={
+ varn:["varnostn","varovanj","straz","stražar","ochran"],
+ gost:["natakar","kuhar","kuhinj","strez","strež","sank","šank","barmen","pomival","sobaric","hotel","picopek","slascicar","slaščičar"],
+ trg:["blagajn","trgovin","prodajalec","prodajalk","polnjenje polic","polnilec"],
+ proiz:["proizvodn","linij","montaz","montaž","sestavlj","pakir"],
+ log:["selitv","voznik","dostav","kurir","logist","viličar","vilicar","skladisc","skladišč","transport"],
+ cisc:["čistil","cistil","čiščen","ciscen","hisnik","hišnik"],
+ grad:["zidar","gradb","tesar","keramičar","keramicar","pleskar","fasader","krovec","inštalater","instalater","vodovod"],
+ pis:["administr","tajnic","pisarn","referent","recepcij","office"],
+ osk:["negoval","oskrb","medicinsk","bolničar","bolnicar","sestra"],
+ zdrav:["farmacevt","lekarn","zdravnik","fizioterap"],
+ it:["programer","razvijal","developer","sistemsk","informatik"," it "],
+ fin:["računovod","racunovod","knjigovod","financ"],
+ prod:["komercialist","prodajni svetoval","prodajni predstavnik"],
+ mark:["marketing","grafični","graficni","oblikoval","družbenih omrežij","druzbenih omrezij"],
+ izob:["učitelj","ucitelj","vzgojitelj","profesor","inštruktor","instruktor"],
+ teh:["električar","elektricar","elektro","cnc","strojnik","varilec","ključavničar"],
+ avtos:["avtomehanik","mehanik","klepar","vulkanizer","avtoličar"],
+ kmet:["obiran","kmetij","vrtnar","gozd","sadovnjak"],
+ prom:["promotor","promocij","anket","degustac","letak"],dog:["festival","dogod","koncert","hostes","prireditev"],
+ ins:["inštrukc","instrukc","učna pomoč","ucna pomoc","varstvo","varuš","varus","pazk"],dig:["vnos podatkov","splet","digital","socialna omrežja"],
+ sport:["bazen","reševalec","resevalec","animator","šport","sport","trener"],tur:["turist","koča","koca","vodič","vodic","planin"],
+ prev:["prevaj","podnapis","lektor"],klic:["klicn","call","pomoč strankam","pomoc strankam","telefonist"],foto:["foto","video","instagram","tiktok","družbena omrežja"],
+ stdost:["dostav","kurir"],stskl:["skladisc","skladišč","komision"],sttrg:["blagajn","trgovin","polnjenje polic"],
+ stgost:["natakar","strez","strež","kuhinj","pomival"],stcisc:["čišč","cisc","čistil","cistil"],stadm:["vnos podatkov","administr","pisarn"],
+ stfiz:["selitv","fizičn","fizicn","nosac","nosač"],stvarst:["varstvo otrok","varuš","varus","varstvo živali","pes","psov"]};
+function secGuess(title,opts){const s=" "+String(title||"").toLowerCase()+" ";let best=null,len=0;
+  for(const k of opts){for(const w of (SECKW[k]||[])){if(s.includes(w)&&w.length>len){best=k;len=w.length}}}return best}
+{const _rc=renderCoAds;renderCoAds=function(...r){const x=_rc(...r);try{const ti=$("ca-title"),se=$("ca-sec");if(ti&&se&&!ti.dataset.sg){ti.dataset.sg="1";
+  if(coForm&&coForm.secManual)se.dataset.man="1";
+  se.addEventListener("change",()=>{se.dataset.man="1";if(coForm)coForm.secManual=true});
+  const go=()=>{if(se.dataset.man)return;const opts=[...se.options].map(o=>o.value);const k=secGuess(ti.value,opts);if(k&&se.value!==k){se.value=k;if(coForm)coForm.sec=k;const ow=$("ca-secOw");if(ow)ow.hidden=k!=="drugo"}};
+  ti.addEventListener("input",go);go()}}catch(_){}return x}}
 
 function goHome(){closeSheet();$("onb").hidden=false;$("onb").scrollTop=0;const f=$("onb").querySelector(".choice");if(f)f.focus({preventScroll:true})}
 $("homeBtn").onclick=goHome;
