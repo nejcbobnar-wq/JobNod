@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="116";
+const APP_VER="117";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -6637,8 +6637,8 @@ if(PILOT()){
   Object.assign(LANGS.sl,{chatSafety:"Ne delite podatkov kartice v klepetu.",confirmDone:"Potrdi, da je delo opravljeno",
     lgT5:"V pilotni fazi JobNod ne obdeluje plačil. Plačilo za delo se dogovorita stranka in izvajalec neposredno.",lgR4:"Ne pošiljajte podatkov kartice v klepetu.",
     setSub:"Videz, zvoki, zasebnost, preverjanje računa, blokirani",noJobsRadius:"Tu še ni objavljenih del",moreOutside:"Ko bo kdo v tvojem radiju objavil delo, ga vidiš tukaj. Lahko pa povečaš radius.",noAdsRadius:"Tu še ni oglasov",plSortPro:"Priporočeni",widenOrCat:"Ko bo podjetje objavilo oglas, ga vidiš tukaj. Lahko pa povečaš radius.",ssPro:LANGS.sl.pmFree});
-  {const _pj=passJob;passJob=function(j,...r){if(j&&!j.live&&j.client!=="me")return false;return _pj(j,...r)}}
-  {const _pa=passAd;passAd=function(a,...r){if(a&&!a.live&&a.co!=="me")return false;return _pa(a,...r)}}
+  {const _pj=passJob;passJob=function(j,...r){if(j&&!j.live&&j.client!=="me")return false;if(j&&coords(j)&&!inSlo(coords(j)))return false;return _pj(j,...r)}}
+  {const _pa=passAd;passAd=function(a,...r){if(a&&!a.live&&a.co!=="me")return false;if(a&&TOWNS[a.loc]&&!inSlo(TOWNS[a.loc]))return false;return _pa(a,...r)}}
   if(!st.removedMy1){st.removedMy1=true;st.plMy1=true}
   {const _om=openMap;openMap=function(v,...r){return _om("local",...r)}}
   try{brUpd()}catch(_){}
@@ -6656,6 +6656,17 @@ html.pilot .demo-note,html.pilot .empty p:has(a[href*="mojedelo"]),html.pilot .s
   if(dz)dz.insertAdjacentHTML("beforebegin",h);else inn.insertAdjacentHTML("beforeend",h);
   $("plSw").onchange=e=>{st.pilot=e.target.checked;if(!st.pilot){st.noDemo=false;if(st.plMy1){st.removedMy1=false;st.plMy1=false}}save();setTimeout(()=>location.reload(),150)}}
   const av=$("profile")&&$("profile").querySelector(".appver");if(av&&PILOT())av.textContent=av.textContent.replace("JobNod demo","JobNod pilot")}catch(_){}return x}}
+/* pilot: "Podjetja" lists only real companies that have open live ads (in Slovenia); badge icons only "verified" */
+Object.assign(LANGS.sl,{pmNoCos:"Tu še ni podjetij z oglasi. Ko bo podjetje objavilo oglas, ga vidiš tukaj."});
+Object.assign(LANGS.en,{pmNoCos:"No companies with ads yet. When a company posts an ad, you'll see it here."});
+{const css=document.createElement("style");css.textContent=`html.pilot .bico span:not(.ver){display:none!important}`;document.head.appendChild(css)}
+{const _rc=renderCos;renderCos=function(...r){const x=_rc(...r);try{if(!PILOT())return x;const el=$("cos");if(!el)return x;
+  const by={};ADS.filter(a=>a.live&&!a.closed&&(st.hireSec==="all"||a.sec===st.hireSec)).forEach(a=>{(by[a.co]=by[a.co]||[]).push(a)});
+  const list=Object.keys(by).map(id=>({c:CO_MAP.get(id)||{id,name:"Podjetje",sec:by[id][0].sec,loc:by[id][0].loc},n:by[id].length})).filter(({c})=>!TOWNS[c.loc]||inSlo(TOWNS[c.loc])).map(o=>Object.assign(o,{d:distT(o.c.loc)})).sort((a,b)=>(a.d??0)-(b.d??0));
+  el.innerHTML=list.length?list.map(({c,d,n})=>`<button class="prow" data-co="${esc(c.id)}">${coAv(c,"md")}<div style="min-width:0"><h4>${esc(c.name)}</h4><p>${esc(secName(c.sec))} · ${esc(c.loc||"")}${d!=null?" · "+fkm(d):""}</p></div>
+   <div class="r" style="font-size:15px">${num(n)}<small>${pl(n,["prosto mesto","prosti mesti","prosta mesta","prostih mest"],["opening","openings"])}</small></div></button>`).join("")
+   :`<p class="hint" style="text-align:center;padding:24px 8px">${t("pmNoCos")}</p>`;
+  el.querySelectorAll("[data-co]").forEach(b=>b.onclick=()=>openCompany(b.dataset.co))}catch(e){console.warn("pilot cos",e)}return x}}
 
 /* ================= TIDY 2: SL + EN only (choice in Nastavitve), profile button by the bell, map = Slovenia only, "Moja" with folding termini + objave ================= */
 Object.assign(LANGS.sl,{lgTitle2:"🌐 Jezik",mfAg:"📅 Prihajajoči termini",mfPo:"📝 Moje objave",hdrProf:"Moj profil"});
@@ -6752,7 +6763,7 @@ function secGuess(title,opts){const s=" "+String(title||"").toLowerCase()+" ";le
 
 /* ================= CLOSED TEST: entry with invite code, own secure key per phone (Supabase anonymous sign-in), every request carries it ================= */
 const JN_CLOSED=true;
-const JN_CONTACT="";
+const JN_CONTACT="jobnodapp@gmail.com";
 Object.assign(LANGS.sl,{jaTitle:"JobNod je v zaprtem testu",jaLead:"Vstopiš lahko s povabilno kodo, ki si jo dobil od nas.",jaCode:"Povabilna koda",jaCodePh:"npr. ABC123",
   jaAgree:"Strinjam se s {t} in {p}.",jaTerms:"pogoji uporabe",jaPriv:"izjavo o varstvu podatkov",jaGo:"Vstopi",jaBusy:"Povezujem …",jaBad:"Koda ni pravilna. Preveri jo in poskusi znova.",
   jaNeedAgree:"Za vstop potrdi pogoje in izjavo o varstvu podatkov.",jaNeedCode:"Vpiši povabilno kodo.",jaOff:"Prijava trenutno ni mogoča (vklopljena mora biti anonimna prijava v Supabase). Poskusi kasneje.",
