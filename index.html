@@ -2723,7 +2723,7 @@ function scrollToEl(el,where){const sc=el.closest(".scroll");if(!sc)return;const
 /* toggles: flip the switch without focusing its hidden checkbox (focus made phones jump to a blank screen) */
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("label.tog");if(!l)return;const cb=l.querySelector('input[type="checkbox"]');if(!cb||e.target===cb)return;if(cb.disabled){e.preventDefault();return}
   e.preventDefault();cb.checked=!cb.checked;cb.dispatchEvent(new Event("change",{bubbles:true}))},true);
-const APP_VER="121";
+const APP_VER="122";
 {const _rp=renderProfile;renderProfile=function(){_rp();const P=$("profile");if(P&&!P.querySelector(".appver"))P.insertAdjacentHTML("beforeend",`<p class="hint appver" style="text-align:center;margin:10px 0 70px">JobNod demo · ${lang==="sl"?"različica":"version"} ${APP_VER}</p>`)}}
 /* ================= JOBS: MORE CATEGORIES + REQUIRED MEASUREMENT PER CATEGORY ================= */
 Object.assign(UNITS,{km:{sl:["km","km","km","km"],en:["km","km"]},m3:{sl:["m³","m³","m³","m³"],en:["m³","m³"]}});
@@ -7012,15 +7012,18 @@ function dmAv(uid){const p=person("lv_"+uid),nm=(st.dm[uid]||{}).name||(p&&p.nam
 async function dmSync(){if(DMS.busy||!st.liveId||!jaIsIn())return;DMS.busy=true;
   try{const me=encodeURIComponent(st.liveId);
     const rows=await sb(`dms?or=(to_id.eq.${me},from_id.eq.${me})&order=created_at.asc&limit=500&select=*`);DMS.ok=true;
-    let fresh=0;(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
+    let fresh=0,chg=0;(rows||[]).forEach(r=>{const mine=r.from_id===st.liveId,other=mine?r.to_id:r.from_id;
       const T=dmThread(other,mine?(r.to_name||""):(r.from_name||""));if(T.msgs.some(m=>m.id===r.id))return;
-      T.msgs.push({id:r.id,me:mine,text:r.body||"",ts:Date.parse(r.created_at)||now()});
+      const tmp=mine&&T.msgs.find(m=>String(m.id).startsWith("tmp")&&m.text===(r.body||""));if(tmp){tmp.id=r.id;return}
+      T.msgs.push({id:r.id,me:mine,text:r.body||"",ts:Date.parse(r.created_at)||now()});chg++;
       if(!mine&&!(sheetOpts&&sheetOpts.dm===other)){T.unread=(T.unread||0)+1;fresh++;notify("dmNote",{x:T.name},{dm:other})}});
     Object.values(st.dm).forEach(T=>{T.msgs.sort((a,b)=>a.ts-b.ts);T.msgs=T.msgs.slice(-200)});
-    save();updBell();if(sheetOpts&&sheetOpts.dm)dmDraw(sheetOpts.dm);if(!$("v-msgs").hidden)renderMsgs()}
+    if(!chg)return;save();updBell();if(sheetOpts&&sheetOpts.dm)dmBox(sheetOpts.dm);if(!$("v-msgs").hidden)renderMsgs()}
   catch(e){console.warn("dm sync",e);if(/404|PGRST205|relation/.test(String(e)))DMS.ok=false}finally{DMS.busy=false}}
+function dmMsgs(T){return T.msgs.map(m=>`<div class="mb ${m.me?"me":"them"}"><p>${esc(m.text)}</p><small>${hhmm(m.ts)}</small></div>`).join("")||`<div class="msys">${t("dmEmpty")}</div>`}
+function dmBox(uid){const b=$("chatBox");if(!b||!$("dmForm")){dmDraw(uid);return}const end=b.scrollHeight-b.scrollTop-b.clientHeight<60;b.innerHTML=dmMsgs(dmThread(uid));if(end)b.scrollTop=b.scrollHeight}
 function dmDraw(uid){const T=dmThread(uid);const keep=$("dmTxt")?$("dmTxt").value:"";
-  const msgs=T.msgs.map(m=>`<div class="mb ${m.me?"me":"them"}"><p>${esc(m.text)}</p><small>${hhmm(m.ts)}</small></div>`).join("")||`<div class="msys">${t("dmEmpty")}</div>`;
+  const msgs=dmMsgs(T);
   $("sheet").innerHTML=`<div class="grab"></div><button class="close" id="cls" aria-label="${t("close")}">×</button>
   <div class="chathead">${dmAv(uid)}<div><b>${esc(T.name)}</b><small>${t("dmTag")}</small></div></div>
   <div class="chatbox" id="chatBox">${msgs}</div>
@@ -7028,10 +7031,10 @@ function dmDraw(uid){const T=dmThread(uid);const keep=$("dmTxt")?$("dmTxt").valu
   <p class="hint safety">${t("chatSafety")}</p>`;
   $("cls").onclick=closeSheet;$("dmTxt").value=keep;
   $("dmForm").onsubmit=async e=>{e.preventDefault();const inp=$("dmTxt"),txt=inp.value.trim();if(!txt)return;inp.value="";
-    const tmp={id:"tmp"+now(),me:true,text:txt,ts:now()};T.msgs.push(tmp);save();dmDraw(uid);
+    const tmp={id:"tmp"+now(),me:true,text:txt,ts:now()};T.msgs.push(tmp);save();dmBox(uid);const b=$("chatBox");if(b)b.scrollTop=b.scrollHeight;inp.focus();
     try{const r=await sb("dms",{method:"POST",prefer:"return=representation",body:{from_id:st.liveId,from_name:liveName(),to_id:uid,to_name:T.name,body:txt}});
       const row=Array.isArray(r)?r[0]:r;if(row&&row.id)tmp.id=row.id;save()}
-    catch(err){console.warn("dm send",err);T.msgs=T.msgs.filter(m=>m!==tmp);save();toast(t("dmFail"));if(sheetOpts.dm===uid){dmDraw(uid);$("dmTxt").value=txt}}};
+    catch(err){console.warn("dm send",err);T.msgs=T.msgs.filter(m=>m!==tmp);save();toast(t("dmFail"));if(sheetOpts.dm===uid){dmBox(uid);if($("dmTxt"))$("dmTxt").value=txt}}};
   setTimeout(()=>{const b=$("chatBox");if(b)b.scrollTop=b.scrollHeight},20)}
 function dmOpen(uid,name){const T=dmThread(uid,name);T.unread=0;save();updBell();sheetOpts={dm:uid};dmDraw(uid);openSheet(t("dmTitle"));
   if(!$("v-msgs").hidden)renderMsgs();dmSync()}
@@ -7057,6 +7060,9 @@ function dmOpen(uid,name){const T=dmThread(uid,name);T.unread=0;save();updBell()
   if(n&&n.link&&n.link.dm){b.onclick=()=>{n.read=true;save();dmOpen(n.link.dm)}}})}catch(_){}return x}}
 setTimeout(dmSync,3000);setInterval(()=>{if(!document.hidden&&DMS.ok)dmSync()},20000);
 setInterval(()=>{if(!document.hidden&&DMS.ok&&sheetOpts&&sheetOpts.dm&&!$("sheetWrap").hidden)dmSync()},6000);
+/* keep the keyboard and the typed text when a chat redraws (new message arriving, sending) */
+{const _dc=drawChat;drawChat=function(id,...r){const a=document.activeElement,foc=a&&a.id==="chatTxt",val=$("chatTxt")?$("chatTxt").value:"";
+  const x=_dc(id,...r);try{const i=$("chatTxt");if(i&&val&&!i.value)i.value=val;if(i&&foc){i.focus({preventScroll:true});try{i.setSelectionRange(i.value.length,i.value.length)}catch(_){}}}catch(_){}return x}}
 
 /* ================= PUSH ALERTS (v121): on by default, the phone shows messages even when the app is closed; switch off in Nastavitve ================= */
 const PUSH_PUB="BMGe3Khks8X2feSjhqt8HG4pxqz9OuauPq3kToQjBJdjyYCp8OEE2OFvIrvRCCErgRPXM_AAXi5B8m1CjpKbIGA";
