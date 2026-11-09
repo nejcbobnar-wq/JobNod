@@ -6666,7 +6666,7 @@ Object.assign(LANGS.en,{lgTitle2:"🌐 Language",mfAg:"📅 Upcoming appointment
 const LANG_OK=["sl","en"];
 if(!LANG_OK.includes(lang)){try{setLang("sl")}catch(_){}}
 {const css=document.createElement("style");css.textContent=`#langBtn,#onbMoreLang{display:none!important}
-#profBtn svg{width:20px;height:20px}#profBtn{padding:0;width:40px;justify-content:center}#profBtn.on{background:var(--ink);color:var(--surface)}
+nav [data-v="profile"]{display:none!important}
 #lgCard .sortseg{display:flex;width:100%;margin:8px 0 2px}#lgCard .sortseg button{flex:1;padding:9px 8px;font-size:14px}
 details.mfold{display:block;margin:14px 0 0;padding:0;overflow:hidden}details.mfold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:15px 18px}
 details.mfold>summary::-webkit-details-marker{display:none}details.mfold>summary b{flex:1;font-size:16.5px}
@@ -6684,9 +6684,8 @@ openLang=function(){const nx=lang==="sl"?"en":"sl";setLang(nx)};
   inn.insertAdjacentHTML("afterbegin",`<div class="pcard" id="lgCard"><div class="h3" style="margin-top:0">${t("lgTitle2")}</div><div class="sortseg" role="group">${[["sl","Slovenščina"],["en","English"]].map(([k,n])=>`<button type="button" data-lg="${k}" aria-pressed="${lang===k}">${n}</button>`).join("")}</div></div>`);
   $("lgCard").querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{if(b.dataset.lg!==lang){setOpen=true;setLang(b.dataset.lg)}})}}catch(_){}return x}}
 /* profile button next to the bell */
-{const bell=$("bellBtn");if(bell&&!$("profBtn")){bell.insertAdjacentHTML("afterend",`<button class="locbtn" id="profBtn" aria-label="${esc(t("hdrProf"))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>`);
+{const bell=$("bellBtn");if(bell&&!$("profBtn")){bell.insertAdjacentHTML("afterend",`<button class="locbtn bellbtn" id="profBtn" aria-label="${esc(t("hdrProf"))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>`);
   $("profBtn").onclick=()=>{const pb=document.querySelector('#nav [data-v="profile"],nav [data-v="profile"],[data-view="profile"]');show("profile")}}}
-{const _s=show;show=function(v,...r){const x=_s(v,...r);try{const b=$("profBtn");if(b)b.classList.toggle("on",v==="profile")}catch(_){}return x}}
 /* map: only places inside Slovenia, and in the pilot only real (live) items */
 function inSlo(ll){if(!ll)return false;const y=ll[0],x=ll[1];let ins=false;for(let i=0,j=SLO.length-1;i<SLO.length;j=i++){const yi=SLO[i][0],xi=SLO[i][1],yj=SLO[j][0],xj=SLO[j][1];
   if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))ins=!ins}return ins}
