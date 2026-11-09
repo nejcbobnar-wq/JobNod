@@ -1,0 +1,18 @@
+name: Supabase ping (JobNod)
+# Keeps the free Supabase project awake: GitHub calls the database twice a day.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+    - cron: "43 17 * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://eivqantbqesybjhlrdpp.supabase.co/rest/v1/pros?select=id&limit=1" \
+            -H "apikey: sb_publishable_3tckIMPjhDhSoH8XEC_Yww_Z-aU9hGv")
+          echo "Supabase answered: $code"
+          if [ "$code" = "000" ] || [ "$code" -ge 500 ]; then exit 1; fi
